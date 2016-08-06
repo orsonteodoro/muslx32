@@ -73,6 +73,9 @@ mono (incomplete patch from pldlinux... was testing)
 chrony and ntp or musl's timezone stuff is broken.  use the hw clock instead.  do not automatically update time though ntp protocol
 import (from imagematick) - cannot take screenshot use imlib2 instead
 
+Unconfirmed broken:
+revdep-rebuild - it always says linking is fine.
+
 Masks:
 >sys-libs/ncurses-5.9-r5
 
