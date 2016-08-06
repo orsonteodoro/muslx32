@@ -72,7 +72,7 @@ webkit-gtk just blank screen, jit is broken it works for 2.0.4 but it doesn't wo
 evdev (semi broken and quirky; dev permissions need to be manually set or devices reloaded)
 grub2-install (doesn't work in x32 use lilo)
 xterm (works in root but not as user)
-mono (incomplete patch from pldlinux... was testing)
+mono C# (incomplete patch from pldlinux... was testing) details (https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html) on what needs to be done.
 chrony and ntp or musl's timezone stuff is broken.  use the hw clock instead.  do not automatically update time though ntp protocol
 import (from imagematick) - cannot take a screenshot use imlib2 
 clang - cannot compile it yet
