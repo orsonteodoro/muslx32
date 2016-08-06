@@ -69,6 +69,7 @@ evdev (semi broken and quirky; dev permissions need to be manually set or device
 grub2-install (doesn't work in x32 use lilo)
 xterm (works in root but not as user)
 mono (incomplete patch from pldlinux... was testing)
+chrony and ntp or musl's timezone stuff is broken.  use the hw clock instead.  do not automatically update time though ntp protocol
 
 Masks:
 >sys-libs/ncurses-5.9-r5
