@@ -3,7 +3,7 @@ This is an unofficial muslx32 (musl libc and x32 abi) overlay for Gentoo Linux.
 
 Current goals:  get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
-Why musl and x32 and Gentoo?  Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux packages were pretty much outdated.
+Why musl and x32 and Gentoo?  Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux packages were pretty much outdated.  blueness said that he wouldn't make muslx32 as top priority or it wasn't his job to do it, so I decided to just do it myself.
 
 Disadvantages of this platform:  No binary packages work (e.g. spotify, genymotion, virtualbox, etc.).  Some assembly optimizations are not enabled.  Some assembly based packages don't work.  It is not multilib.
 
@@ -11,7 +11,8 @@ Other recommendations?  Use -Os and use kernel zswap+zbud to significantly reduc
 
 You need use crossdev to build this.  Crossdev is used to build the cross-compile toolchain.  Use the cross-compile toolchain to build system.  Use the system to build world.  The result is a stage 3/4 image like the tarball you download from Gentoo.  It sound easy but there are a lot of broken ebuilds and packages that need patches.  It took me several weeks to get it right.  I give you the overlay this time so it will only take you a few days.
 
-Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), .... (will update this list)
+Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi)
+) .... (will update this list)
 
 Expected Repositories and priorities (negative less important and positive is highest ebuilds used):
 
