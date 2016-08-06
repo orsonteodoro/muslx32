@@ -5,7 +5,7 @@ Current goals:  get popular packages and necessary developer tools working on th
 
 Why musl and x32 and Gentoo?  Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux packages were pretty much outdated.
 
-Disadvantages of this platform:  No binary packages work.  Some assembly optimizations are not enabled.  Some assembly based packages don't work.  It is not multilib.
+Disadvantages of this platform:  No binary packages work (e.g. spotify, genymotion, virtualbox, etc.).  Some assembly optimizations are not enabled.  Some assembly based packages don't work.  It is not multilib.
 
 Other recommendations?  Use -Os and use kernel zswap+zbud to significantly reduce swapping.  Use ramdisk for Firefox if using Gentoo on usbstick.
 
