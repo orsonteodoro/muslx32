@@ -388,12 +388,12 @@ chroot ./ /bin/bash
 #set the root password
 
 #build the native toolchain
-emerge -pve system
+emerge -ve system
 
 #remember to build mpfr, which, gettext as cross-compile if it fails then continue --resuming
 
 #build the world
-emerge -vuDN world
+emerge -ve world
 
 #remember to build mpfr, which, gettext as cross-compile if it fails then continue --resuming
 
@@ -401,11 +401,6 @@ emerge -vuDN world
 #remember to set your root password and users
 
 add app-arch/gzip-1.7 to /usr/x86_64-pc-linux-muslx32/etc/package.accept_keywords
-
-#add these musl x32 hacks to portage
-#patch1: for buggy coreutils cp command permissions ownership bug
-#patch2: for file editing directory bug
-#patch3: for some unpacking exit code verification bug
 
 #add to package.use/wpa_supplicant
 dev-util/pkgconfig internal-glib
@@ -427,7 +422,12 @@ emerge nano
 emerge screen
 emerge links
 
-#tricky part
+#unmount all mounted in /usr/x86_64-pc-linux-muslx32/mnt and /usr/x86_64-pc-linux-muslx32/boot
+exit
+exit
+#unmount all mounted in /usr/mnt/gentoo
+
+#the tricky part (use the created native world image produced by you ground up and replacing the unpacked official tarball image.)
 #you can bork your system if you get it wrong and need to start from scratch again
 
 #last step put old files into trash and move the cross compiled stuff in root
@@ -435,6 +435,9 @@ emerge links
 mkdir trash
 mv * trash
 mv trash/usr/x86_64-pc-linux-muslx32/* ./
+#do not delete the trash because you may need it later to build the 3 cross-compiled files.
+
+sync
 
 reboot
 
