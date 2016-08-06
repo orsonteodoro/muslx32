@@ -48,6 +48,7 @@ gdb (for debugging)
 X (for windowing system)
 wpa_supplicant (for wifi)
 xf86-video-nouveau
+xf86-video-ati
 see bottom of readme for details emerged packages
 mplayer (but without simd optimizations)
 mpd
@@ -57,6 +58,8 @@ xfce4
 aterm
 xfce4-terminal
 gimp
+xscreensaver
+glxgears from mesa-progs
 
 Broken: 
 Makefile.in or make system - use my bashrc scripts to fix it see below.
