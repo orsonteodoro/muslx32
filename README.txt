@@ -1159,3 +1159,193 @@ Total: 663 packages (2 upgrades, 661 reinstalls), Size of downloads: 5818 KiB
 
  * IMPORTANT: 13 news items need reading for repository 'gentoo'.
  * Use eselect news read to view new items.
+ 
+ ---
+ package.use:
+ www-client/chromium -tcmalloc custom-cflags
+# required by www-client/chromium-51.0.2704.63::gentoo
+# required by chromium (argument)
+>=media-libs/harfbuzz-1.2.7 icu
+# required by www-client/chromium-51.0.2704.63::gentoo
+# required by chromium (argument)
+>=sys-libs/zlib-1.2.8-r1 minizip
+# required by www-client/chromium-51.0.2704.63::gentoo
+# required by chromium (argument)
+>=dev-libs/libxml2-2.9.4 icu
+cross-x86_64-pc-linux-muslx32/binutils -selinux -multilib
+cross-x86_64-pc-linux-muslx32/linux-headers -selinux -multilib
+cross-x86_64-pc-linux-muslx32/musl -selinux -multilib
+cross-x86_64-pc-linux-muslx32/gcc -selinux -boundschecking -d -gcj -gtk -libffi -mudflap -objc -objc++ -objc-gc -multilib
+net-misc/curl curl_ssl_gnutls -curl_ssl_openssl
+# required by media-libs/giblib-1.2.4::gentoo
+# required by media-gfx/feh-2.9.3::gentoo
+# required by feh (argument)
+>=media-libs/imlib2-1.4.9 X
+media-video/ffmpeg aac mp3 alsa gnutls -openssl
+# required by x11-libs/wxGTK-3.0.2.0-r2::gentoo[X]
+# required by net-ftp/filezilla-3.12.0.2::gentoo
+# required by filezilla (argument)
+>=x11-libs/pango-1.38.1 X
+www-client/firefox gstreamer -jemalloc3 system-icu system-libvpx system-sqlite system-jpeg system-harfbuzz custom-cflags custom-optimization -hardened hwaccel -debug ffmpeg jit pulseaudio
+# required by www-client/firefox-38.8.0::gentoo
+# required by firefox (argument)
+>=media-libs/libpng-1.6.21 apng
+# required by www-client/firefox-38.8.0::gentoo
+# required by firefox (argument)
+>=dev-lang/python-2.7.10-r1:2.7 sqlite
+# required by www-client/firefox-38.8.0::gentoo[system-libvpx]
+# required by firefox (argument)
+>=media-libs/libvpx-1.4.0 postproc
+# required by www-client/firefox-38.8.0::gentoo[system-sqlite]
+# required by firefox (argument)
+>=dev-db/sqlite-3.12.0 secure-delete
+# required by www-client/firefox-47.0.1::x-portage[system-sqlite]
+# required by =firefox-47.0.1 (argument)
+>=dev-db/sqlite-3.12.0 -debug
+media-plugins/gst-plugins-meta alsa mp3 theora vorbis ogg aac opus ffmpeg http
+# required by media-plugins/gst-plugins-meta-1.6.3::gentoo
+# required by gst-plugins-meta (argument)
+>=media-libs/gst-plugins-base-1.6.3 alsa
+# required by media-plugins/gst-plugins-meta-1.6.3::gentoo
+# required by gst-plugins-meta (argument)
+>=media-libs/gst-plugins-base-1.6.3 theora
+media-libs/flac -cpu_flags_x86_sse
+cross-x86_64-pc-linux-muslx32/gcc -vtv -fortran -sanitize
+sys-devel/gcc -vtv -fortran -sanitize
+sys-devel/gdb nls server client -multitarget
+x11-libs/gdk-pixbuf jpeg
+sys-devel/gettext cxx
+media-gfx/gimp exif jpeg png svg tiff
+#dev-libs/gmp -cxx
+www-plugins/gnash gtk sdl
+sys-boot/grub grub_platforms_pc
+x11-libs/gtk+:3 X wayland
+#dev-scheme/guile threads
+# required by dev-scheme/guile-2.0.0::gentoo
+# required by guile (argument)
+>=dev-libs/boehm-gc-7.4.2-r99 threads
+media-gfx/imagemagick png jpeg X
+media-libs/imlib2 gif jpeg png
+net-misc/iputils -caps -filecaps
+dev-qt/qtcore icu qt3support
+dev-qt/qtgui qt3support mng tiff
+# required by x11-libs/gtk+-2.24.30::gentoo
+# required by app-editors/leafpad-0.8.18.1::gentoo
+# required by leafpad (argument)
+>=x11-libs/gdk-pixbuf-2.32.3 X
+# required by x11-libs/gtk+-2.24.30::gentoo
+# required by app-editors/leafpad-0.8.18.1::gentoo
+# required by leafpad (argument)
+>=x11-libs/cairo-1.14.6 X
+media-libs/libvpx -cpu_flags_x86_sse3 -cpu_flags_x86_sse2 -cpu_flags_x86_sse -cpu_flags_x86_mmx
+sys-devel/llvm -clang -gold
+www-client/midori
+# required by www-client/midori-0.5.11-r1::gentoo
+# required by midori (argument)
+>=app-crypt/gcr-3.18.0 gtk
+media-sound/mpd -* alsa lame mpg123 curl network glib ffmpeg libmpdclient
+#media-video/mplayer -* -X -xv -cdio -xscreensaver -osdmenu -dvd -dvdnav -truetype -enca -encode -libass -iconv -shm -unicode alsa network mp3 -faad cpu_flags_x86_3dnow cpu_flags_x86_3dnowext cpu_flags_x86_mmx cpu_flags_x86_mmxext cpu_flags_x86_sse cpu_flags_x86_sse2 cpu_flags_x86_sse3
+media-video/mplayer -* -X -xv -cdio -xscreensaver -osdmenu -dvd -dvdnav -truetype -enca -encode -libass -iconv -shm -unicode alsa network mp3 -faad
+media-video/mpv -dvd -enca -libass -opengl -xscreensaver -X -iconv
+www-client/netsurf gtk -svgtiny
+# required by media-libs/libsvgtiny-0.1.4::gentoo
+# required by www-client/netsurf-3.5::gentoo[svg,svgtiny]
+# required by netsurf (argument)
+>=net-libs/libdom-0.3.0 xml
+net-misc/networkmanager -* wifi ncurses dhcpcd gnutls
+# required by sys-auth/consolekit-1.1.0::gentoo
+# required by sys-auth/polkit-0.113::musl
+# required by net-misc/networkmanager-1.0.12-r1::gentoo
+# required by networkmanager (argument)
+>=dev-libs/glib-2.46.2-r3 dbus
+# required by sys-auth/polkit-0.113::musl
+# required by net-misc/networkmanager-1.0.12-r1::gentoo
+# required by networkmanager (argument)
+>=sys-auth/consolekit-1.1.0 policykit
+# required by net-misc/networkmanager-1.0.12-r1::gentoo[wifi]
+# required by networkmanager (argument)
+>=net-wireless/wpa_supplicant-2.5-r1 dbus
+media-sound/pulseaudio dbus system-wide gtk
+dev-cpp/gtkmm X wayland
+dev-cpp/cairomm X
+# required by dev-qt/qt3support-4.8.6-r99::musl
+# required by dev-qt/qtgui-4.8.6-r4::gentoo[qt3support]
+# required by dev-qt/qtcore-4.8.6-r99::musl[qt3support]
+# required by qtcore:4 (argument)
+>=dev-qt/qtsql-4.8.6-r1:4 qt3support
+# required by dev-qt/qtwebkit-4.8.6-r1::gentoo[gstreamer]
+# required by www-client/qupzilla-1.8.9::gentoo[qt4]
+# required by qupzilla (argument)
+>=dev-libs/libxml2-2.9.4 -icu
+# required by dev-util/itstool-2.0.2::gentoo
+# required by gnome-extra/zenity-3.18.1.1::gentoo
+# required by media-sound/spotify-1.0.31::gentoo
+# required by spotify (argument)
+>=dev-libs/libxml2-2.9.4 python
+#dev-util/strace unwind aio
+www-client/surf gtk3 muslx32 adblock savedconfig
+net-libs/webkit-gtk muslx32 -wayland
+# required by net-libs/webkit-gtk-2.13.2::oiledmachine-overlay[opengl,webgl]
+# required by www-client/surf-0.6-r1::oiledmachine-overlay[gtk3]
+# required by www-client/surf::oiledmachine-overlay (argument)
+>=x11-libs/cairo-1.14.6 opengl
+media-libs/gst-plugins-bad opengl X
+sys-apps/dbus X
+net-libs/webkit-gtk -geoloc wayland -bmalloc nsplugin spell geoloc
+# required by dev-libs/weston-1.9.0::gentoo[gles2]
+# required by weston (argument)
+>=media-libs/mesa-11.0.6 gles2 wayland
+dev-libs/weston wayland-compositor xwayland jpeg webp
+# required by dev-libs/weston-1.9.0::gentoo[xwayland]
+# required by weston (argument)
+>=x11-base/xorg-server-1.17.4 wayland
+# required by dev-libs/weston-1.9.0::gentoo[xwayland]
+# required by weston (argument)
+>=x11-libs/cairo-1.14.6 xcb
+app-emulation/wine abi_x86_32
+dev-util/pkgconfig internal-glib
+sys-apps/help2man -nls
+x11-base/xorg-server glamor
+x11-drivers/xf86-video-nouveau glamor
+x11-misc/xscreensaver opengl jpeg
+# required by www-client/chromium-52.0.2743.82::gentoo
+# required by chromium (argument)
+>=dev-libs/libxml2-2.9.4 icu
+# required by media-sound/pulseaudio-8.0::gentoo[alsa-plugin,alsa]
+# required by www-client/firefox-45.2.0::x-portage[pulseaudio]
+# required by @selected
+# required by @world (argument)
+>=media-plugins/alsa-plugins-1.0.29 pulseaudio
+
+----
+
+package.mask:
+>=cross-x86_64-pc-linux-muslx32/gcc-9999
+=net-misc/curl-7.49.0
+app-text/enchant::oiledmachine-overlay
+>cross-x86_64-pc-linux-muslx32/gcc-4.9.3
+>sys-devel/gcc-4.9.3
+#=dev-vcs/git-2.7.3-r1
+dev-libs/glib::x-portage
+dev-libs/glib::gentoo
+#=dev-libs/gmp-6.0.0a
+#=dev-scheme/guile-2.0.11
+dev-scheme/guile::gentoo
+<sys-devel/libtool-2.4.3-r2
+>sys-devel/llvm-3.5.0-r99
+www-client/midori::gentoo
+*/*::musl-extras
+>sys-libs/ncurses-5.9-r5
+<sys-apps/openrc-0.13.0
+<sys-process/procps-3.3.9-r2
+<dev-lang/perl-5.18.0
+sys-process/psmisc::musl
+app-accessibility/speech-dispatcher::oiledmachine-overlay
+#www-client/surf::oiledmachine-overlay
+net-libs/webkit-gtk::oiledmachine-overlay
+#=net-libs/webkit-gtk::x-portage
+net-libs/webkit-gtk::musl
+net-libs/webkit-gtk::gentoo
+#>net-libs/webkit-gtk-2.0.4
+app-arch/xz-utils::gentoo
+
