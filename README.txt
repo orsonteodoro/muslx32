@@ -22,7 +22,6 @@ x-portage
     masters: gentoo
     priority: 2
 
-
 Works:
 firefox - except audio and jit.  javascript works but through interpreter.
 strace (for debugging)
@@ -30,7 +29,6 @@ gdb (for debugging)
 X (for windowing system)
 wpa_supplicant (for wifi)
 xf86-video-nouveau
-
 
 Broken: 
 chromium (v8 javascript engine is broken for x32)
@@ -49,10 +47,9 @@ sys-devel/gettext
 sys-apps/which
 
 
-----
-
 Instructions to build stage 4 from stage 1 to 3 cross compile toolchain, system cross-compiled toolchain (x86_64-pc-muslx32-emerge -e system), system native toolchain (emerge -e system), to world (emerge -e world).  
 Incomplete instructions.  Backup!  Adjust to your needs.
+
 
 assuming sysrescuecd
 
@@ -279,14 +276,14 @@ ln -s /usr/lib/gcc/x86_64-pc-linux-muslx32/4.9.3/libgomp.so.1 /lib/libgomp.so.1
 
 #xorg.conf needs to load modules
 contents of /etc/X11/xorg.conf.d/20-nouveau.conf
+
+<div>
 Section "Module"
 	Load "exa"
 	Load "wfb"
-
 	Load "dri"
 	Load "dri2"
 	Load "dri3"
-
 	Load "int10"
 	Load "vbe"
 	Load "fb"
@@ -299,14 +296,12 @@ Section "Module"
 	Load "fbdevhw"
 	Load "glamoregl"
 	Load "glx"
-
 #	Load "ati_drv"
 	Load "radeon_drv"
 #	Load "nouveau_drv"
 #	Load "vesa_drv"
 #	Load "modesetting_drv"
 EndSection
-
 Section "ServerLayout"
 	Identifier	"Layout0"
 	Screen	0       "Screen0"
@@ -314,7 +309,6 @@ Section "ServerLayout"
 	InputDevice     "Mouse0" "CorePointer"
 	Option "AutoAddDevices" "False"
 EndSection
-
 Section "InputDevice"
 	Identifier	"Mouse0"
 	Driver		"mouse"
@@ -324,12 +318,10 @@ Section "InputDevice"
 	Option		"XAxisMapping" "6 7"
 	Option		"Buttons" "17"
 EndSection
-
 Section "InputDevice"
 	Identifier	"Keyboard0"
 	Driver		"kbd"
 EndSection
-
 # the right one
 Section "Monitor"
           Identifier   "Samsung 941BW"
@@ -343,15 +335,12 @@ EndSection
 #pixel clock 137MHz
 #1440x900@75Hz max
 #1440x900@60Hz opti
-
-
 # the left one
 #Section "Monitor"
 #          Identifier   "FUS"
 #          Option "PreferredMode" "1280x1024_60.00"
 #          Option "LeftOf" "NEC"
 #EndSection
-
 Section "Device"
 #    Identifier "Nvidia"
     Identifier "ATI"
@@ -364,7 +353,6 @@ Section "Device"
 #    Option "DRI3" "1"
     Option "AccelMethod" "glamor"
 EndSection
-
 Section "Screen"
     Identifier "Screen0"
     Monitor "Samsung"
@@ -377,9 +365,9 @@ Section "Screen"
 #    Device "Nvidia"
     Device "ATI"
 EndSection
+</div>
 
----
-
+<pre>
 emerge --info
 Portage 2.2.28 (python 3.4.3-final-0, hardened/linux/musl/amd64/x32, gcc-4.9.3, musl-1.1.14, 4.4.6-gentoo x86_64)
 =================================================================
@@ -454,6 +442,5 @@ PORTAGE_TMPDIR="/var/tmp"
 USE="amd64 bindist cli cracklib crypt cxx dri fortran iconv ipv6 mmx modules ncurses nls nptl openmp pam pcre pic readline seccomp session sse sse2 ssl tcpd unicode xattr zlib" ABI_X86="x32" ALSA_CARDS="emu10k1" APACHE2_MODULES="authn_core authz_core socache_shmcb unixd actions alias auth_basic authn_alias authn_anon authn_dbm authn_default authn_file authz_dbm authz_default authz_groupfile authz_host authz_owner authz_user autoindex cache cgi cgid dav dav_fs dav_lock deflate dir disk_cache env expires ext_filter file_cache filter headers include info log_config logio mem_cache mime mime_magic negotiation rewrite setenvif speling status unique_id userdir usertrack vhost_alias" CALLIGRA_FEATURES="kexi words flow plan sheets stage tables krita karbon braindump author" CAMERAS="ptp2" COLLECTD_PLUGINS="df interface irq load memory rrdtool swap syslog" CPU_FLAGS_X86="3dnow 3dnowext mmx mmxext sse sse2 sse3" ELIBC="musl" GPSD_PROTOCOLS="ashtech aivdm earthmate evermore fv18 garmin garmintxt gpsclock itrax mtk3301 nmea ntrip navcom oceanserver oldstyle oncore rtcm104v2 rtcm104v3 sirf superstar2 timing tsip tripmate tnt ublox ubx" INPUT_DEVICES="keyboard mouse evdev" KERNEL="linux" LCD_DEVICES="bayrad cfontz cfontz633 glk hd44780 lb216 lcdm001 mtxorb ncurses text" LIBREOFFICE_EXTENSIONS="presenter-console presenter-minimizer" OFFICE_IMPLEMENTATION="libreoffice" PHP_TARGETS="php5-5" PYTHON_SINGLE_TARGET="python2_7" PYTHON_TARGETS="python2_7 python3_4" RUBY_TARGETS="ruby20 ruby21" USERLAND="GNU" VIDEO_CARDS="nouveau radeon r600" XTABLES_ADDONS="quota2 psd pknock lscan length2 ipv4options ipset ipp2p iface geoip fuzzy condition tee tarpit sysrq steal rawnat logmark ipmark dhcpmac delude chaos account"
 Unset:  CC, CPPFLAGS, CTARGET, CXX, EMERGE_DEFAULT_OPTS, LANG, LC_ALL, PORTAGE_BUNZIP2_COMMAND, PORTAGE_COMPRESS, PORTAGE_COMPRESS_FLAGS, PORTAGE_RSYNC_EXTRA_OPTS, USE_PYTHON
 
----
 
-
+</pre>
