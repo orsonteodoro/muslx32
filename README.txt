@@ -32,7 +32,7 @@ x-portage
     priority: 3
 
 Works:
-firefox - except audio and jit.  javascript works but through interpreter.
+firefox - except alsa audio and jit.  javascript works but through interpreter.  pulseaudio untested.
 strace (for debugging)
 gdb (for debugging)
 X (for windowing system)
