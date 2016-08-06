@@ -82,7 +82,9 @@ emerge crossdev
 
 emerge dev-vcs/git layman
 layman -L
-layman -a
+layman -
+
+#this block is optional if you are using the muslx32 overlay
 cd ~/
 git clone http://github.com/GregorR/musl-gcc-patches.git
 mkdir -p /usr/local/portage
@@ -100,7 +102,7 @@ cd /etc/portage
 mv make.profile make.profile.orig
 ln -s /usr/portage/profiles/hardened/linux/musl/amd64/x32 ./make.profile
 
-not necessary if you have the muslx32 overlay:  this is here just in case my overlay fails
+This block is not necessary if you have the muslx32 overlay.  This is here for backup just in case my overlay fails.
 mkdir -p /etc/portage/patches/cross-x86_64-pc-linux-muslx32/gcc
 cp ~/musl-gcc-patches/*.diff /etc/portage/patches/cross-x86_64-pc-linux-muslx32/gcc
 cd /etc/portage/patches/cross-x86_64-pc-linux-muslx32/gcc
@@ -116,7 +118,6 @@ crossdev -S -A x32 --g "=5.3.0" --target x86_64-pc-linux-muslx32
 edit /etc/portage/make.conf
 add line: source /var/lib/layman/make.conf
 
-
 cd /usr/x86_64-pc-linux-muslx32/etc/portage
 mv make.profile make.profile.orig
 ln -s /usr/portage/profiles/hardened/linux/musl/amd64/x32 ./make.profile
@@ -126,12 +127,12 @@ nano gcc
 cross-x86_64-pc-linux-muslx32/gcc -sanitize -fortran -vtv
 sys-devel/gcc -sanitize -fortran -vtv
 
+#build the cross compile toolchain
 x86_64-pc-linux-muslx32-emerge -pve system
 
 cp /usr/lib/libx32/
 cp -a libx32/python2.7/site-packages lib/python2.7/site-packages
 cp -a libx32/python3.4/site-packages lib/python3.4/site-packages
-
 
 #emerge the 64 bit of lilo and use it
 emerge lilo
@@ -177,13 +178,13 @@ cp /etc/portage/make.conf /usr/x86_64-pc-linux-muslx32/etc/portage/make.conf #co
 cd /usr/x86_64-pc-linux-muslx32/etc/portage
 ln -s make.conf.cat make.conf
 
-
 cd /usr/x86_64-pc-linux-muslx32
 mkdir proc
 mkdir dev
 
 mount -t proc proc proc
 
+#add missing dev
 cd dev
 mknod console c 0 0
 mknod -m 666 null c 1 3
@@ -199,8 +200,20 @@ nano config
 python2.7
 
 cd /usr/x86_64-pc-linux-muslx32
+#copy the resolv.conf to ./etc
 chroot ./ /bin/bash
+
+#set the root password
+
+#build the native toolchain
+emerge -pve system
+
+#remember to build mpfr, which, gettext as cross-compile if it fails then continue --resuming
+
+#build the world
 emerge -vuDN world
+
+#remember to build mpfr, which, gettext as cross-compile if it fails then continue --resuming
 
 #IMPORTANT
 #remember to set your root password and users
@@ -274,10 +287,9 @@ rc-update add fixalsa
 #for xkeyboard-config
 ln -s /usr/lib/gcc/x86_64-pc-linux-muslx32/4.9.3/libgomp.so.1 /lib/libgomp.so.1
 
-#xorg.conf needs to load modules
+#xorg.conf needs to be told explicity which modules to load.  It doesn't work the way it should like with glib under musl.
 contents of /etc/X11/xorg.conf.d/20-nouveau.conf
 
-<div>
 Section "Module"
 	Load "exa"
 	Load "wfb"
@@ -302,6 +314,7 @@ Section "Module"
 #	Load "vesa_drv"
 #	Load "modesetting_drv"
 EndSection
+
 Section "ServerLayout"
 	Identifier	"Layout0"
 	Screen	0       "Screen0"
@@ -309,6 +322,7 @@ Section "ServerLayout"
 	InputDevice     "Mouse0" "CorePointer"
 	Option "AutoAddDevices" "False"
 EndSection
+
 Section "InputDevice"
 	Identifier	"Mouse0"
 	Driver		"mouse"
@@ -318,10 +332,12 @@ Section "InputDevice"
 	Option		"XAxisMapping" "6 7"
 	Option		"Buttons" "17"
 EndSection
+
 Section "InputDevice"
 	Identifier	"Keyboard0"
 	Driver		"kbd"
 EndSection
+
 # the right one
 Section "Monitor"
           Identifier   "Samsung 941BW"
@@ -332,6 +348,7 @@ Section "Monitor"
 	  Option "DPI" "96 x 96"
 #	  Option "DMPS"
 EndSection
+
 #pixel clock 137MHz
 #1440x900@75Hz max
 #1440x900@60Hz opti
@@ -341,6 +358,7 @@ EndSection
 #          Option "PreferredMode" "1280x1024_60.00"
 #          Option "LeftOf" "NEC"
 #EndSection
+
 Section "Device"
 #    Identifier "Nvidia"
     Identifier "ATI"
@@ -353,6 +371,7 @@ Section "Device"
 #    Option "DRI3" "1"
     Option "AccelMethod" "glamor"
 EndSection
+
 Section "Screen"
     Identifier "Screen0"
     Monitor "Samsung"
@@ -365,9 +384,9 @@ Section "Screen"
 #    Device "Nvidia"
     Device "ATI"
 EndSection
-</div>
 
-<pre>
+----
+
 emerge --info
 Portage 2.2.28 (python 3.4.3-final-0, hardened/linux/musl/amd64/x32, gcc-4.9.3, musl-1.1.14, 4.4.6-gentoo x86_64)
 =================================================================
@@ -443,4 +462,3 @@ USE="amd64 bindist cli cracklib crypt cxx dri fortran iconv ipv6 mmx modules ncu
 Unset:  CC, CPPFLAGS, CTARGET, CXX, EMERGE_DEFAULT_OPTS, LANG, LC_ALL, PORTAGE_BUNZIP2_COMMAND, PORTAGE_COMPRESS, PORTAGE_COMPRESS_FLAGS, PORTAGE_RSYNC_EXTRA_OPTS, USE_PYTHON
 
 
-</pre>
