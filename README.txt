@@ -10,17 +10,26 @@ gentoo
     sync-uri: rsync://rsync.gentoo.org/gentoo-portage
     priority: -1000
 
-musl-extras (optional): https://github.com/lluixhi/musl-extras
 
 musl
     location: /var/lib/layman/musl
     masters: gentoo
     priority: 0
 
-x-portage
-    location: /usr/local/portage <--- this repository
+musl-extras (optional; https://github.com/lluixhi/musl-extras)
+    location: /usr/local/musl-extras
+    masters: gentoo
+    priority: 1
+
+muslx32
+    location: /usr/local/muslx32 <--- this repository
     masters: gentoo
     priority: 2
+
+x-portage
+    location: /usr/local/portage
+    masters: gentoo
+    priority: 3
 
 Works:
 firefox - except audio and jit.  javascript works but through interpreter.
