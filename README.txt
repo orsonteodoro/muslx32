@@ -60,6 +60,7 @@ xfce4-terminal
 gimp
 
 Broken: 
+Makefile.in or make system - use my bashrc scripts to fix it see below.
 chromium (v8 javascript engine is broken for x32)
 wayland (dunno)
 weston (segfaults)
@@ -80,6 +81,131 @@ dev-libs/mpfr
 sys-devel/gettext
 sys-apps/which
 
+----cutnpaste
+
+#bashrc script
+#contents of /etc/portage/bashrc script to fix Makefile.in/make system.  add this before running emerge
+#use only MAKEOPTS=-j1 some packages may be able to get away with MAKEOPTS=-j5 or whatever or system can handle
+
+#      "${CATEGORY}/${PN}" != "dev-lang/perl" 
+#if [[ "${CATEGORY}/${PN}" != "sys-apps/gawk" ]]; then
+if [[ "${CATEGORY}/${PN}" != "sys-scheme/guile" ]]; then
+#      "${CATEGORY}/${PN}" != "dev-libs/mpfr" ]]; then
+
+#echo "$EBUILD_PHASE"
+if [[ $EBUILD_PHASE == configure ]]; then
+	#einfo "Applying automake musl patch"
+        #for file in $(grep -l -r -e "\$(am__cd) \$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target" "${WORKDIR}"); do
+	#	einfo "Editing $file"
+	#	sed -i 's|(\$(am__cd) \$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target) |$(am__cd) $(CURDIR)/$$subdir \&\& $(MAKE) $(AM_MAKEFLAGS) $$local_target |g' "$file"
+        #done
+
+        #for file in $(grep -l -r -e "\$(am__cd) \$(srcdir)/\$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target" "${WORKDIR}"); do
+	#	einfo "Editing $file"
+	#	sed -i 's|\$(am__cd) \$(srcdir)/\$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target |$(am__cd) $(CURDIR)/$$subdir \&\& $(MAKE) $(AM_MAKEFLAGS) $$local_target |g' "$file"
+        #done
+	
+	einfo "Applying automake/libtool musl patch"
+	for file in $(find "${WORKDIR}" -name "Makefile" -o -name "Makefile.in" -o -name "Makefile.in.in" -o -name "Make-in"); do
+		einfo "Editing $file"
+
+		local myallrecursive
+		local myinstallrecursive
+
+		myallrecursive=""
+		grep -q "all-recursive" $file
+		[[ "$?" == "0" ]] && myallrecursive="all-recursive"
+
+		myinstallrecursive=""
+		grep -q "install-recursive" $file
+		[[ "$?" == "0" ]] && myinstallrecursive="install-recursive"
+
+		#einfo "Applying automake musl patch"
+		grep -q "\$(am__cd) \$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target" "$file"
+		[[ "$?" == "0" ]] && sed -i 's|(\$(am__cd) \$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target) |$(am__cd) $(CURDIR)/$$subdir \&\& $(MAKE) $(AM_MAKEFLAGS) $$local_target |g' "$file"
+		
+		grep -q "\$(am__cd) \$(srcdir)/\$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target" "$file"
+		[[ "$?" == "0" ]] && sed -i 's|\$(am__cd) \$(srcdir)/\$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target |$(am__cd) $(CURDIR)/$$subdir \&\& $(MAKE) $(AM_MAKEFLAGS) $$local_target |g' "$file"
+
+		grep -q "all-am" $file
+		[[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e 's|\nall: all-recursive\n|\nall: all-recursive all-am\n|g' "$file"
+
+		grep -q "all-am" $file
+		[[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall: \$(BUILT_SOURCES)\n|\nall: \$(BUILT_SOURCES) ${myallrecursive} all-am\n|g" "$file"
+
+		grep -q "all-am" $file
+		[[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall: \$(BUILT_SOURCES) config.h\n|\nall: \$(BUILT_SOURCES) config.h ${myallrecursive} all-am\n|g" "$file"
+
+		grep -q "install-am" $file
+	        [[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e 's|\ninstall: install-recursive\n|\ninstall: install-recursive install-am\n|g' "$file"
+
+		grep -q "install-am" $file
+		[[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\ninstall: \$(BUILT_SOURCES)\n|\ninstall: ${myinstallrecursive} \$(BUILT_SOURCES) install-am\n|g" "$file"
+
+		if [[ $file =~ "/po/" && $file =~ "Makefile.in.in" ]]; then
+			sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall: \([-a-zA-Z ]*\)all-@USE_NLS@\n\n|\nall: \1 ${myallrecursive} all-@USE_NLS@\nall-am:\ninstall-am:\n\n|g" "$file"
+		fi
+
+		if [[ $file =~ "/po/" && $file =~ "Make-in" ]]; then
+			sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall: all-@USE_NLS@\n\n|\nall: ${myallrecursive} all-@USE_NLS@\nall-am:\ninstall-am:\ninfo-am:\n\n|g" "$file"
+		fi
+
+		grep -q "\$\$files" "$file"
+		if [[ "$?" == "0" ]]; then
+			#einfo "Applying libtool musl patch"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|if test -f "\$(CURDIR)/\$\$p"; then d="\$(CURDIR)/"\; else d="\$(srcdir)/"\; fi\; \\|if [[ -f "$(CURDIR)/$$p" ]]\; then \\\n\t    d="$(CURDIR)/"\; \\\n\telif [[ -f "$(srcdir)/$$p" ]]\; then \\\n\t    d="$(srcdir)/"\; \\\n\telif [[ -f "$$p" ]]; then \\\n\t    d=""\; \\\n\tfi\; \\|g' "$file"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|if test -f \$\$p\; then d=\; else d="\$(srcdir)\/"\; fi\; \\\n\t  echo "\$\$d\$\$p"\; echo "\$\$\p"\; \\|if [[ -f "$(CURDIR)/$$p" ]]; then \\\n\t    d="$(CURDIR)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$(srcdir)/$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$$p" ]]; then \\\n\t    echo "$$p"; \\\n\t  fi; \\|g' "$file"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|for p in \$\$list\; do \\\n\t  if test -f "\$\$p"\; then d=\; else d="\$(srcdir)\/"\; fi\; \\\n\t  echo "\$$d\$\$p"\; \\|for p in $$list; do \\\n\t  if [[ -f "$(CURDIR)/$$p" ]]; then \\\n\t    d="$(CURDIR)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$(srcdir)/$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$p"; \\\n\t  fi; \\|g' "$file"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|echo " \$(\([-_a-zA-Z0-9]*\)) \$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t  \$([-_a-zA-Z0-9]*) \$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"	
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|test -z "\$\$files" \|\| { echo " \$(\([-_a-zA-Z0-9]*\)) \$(srcdir)\/\$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t  \$([-_a-zA-Z0-9]*) \$(srcdir)\/\$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; }\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"	
+	                sed -i -e ':a' -e 'N' -e '$!ba' -e 's|test -z "\$\$files" \|\| { \\\n\t    echo " \$(\([-_a-zA-Z0-9]*\)) \$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t    \$([-_a-zA-Z0-9]*) \$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; }\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|echo " \$(INSTALL_SCRIPT) \$\$files \x27\$(DESTDIR)\$(bindir)\$\$dir\x27"\; \\|if [[ -z "$$files" \|\| -d "$$files" ]]; then \\\n\t\t   continue; \\\n\t       fi; \\\n\t       echo " $(INSTALL_SCRIPT) $$files \x27$(DESTDIR)$(bindir)$$dir\x27"; \\|g' "$file"	
+		fi
+
+		grep -q "CTAGS = ctags" "$file"
+		if [[ "$?" == "0" ]]; then
+			sed -i "s|CTAGS = ctags|CTAGS = true|g" "$file"
+		fi
+
+		grep -q "SOURCES = " "$file"
+		if [[ "$?" == "0" ]]; then
+			sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall-am: Makefile \$(LTLIBRARIES) \$(DATA) \$(HEADERS) config.h\n|\nall-am: Makefile \$(SOURCES) \$(LTLIBRARIES) \$(DATA) \$(HEADERS) config.h\n|g" "$file"
+		fi
+	done
+
+	#einfo "Applying /po/Makefile.in.in patch"
+	#for file in $(find "${WORKDIR}" -name "Makefile.in.in"); do
+	#	if [[ $file =~ "/po/" ]]; then
+	#		einfo "Editing $file"
+	#		sed -i -e ':a' -e 'N' -e '$!ba' -e 's|all: \([-a-zA-Z ]*\)all-@USE_NLS@\n\n|all: \1 all-@USE_NLS@\nall-am:\ninstall-am:\n\n|g' "$file"
+	#	fi
+	#done
+
+	#einfo "Applying /po/Make-in patch"
+	#for file in $(find "${WORKDIR}" -name "Make-in"); do
+	#	if [[ $file =~ "/po/" ]]; then
+	#		einfo "Editing $file"
+	#		sed -i -e ':a' -e 'N' -e '$!ba' -e 's|all: all-@USE_NLS@\n\n|all: all-@USE_NLS@\nall-am:\ninstall-am:\ninfo-am:\n\n|g' "$file"
+	#	fi
+	#done
+
+	#einfo "Applying libtool musl patch"
+        #for file in $(grep -l -r -e "\$\$files" "${WORKDIR}"); do
+	#	einfo "Editing $file"
+	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|if test -f "\$(CURDIR)/\$\$p"; then d="\$(CURDIR)/"\; else d="\$(srcdir)/"\; fi\; \\|if [[ -f "$(CURDIR)/$$p" ]]\; then \\\n\t    d="$(CURDIR)/"\; \\\n\telif [[ -f "$(srcdir)/$$p" ]]\; then \\\n\t    d="$(srcdir)/"\; \\\n\telif [[ -f "$$p" ]]; then \\\n\t    d=""\; \\\n\tfi\; \\|g' "$file"
+	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|if test -f \$\$p\; then d=\; else d="\$(srcdir)\/"\; fi\; \\\n\t  echo "\$\$d\$\$p"\; echo "\$\$\p"\; \\|if [[ -f "$(CURDIR)/$$p" ]]; then \\\n\t    d="$(CURDIR)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$(srcdir)/$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$$p" ]]; then \\\n\t    echo "$$p"; \\\n\t  fi; \\|g' "$file"
+	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|for p in \$\$list\; do \\\n\t  if test -f "\$\$p"\; then d=\; else d="\$(srcdir)\/"\; fi\; \\\n\t  echo "\$$d\$\$p"\; \\|for p in $$list; do \\\n\t  if [[ -f "$(CURDIR)/$$p" ]]; then \\\n\t    d="$(CURDIR)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$(srcdir)/$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$p"; \\\n\t  fi; \\|g' "$file"
+	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|echo " \$(\([-_a-zA-Z0-9]*\)) \$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t  \$([-_a-zA-Z0-9]*) \$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"	
+	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|test -z "\$\$files" \|\| { echo " \$(\([-_a-zA-Z0-9]*\)) \$(srcdir)\/\$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t  \$([-_a-zA-Z0-9]*) \$(srcdir)\/\$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; }\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"	
+        #       sed -i -e ':a' -e 'N' -e '$!ba' -e 's|test -z "\$\$files" \|\| { \\\n\t    echo " \$(\([-_a-zA-Z0-9]*\)) \$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t    \$([-_a-zA-Z0-9]*) \$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; }\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"
+	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|echo " \$(INSTALL_SCRIPT) \$\$files \x27\$(DESTDIR)\$(bindir)\$\$dir\x27"\; \\|if [[ -z "$$files" \|\| -d "$$files" ]]; then \\\n\t\t   continue; \\\n\t       fi; \\\n\t       echo " $(INSTALL_SCRIPT) $$files \x27$(DESTDIR)$(bindir)$$dir\x27"; \\|g' "$file"	
+	#done
+fi
+
+fi
+
+
+----cutnpaste
 
 Instructions to build stage 4 from stage 1 to 3 cross compile toolchain, system cross-compiled toolchain (x86_64-pc-muslx32-emerge -e system), system native toolchain (emerge -e system), to world (emerge -e world).  
 Incomplete instructions.  Backup!  Adjust to your needs.
@@ -160,6 +286,8 @@ cd /usr/x86_64-pc-linux-muslx32/etc/portage/package.use
 nano gcc
 cross-x86_64-pc-linux-muslx32/gcc -sanitize -fortran -vtv
 sys-devel/gcc -sanitize -fortran -vtv
+
+#add my bashrc script above to fix make and all the Makefile.in.  use only MAKEOPTS=-j1
 
 #build the cross compile toolchain
 x86_64-pc-linux-muslx32-emerge -pve system
