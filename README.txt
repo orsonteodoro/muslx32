@@ -11,8 +11,7 @@ Other recommendations?  Use -Os and use kernel zswap+zbud to significantly reduc
 
 You need use crossdev to build this.  Crossdev is used to build the cross-compile toolchain.  Use the cross-compile toolchain to build system.  Use the system to build world.  The result is a stage 3/4 image like the tarball you download from Gentoo.  It sound easy but there are a lot of broken ebuilds and packages that need patches.  It took me several weeks to get it right.  I give you the overlay this time so it will only take you a few days.
 
-Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi)
-) .... (will update this list)
+Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi)) .... (will update this list)
 
 Expected Repositories and priorities (negative less important and positive is highest ebuilds used):
 
@@ -61,11 +60,12 @@ gimp
 
 Broken: 
 Makefile.in or make system - use my bashrc scripts to fix it see below.
-chromium (v8 javascript engine is broken for x32)
+chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
+Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014 but it has been neglected and doesn't work for since my testing of >=52.0.2743.116.
 wayland (dunno)
 weston (segfaults)
 pulseaudio (cannot connect pavucontrol or pulseaudio apps)
-webkit-gtk (just blank screen, jit is broken)
+webkit-gtk just blank screen, jit is broken it works for 2.0.4 but it doesn't work when applied to 2.12.3. 2.0.4. is unstable and crashes out a lot.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
 evdev (semi broken and quirky; dev permissions need to be manually set or devices reloaded)
 grub2-install (doesn't work in x32 use lilo)
 xterm (works in root but not as user)
