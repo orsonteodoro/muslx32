@@ -433,7 +433,7 @@ exit
 exit
 #unmount all mounted in /usr/mnt/gentoo
 
-#the tricky part (use the created native world image produced by you ground up and replacing the unpacked official tarball image.)
+#the tricky part (use the created native world image produced by you ground up replacing the unpacked official tarball image.)
 #you can bork your system if you get it wrong and need to start from scratch again
 
 #last step put old files into trash and move the cross compiled stuff in root
