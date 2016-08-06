@@ -13,6 +13,12 @@ You need use crossdev to build this.  Crossdev is used to build the cross-compil
 
 Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi)) .... (will update this list)
 
+What you can do to help?:  
+Clean the ebuilds with proper x32 abi and musl chost checks and submit them to Gentoo.
+Write assembly code for the jit based packages and assembly based packages.
+Test and patch new ebuilds for these use cases: server, web, gaming, etc, entertainment, developer.
+Fix the build system to get rid of the bashrc script and odd quirks.
+
 Expected Repositories and priorities (negative less important and positive is highest ebuilds used):
 
 gentoo
