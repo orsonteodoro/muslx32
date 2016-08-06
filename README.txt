@@ -215,7 +215,7 @@ fi
 ----cutnpaste
 
 Instructions to build stage 4 from stage 1 to 3 cross compile toolchain, system cross-compiled toolchain (x86_64-pc-muslx32-emerge -e system), system native toolchain (emerge -e system), to world (emerge -e world).  
-Incomplete instructions.  Backup!  Adjust to your needs.
+These are incomplete instructions so backup!  Adjust these steps to your needs.
 
 
 assuming sysrescuecd
