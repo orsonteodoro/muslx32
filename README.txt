@@ -2,6 +2,8 @@
 muslx32 (musl libc and x32 abi) overlay for Gentoo Linux
 You need use crossdev to build this.  Crossdev is used to build the cross-compile toolchain.  Use the cross-compile toolchain to build system.  Use the system to build world.
 
+Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), .... (will update this list)
+
 Expected Repositories and priorities:
 
 gentoo
@@ -57,6 +59,7 @@ webkit-gtk (just blank screen, jit is broken)
 evdev (semi broken and quirky; dev permissions need to be manually set or devices reloaded)
 grub2-install (doesn't work in x32 use lilo)
 xterm (works in root but not as user)
+mono (incomplete patch from pldlinux... was testing)
 
 Masks:
 >sys-libs/ncurses-5.9-r5
