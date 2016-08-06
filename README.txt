@@ -163,9 +163,21 @@ sys-devel/gcc -sanitize -fortran -vtv
 #build the cross compile toolchain
 x86_64-pc-linux-muslx32-emerge -pve system
 
+#OLD ignore block
 cp /usr/lib/libx32/
 cp -a libx32/python2.7/site-packages lib/python2.7/site-packages
 cp -a libx32/python3.4/site-packages lib/python3.4/site-packages
+
+#updated block to fix emerge
+cd /usr/x86_64-pc-linux-muslx32/
+cp -a ./usr/lib ./usr/lib/libx32
+rm ./usr/lib
+ln -s ./usr/lib/libx32 ./usr/lib
+
+#do the same for ./lib ./libx32
+cp -a ./lib ./libx32
+rm ./lib
+ln -s ./libx32 ./lib
 
 #emerge the 64 bit of lilo and use it
 emerge lilo
