@@ -3,7 +3,7 @@ This is an unofficial muslx32 (musl libc and x32 abi) overlay for Gentoo Linux.
 
 Current goals:  get popular packages and necessary developer tools working on the platform for widespread adoption.
 
-Why musl and x32 and Gentoo?  Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox was tagging my USB resulting in a big slow down for many tabs.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux packages were pretty much outdated.
+Why musl and x32 and Gentoo?  Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux packages were pretty much outdated.
 
 Other recommendations?  Use -Os and use kernel zswap+zbud to significantly reduce swapping.  Use ramdisk for Firefox if using Gentoo on usbstick.
 
