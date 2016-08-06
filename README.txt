@@ -60,8 +60,8 @@ gimp
 
 Broken: 
 Makefile.in or make system - use my bashrc scripts to fix it see below.
-chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
-Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014 but it has been neglected and doesn't work for since my testing of >=52.0.2743.116.
+Chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
+Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.
 wayland (dunno)
 weston (segfaults)
 pulseaudio (cannot connect pavucontrol or pulseaudio apps)
