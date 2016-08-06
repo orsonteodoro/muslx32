@@ -30,6 +30,14 @@ X (for windowing system)
 wpa_supplicant (for wifi)
 xf86-video-nouveau
 see bottom of readme for details emerged packages
+mplayer (but without simd optimizations)
+mpd
+geany
+dwm
+xfce4
+aterm
+xfce4-terminal
+gimp
 
 Broken: 
 chromium (v8 javascript engine is broken for x32)
@@ -39,6 +47,7 @@ pulseaudio (cannot connect pavucontrol or pulseaudio apps)
 webkit-gtk (just blank screen, jit is broken)
 evdev (semi broken and quirky; dev permissions need to be manually set or devices reloaded)
 grub2-install (doesn't work in x32 use lilo)
+xterm (works in root but not as user)
 
 Masks:
 >sys-libs/ncurses-5.9-r5
