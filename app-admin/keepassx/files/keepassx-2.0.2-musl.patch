@@ -1,0 +1,11 @@
+diff -ur keepassx-2.0.2.orig/src/core/qlockfile_unix.cpp keepassx-2.0.2/src/core/qlockfile_unix.cpp
+--- keepassx-2.0.2.orig/src/core/qlockfile_unix.cpp	2016-02-01 16:22:48.000000000 -0800
++++ keepassx-2.0.2/src/core/qlockfile_unix.cpp	2016-07-11 18:46:26.387392504 -0700
+@@ -40,6 +40,7 @@
+ #include <QDebug>
+ #include <QDateTime>
+ 
++#include <fcntl.h>
+ #include <sys/file.h>  // flock
+ #include <sys/types.h> // kill
+ #include <signal.h>    // kill

@@ -1,0 +1,11 @@
+diff -urN firefox-45.2.0esr.orig/toolkit/crashreporter/google-breakpad/src/common/linux/elf_core_dump.h firefox-45.2.0esr/toolkit/crashreporter/google-breakpad/src/common/linux/elf_core_dump.h
+--- firefox-45.2.0esr.orig/toolkit/crashreporter/google-breakpad/src/common/linux/elf_core_dump.h	2016-05-12 10:10:05.000000000 -0700
++++ firefox-45.2.0esr/toolkit/crashreporter/google-breakpad/src/common/linux/elf_core_dump.h	2016-07-30 13:37:38.048256528 -0700
+@@ -36,6 +36,7 @@
+ #include <elf.h>
+ #include <link.h>
+ #include <stddef.h>
++#include <sys/reg.h>
+ 
+ #include "common/memory_range.h"
+ 

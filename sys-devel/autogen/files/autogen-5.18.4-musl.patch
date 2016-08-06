@@ -1,0 +1,11 @@
+--- autogen-5.18.4.orig/autoopts/Makefile.in	2016-06-26 17:10:02.932703117 -0700
++++ autogen-5.18.4/autoopts/Makefile.in	2016-06-26 17:47:37.995726579 -0700
+@@ -529,7 +529,7 @@
+ 	builddir="$(builddir)" top_builddir="$(top_builddir)" \
+ 	POSIX_SHELL="$(POSIX_SHELL)"
+ 
+-all: $(BUILT_SOURCES)
++all: libopts.la $(BUILT_SOURCES)
+ 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
+ 
+ .SUFFIXES:

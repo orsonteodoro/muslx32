@@ -1,0 +1,69 @@
+diff -ur chromium-52.0.2743.116.orig/v8/src/v8.gyp chromium-52.0.2743.116/v8/src/v8.gyp
+--- chromium-52.0.2743.116.orig/v8/src/v8.gyp	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/v8.gyp	2016-08-05 05:04:58.553257982 -0700
+@@ -1449,7 +1449,7 @@
+             'regexp/mips64/regexp-macro-assembler-mips64.h',
+           ],
+         }],
+-        ['v8_target_arch=="x64" or v8_target_arch=="x32"', {
++        ['v8_target_arch=="x64"', {
+           'sources': [  ### gcmole(arch:x64) ###
+             'crankshaft/x64/lithium-codegen-x64.cc',
+             'crankshaft/x64/lithium-codegen-x64.h',
+@@ -1484,6 +1484,41 @@
+             'regexp/x64/regexp-macro-assembler-x64.h',
+           ],
+         }],
++        ['v8_target_arch=="x32"', {
++          'sources': [  ### gcmole(arch:x32) ###
++            'crankshaft/x32/lithium-codegen-x32.cc',
++            'crankshaft/x32/lithium-codegen-x32.h',
++            'crankshaft/x32/lithium-gap-resolver-x32.cc',
++            'crankshaft/x32/lithium-gap-resolver-x32.h',
++            'crankshaft/x32/lithium-x32.cc',
++            'crankshaft/x32/lithium-x32.h',
++            'x32/assembler-x32-inl.h',
++            'x32/assembler-x32.cc',
++            'x32/assembler-x32.h',
++            'x32/builtins-x32.cc',
++            'x32/code-stubs-x32.cc',
++            'x32/code-stubs-x32.h',
++            'x32/codegen-x32.cc',
++            'x32/codegen-x32.h',
++            'x32/cpu-x32.cc',
++            'x32/deoptimizer-x32.cc',
++            'x32/disasm-x32.cc',
++            'x32/frames-x32.cc',
++            'x32/frames-x32.h',
++            'x32/interface-descriptors-x32.cc',
++            'x32/macro-assembler-x32.cc',
++            'x32/macro-assembler-x32.h',
++            'debug/x32/debug-x32.cc',
++            'full-codegen/x32/full-codegen-x32.cc',
++            'ic/x32/access-compiler-x32.cc',
++            'ic/x32/handler-compiler-x32.cc',
++            'ic/x32/ic-x32.cc',
++            'ic/x32/ic-compiler-x32.cc',
++            'ic/x32/stub-cache-x32.cc',
++            'regexp/x32/regexp-macro-assembler-x32.cc',
++            'regexp/x32/regexp-macro-assembler-x32.h',
++          ],
++        }],
+         ['v8_target_arch=="x64"', {
+           'sources': [
+             'compiler/x64/code-generator-x64.cc',
+@@ -1492,6 +1527,14 @@
+             'compiler/x64/instruction-selector-x64.cc',
+           ],
+         }],
++        ['v8_target_arch=="x32"', {
++          'sources': [
++            'compiler/x32/code-generator-x32.cc',
++            'compiler/x32/instruction-codes-x32.h',
++            'compiler/x32/instruction-scheduler-x32.cc',
++            'compiler/x32/instruction-selector-x32.cc',
++          ],
++        }],
+         ['v8_target_arch=="ppc" or v8_target_arch=="ppc64"', {
+           'sources': [  ### gcmole(arch:ppc) ###
+             'compiler/ppc/code-generator-ppc.cc',

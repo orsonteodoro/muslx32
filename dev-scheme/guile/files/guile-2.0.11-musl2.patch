@@ -1,0 +1,11 @@
+diff -ur guile-2.0.11.orig/libguile/filesys.c guile-2.0.11/libguile/filesys.c
+--- guile-2.0.11.orig/libguile/filesys.c	2014-02-28 12:01:27.000000000 -0800
++++ guile-2.0.11/libguile/filesys.c	2016-06-25 18:00:11.496468710 -0700
+@@ -39,6 +39,7 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <errno.h>
++#include "fcntl.h"
+ 
+ #include "libguile/_scm.h"
+ #include "libguile/smob.h"

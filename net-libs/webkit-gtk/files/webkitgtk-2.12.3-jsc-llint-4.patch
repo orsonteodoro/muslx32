@@ -1,0 +1,16 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-07-25 01:04:31.624980602 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-07-25 01:25:42.290898602 -0700
+@@ -154,7 +154,11 @@
+ # These declarations must match interpreter/JSStack.h.
+ 
+ if JSVALUE64
+-    const PtrSize = 8
++    if X32
++        const PtrSize = 4
++    else
++        const PtrSize = 8
++    end
+     const CallFrameHeaderSlots = 5
+ else
+     const PtrSize = 4

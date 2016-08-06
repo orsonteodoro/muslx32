@@ -1,0 +1,17 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/BasicBlockLocation.cpp webkitgtk-2.12.3/Source/JavaScriptCore/runtime/BasicBlockLocation.cpp
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/BasicBlockLocation.cpp	2016-04-10 23:18:43.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/runtime/BasicBlockLocation.cpp	2016-07-26 01:41:29.526261844 -0700
+@@ -82,8 +82,13 @@
+ #if USE(JSVALUE64)
+ void BasicBlockLocation::emitExecuteCode(CCallHelpers& jit) const
+ {
++#if CPU(X32)
++    static_assert(sizeof(size_t) == 4, "Assuming size_t is 32 bits on 64 bit platforms.");
++    jit.add32(CCallHelpers::TrustedImm32(1), CCallHelpers::AbsoluteAddress(&m_executionCount));
++#else
+     static_assert(sizeof(size_t) == 8, "Assuming size_t is 64 bits on 64 bit platforms.");
+     jit.add64(CCallHelpers::TrustedImm32(1), CCallHelpers::AbsoluteAddress(&m_executionCount));
++#endif
+ }
+ #else
+ void BasicBlockLocation::emitExecuteCode(CCallHelpers& jit, MacroAssembler::RegisterID scratch) const

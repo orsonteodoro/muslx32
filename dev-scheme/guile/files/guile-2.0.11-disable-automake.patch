@@ -1,0 +1,23 @@
+diff -ur guile-2.0.11.orig/Makefile.in guile-2.0.11/Makefile.in
+--- guile-2.0.11.orig/Makefile.in	2016-06-26 00:50:39.558091729 -0700
++++ guile-2.0.11/Makefile.in	2016-06-26 00:51:57.719092542 -0700
+@@ -1718,19 +1718,6 @@
+ .SUFFIXES:
+ am--refresh: Makefile
+ 	@:
+-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
+-	@for dep in $?; do \
+-	  case '$(am__configure_deps)' in \
+-	    *$$dep*) \
+-	      echo ' cd $(srcdir) && $(AUTOMAKE) --gnu'; \
+-	      $(am__cd) $(srcdir) && $(AUTOMAKE) --gnu \
+-		&& exit 0; \
+-	      exit 1;; \
+-	  esac; \
+-	done; \
+-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu Makefile'; \
+-	$(am__cd) $(top_srcdir) && \
+-	  $(AUTOMAKE) --gnu Makefile
+ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+ 	@case '$?' in \
+ 	  *config.status*) \

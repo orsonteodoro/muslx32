@@ -1,0 +1,16 @@
+diff -ur webkitgtk-2.12.3.orig/Source/WTF/wtf/Platform.h webkitgtk-2.12.3/Source/WTF/wtf/Platform.h
+--- webkitgtk-2.12.3.orig/Source/WTF/wtf/Platform.h	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/WTF/wtf/Platform.h	2016-06-28 10:47:50.837485293 -0700
+@@ -167,8 +167,12 @@
+ /* CPU(X86_64) - AMD64 / Intel64 / x86_64 64-bit */
+ #if   defined(__x86_64__) \
+     || defined(_M_X64)
+ #define WTF_CPU_X86_64 1
+ #endif
++#ifdef __ILP32__
++#define WTF_CPU_X32 1
++#else
++#endif
+ 
+ /* CPU(ARM64) - Apple */
+ #if (defined(__arm64__) && defined(__APPLE__)) || defined(__aarch64__)

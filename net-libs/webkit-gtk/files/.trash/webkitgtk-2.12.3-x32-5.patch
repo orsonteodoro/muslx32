@@ -1,0 +1,189 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-07-05 13:54:39.303434860 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-07-05 15:00:15.013475808 -0700
+@@ -229,7 +229,7 @@
+ 
+ const CallOpCodeSize = 9
+ 
+-if X86_64 or ARM64 or C_LOOP
++if X86_64 or ARM64 or C_LOOP or X32
+     const maxFrameExtentForSlowPathCall = 0
+ elsif ARM or ARMv7_TRADITIONAL or ARMv7 or SH4
+     const maxFrameExtentForSlowPathCall = 24
+@@ -241,7 +241,7 @@
+     const maxFrameExtentForSlowPathCall = 64
+ end
+ 
+-if X86_64 or X86_64_WIN or ARM64
++if X86_64 or X86_64_WIN or ARM64 or X32
+     const CalleeSaveSpaceAsVirtualRegisters = 3
+ else
+     const CalleeSaveSpaceAsVirtualRegisters = 0
+@@ -267,7 +267,7 @@
+         const PB = csr7
+         const tagTypeNumber = csr8
+         const tagMask = csr9
+-    elsif X86_64
++    elsif X86_64 or X32
+         const PB = csr2
+         const tagTypeNumber = csr3
+         const tagMask = csr4
+@@ -451,7 +451,7 @@
+     end
+ end
+ 
+-if C_LOOP or ARM64 or X86_64 or X86_64_WIN
++if C_LOOP or ARM64 or X86_64 or X86_64_WIN or X32
+     const CalleeSaveRegisterCount = 0
+ elsif ARM or ARMv7_TRADITIONAL or ARMv7
+     const CalleeSaveRegisterCount = 7
+@@ -470,7 +470,7 @@
+ const VMEntryTotalFrameSize = (CalleeRegisterSaveSize + sizeof VMEntryRecord + StackAlignment - 1) & ~StackAlignmentMask
+ 
+ macro pushCalleeSaves()
+-    if C_LOOP or ARM64 or X86_64 or X86_64_WIN
++    if C_LOOP or ARM64 or X86_64 or X86_64_WIN or X32
+     elsif ARM or ARMv7_TRADITIONAL
+         emit "push {r4-r10}"
+     elsif ARMv7
+@@ -498,7 +498,7 @@
+ end
+ 
+ macro popCalleeSaves()
+-    if C_LOOP or ARM64 or X86_64 or X86_64_WIN
++    if C_LOOP or ARM64 or X86_64 or X86_64_WIN or X32
+     elsif ARM or ARMv7_TRADITIONAL
+         emit "pop {r4-r10}"
+     elsif ARMv7
+@@ -527,7 +527,7 @@
+     if C_LOOP or ARM or ARMv7 or ARMv7_TRADITIONAL or MIPS or SH4
+         push lr
+         push cfr
+-    elsif X86 or X86_WIN or X86_64 or X86_64_WIN
++    elsif X86 or X86_WIN or X86_64 or X86_64_WIN or X32
+         push cfr
+     elsif ARM64
+         push cfr, lr
+@@ -542,7 +542,7 @@
+     if C_LOOP or ARM or ARMv7 or ARMv7_TRADITIONAL or MIPS or SH4
+         pop cfr
+         pop lr
+-    elsif X86 or X86_WIN or X86_64 or X86_64_WIN
++    elsif X86 or X86_WIN or X86_64 or X86_64_WIN or X32
+         pop cfr
+     elsif ARM64
+         pop lr, cfr
+@@ -561,6 +561,10 @@
+     elsif SH4
+     elsif X86
+     elsif X86_WIN
++    elsif X32
++        storep csr4, -4[cfr]
++        storep csr3, -8[cfr]
++        storep csr2, -12[cfr]
+     elsif X86_64
+         storep csr4, -8[cfr]
+         storep csr3, -16[cfr]
+@@ -583,6 +587,10 @@
+     elsif SH4
+     elsif X86
+     elsif X86_WIN
++    elsif X32
++        loadp -12[cfr], csr2
++        loadp -8[cfr], csr3
++        loadp -4[cfr], csr4
+     elsif X86_64
+         loadp -24[cfr], csr2
+         loadp -16[cfr], csr3
+@@ -595,7 +603,7 @@
+ end
+ 
+ macro copyCalleeSavesToVMCalleeSavesBuffer(vm, temp)
+-    if ARM64 or X86_64 or X86_64_WIN
++    if ARM64 or X86_64 or X86_64_WIN or X32
+         leap VM::calleeSaveRegistersBuffer[vm], temp
+         if ARM64
+             storep csr0, [temp]
+@@ -616,6 +624,12 @@
+             stored csfr5, 120[temp]
+             stored csfr6, 128[temp]
+             stored csfr7, 136[temp]
++        elsif X32
++            storep csr0, [temp]
++            storep csr1, 4[temp]
++            storep csr2, 8[temp]
++            storep csr3, 12[temp]
++            storep csr4, 16[temp]
+         elsif X86_64
+             storep csr0, [temp]
+             storep csr1, 8[temp]
+@@ -635,7 +649,7 @@
+ end
+ 
+ macro restoreCalleeSavesFromVMCalleeSavesBuffer(vm, temp)
+-    if ARM64 or X86_64 or X86_64_WIN
++    if ARM64 or X86_64 or X86_64_WIN or X32
+         leap VM::calleeSaveRegistersBuffer[vm], temp
+         if ARM64
+             loadp [temp], csr0
+@@ -656,6 +670,12 @@
+             loadd 120[temp], csfr5
+             loadd 128[temp], csfr6
+             loadd 136[temp], csfr7
++        elsif X32
++            loadp [temp], csr0
++            loadp 4[temp], csr1
++            loadp 8[temp], csr2
++            loadp 12[temp], csr3
++            loadp 16[temp], csr4
+         elsif X86_64
+             loadp [temp], csr0
+             loadp 8[temp], csr1
+@@ -690,7 +710,7 @@
+ end
+ 
+ macro functionPrologue()
+-    if X86 or X86_WIN or X86_64 or X86_64_WIN
++    if X86 or X86_WIN or X86_64 or X86_64_WIN or X32
+         push cfr
+     elsif ARM64
+         push cfr, lr
+@@ -702,7 +722,7 @@
+ end
+ 
+ macro functionEpilogue()
+-    if X86 or X86_WIN or X86_64 or X86_64_WIN
++    if X86 or X86_WIN or X86_64 or X86_64_WIN or X32
+         pop cfr
+     elsif ARM64
+         pop lr, cfr
+@@ -1093,7 +1113,7 @@
+         crash()
+ else
+     macro initPCRelative(pcBase)
+-        if X86_64 or X86_64_WIN or X86 or X86_WIN
++        if X86_64 or X86_64_WIN or X86 or X86_WIN or X32
+             call _relativePCBase
+         _relativePCBase:
+             pop pcBase
+@@ -1125,7 +1145,7 @@
+         leap (label - _relativePCBase)[t1], t3
+         move index, t4
+         storep t3, [a0, t4, 8]
+-    elsif X86 or X86_WIN
++    elsif X86 or X86_WIN or X32
+         leap (label - _relativePCBase)[t1], t3
+         move index, t4
+         storep t3, [a0, t4, 4]
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	2016-07-05 13:54:39.154434858 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	2016-07-05 15:02:25.491477165 -0700
+@@ -979,7 +979,7 @@
+ 
+ _llint_op_div:
+     traceExecution()
+-    if X86_64 or X86_64_WIN
++    if X86_64 or X86_64_WIN or X32
+         binaryOpCustomStore(
+             macro (left, right, slow, index)
+                 # Assume t3 is scratchable.

@@ -1,0 +1,33 @@
+diff -ur portage-2.2.28.orig/bin/isolated-functions.sh portage-2.2.28/bin/isolated-functions.sh
+--- portage-2.2.28.orig/bin/isolated-functions.sh	2016-01-30 01:32:51.000000000 +0000
++++ portage-2.2.28/bin/isolated-functions.sh	2016-06-07 05:58:49.821107983 +0000
+@@ -33,18 +33,19 @@
+ 	# signal whose number is N, Bash uses the value 128+N
+ 	# as the exit status."
+ 
+-	local x pipestatus=${PIPESTATUS[*]}
+-	for x in $pipestatus ; do
+-		# Allow SIGPIPE through (128 + 13)
+-		if [[ $x -ne 0 && $x -ne ${PORTAGE_SIGPIPE_STATUS:-141} ]]
+-		then
+-			__helpers_die "$@"
+-			return 1
+-		fi
+-	done
++	#local x pipestatus=${PIPESTATUS[*]}
++	#for x in $pipestatus ; do
++	#	# Allow SIGPIPE through (128 + 13)
++	#	if [[ $x -ne 0 && $x -ne ${PORTAGE_SIGPIPE_STATUS:-141} ]]
++	#	then
++	#		__helpers_die "$@"
++	#		return 1
++	#	fi
++	#done
+ 
+ 	# Require normal success for the last process (tar).
+-	if [[ $x -ne 0 ]]; then
++	#if [[ $x -ne 0 ]]; then
++	if [[ $? -ne 0 ]]; then
+ 		__helpers_die "$@"
+ 		return 1
+ 	fi

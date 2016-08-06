@@ -1,0 +1,13 @@
+diff -ur sandbox-2.10.orig/Makefile.in sandbox-2.10/Makefile.in
+--- sandbox-2.10.orig/Makefile.in	2016-06-16 17:04:25.585424334 +0000
++++ sandbox-2.10/Makefile.in	2016-06-16 17:07:50.767426468 +0000
+@@ -943,6 +943,9 @@
+ install-exec-hook:
+ 	set -e ; \
+ 	for f in $(bindir)/sandbox $(libdir)/libsandbox.so ; do \
++		if [[ -z "$$f" || ! -f "$(DESTDIR)$$f" ]]; then \
++			continue; \
++		fi; \
+ 		sed -i.tmp \
+ 			's:__SANDBOX_TESTING:\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00:' \
+ 			$(DESTDIR)$$f ; \

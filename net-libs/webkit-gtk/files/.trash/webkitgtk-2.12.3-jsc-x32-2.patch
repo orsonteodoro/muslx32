@@ -1,0 +1,33 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntData.cpp webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntData.cpp
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntData.cpp	2016-06-29 09:30:49.670336138 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntData.cpp	2016-06-29 09:45:17.032345163 -0700
+@@ -74,8 +74,12 @@
+     // Assertions to match LowLevelInterpreter.asm.  If you change any of this code, be
+     // prepared to change LowLevelInterpreter.asm as well!!
+ 
+-#if USE(JSVALUE64) && !CPU(X32)
++#if USE(JSVALUE64)
++    #if CPU(X32)
++    const ptrdiff_t PtrSize = 4;
++    #else
+     const ptrdiff_t PtrSize = 8;
++    #endif
+     const ptrdiff_t CallFrameHeaderSlots = 5;
+ #else // USE(JSVALUE64) // i.e. 32-bit version
+     const ptrdiff_t PtrSize = 4;
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-06-29 09:30:49.674336138 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-06-29 09:44:21.347344583 -0700
+@@ -154,7 +154,11 @@
+ # These declarations must match interpreter/JSStack.h.
+ 
+ if JSVALUE64
+-    const PtrSize = 8
++    if X32
++        const PtrSize = 4
++    else
++        const PtrSize = 8
++    end
+     const CallFrameHeaderSlots = 5
+ else
+     const PtrSize = 4

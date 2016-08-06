@@ -1,0 +1,13 @@
+diff -ur gdb-7.5.1.orig/gdb/amd64-linux-nat.c gdb-7.5.1/gdb/amd64-linux-nat.c
+--- gdb-7.5.1.orig/gdb/amd64-linux-nat.c	2012-06-26 07:42:59.000000000 -0700
++++ gdb-7.5.1/gdb/amd64-linux-nat.c	2016-06-24 15:12:20.724507342 -0700
+@@ -31,7 +31,9 @@
+ #include "elf/common.h"
+ #include <sys/uio.h>
+ #include <sys/ptrace.h>
++#ifdef HAVE_SYS_DEBUGREG_H
+ #include <sys/debugreg.h>
++#endif
+ #include <sys/syscall.h>
+ #include <sys/procfs.h>
+ #include <sys/user.h>

@@ -1,0 +1,13 @@
+Only in chromium-52.0.2743.116/third_party/WebKit/Source/: .gitignore
+diff -ur chromium-52.0.2743.116.orig/third_party/WebKit/Source/platform/heap/blink_heap.gypi chromium-52.0.2743.116/third_party/WebKit/Source/platform/heap/blink_heap.gypi
+--- chromium-52.0.2743.116.orig/third_party/WebKit/Source/platform/heap/blink_heap.gypi	2016-08-04 17:58:33.658898061 -0700
++++ chromium-52.0.2743.116/third_party/WebKit/Source/platform/heap/blink_heap.gypi	2016-08-04 17:54:11.416902259 -0700
+@@ -95,7 +95,7 @@
+           'asm/SaveRegisters_mips64.S',
+         ],
+       }],
+-      ['target_arch == "ia32" or target_arch == "x64"', {
++      ['target_arch == "ia32" or target_arch == "x64" or target_arch =="x32"', {
+         'platform_heap_asm_files': [
+           'asm/SaveRegisters_x86.asm',
+         ],

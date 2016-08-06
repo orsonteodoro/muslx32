@@ -1,0 +1,13 @@
+diff -ur libffi-3.2.1.orig/configure.ac libffi-3.2.1/configure.ac
+--- libffi-3.2.1.orig/configure.ac	2014-11-12 11:56:51.000000000 +0000
++++ libffi-3.2.1/configure.ac	2016-06-03 17:35:23.121982171 +0000
+@@ -180,6 +180,9 @@
+ 	    *-gnux32)
+ 	      TARGET=X86_64
+ 	      ;;
++	    *-muslx32)
++	      TARGET=X86_64
++	      ;;
+ 	    *)
+ 	      TARGET=X86
+ 	      ;;

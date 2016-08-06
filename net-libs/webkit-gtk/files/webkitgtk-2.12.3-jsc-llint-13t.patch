@@ -1,0 +1,15 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/JSObject.h webkitgtk-2.12.3/Source/JavaScriptCore/runtime/JSObject.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/JSObject.h	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/runtime/JSObject.h	2016-07-28 00:03:36.512952902 -0700
+@@ -1493,7 +1493,11 @@
+     return static_cast<size_t>(addressOffset);
+ }
+ 
++#if CPU(X32)
++COMPILE_ASSERT(!((sizeof(JSObject)*2) % sizeof(WriteBarrierBase<Unknown>)), JSObject_inline_storage_has_correct_alignment);
++#else
+ COMPILE_ASSERT(!(sizeof(JSObject) % sizeof(WriteBarrierBase<Unknown>)), JSObject_inline_storage_has_correct_alignment);
++#endif
+ 
+ ALWAYS_INLINE Identifier makeIdentifier(VM& vm, const char* name)
+ {

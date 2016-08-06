@@ -1,0 +1,15 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/b3/air/AirArg.h webkitgtk-2.12.3/Source/JavaScriptCore/b3/air/AirArg.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/b3/air/AirArg.h	2016-07-25 21:26:38.544248613 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/b3/air/AirArg.h	2016-07-25 21:25:53.382251528 -0700
+@@ -1299,7 +1299,11 @@
+     }
+ 
+ private:
++#if CPU(X32)
++    int32_t m_offset { 0 };
++#else
+     int64_t m_offset { 0 };
++#endif
+     Kind m_kind { Invalid };
+     int32_t m_scale { 1 };
+     Air::Tmp m_base;

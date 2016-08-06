@@ -1,0 +1,24 @@
+diff -ur gstreamer-1.6.3.orig/gst/gstregistrybinary.c gstreamer-1.6.3/gst/gstregistrybinary.c
+--- gstreamer-1.6.3.orig/gst/gstregistrybinary.c	2015-10-22 07:59:12.000000000 +0000
++++ gstreamer-1.6.3/gst/gstregistrybinary.c	2016-06-19 23:12:35.066097172 +0000
+@@ -59,7 +59,7 @@
+ #include <gst/gstdeviceproviderfactory.h>
+ #include <gst/gsturi.h>
+ #include <gst/gstinfo.h>
+-#include <gst/gstenumtypes.h>
++#include "gstenumtypes.h"
+ #include <gst/gstpadtemplate.h>
+ 
+ #include <gst/gstregistrychunks.h>
+diff -ur gstreamer-1.6.3.orig/gst/gstregistrychunks.c gstreamer-1.6.3/gst/gstregistrychunks.c
+--- gstreamer-1.6.3.orig/gst/gstregistrychunks.c	2015-12-07 09:54:40.000000000 +0000
++++ gstreamer-1.6.3/gst/gstregistrychunks.c	2016-06-19 23:11:28.262099311 +0000
+@@ -36,7 +36,7 @@
+ #include <gst/gstdeviceproviderfactory.h>
+ #include <gst/gsturi.h>
+ #include <gst/gstinfo.h>
+-#include <gst/gstenumtypes.h>
++#include "gstenumtypes.h"
+ #include <gst/gstpadtemplate.h>
+ 
+ #include <gst/gstregistrychunks.h>

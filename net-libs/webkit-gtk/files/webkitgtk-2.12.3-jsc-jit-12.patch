@@ -1,0 +1,16 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h	2016-07-26 03:19:40.530881681 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h	2016-07-26 03:29:34.184843371 -0700
+@@ -1295,6 +1295,12 @@
+         return MacroAssemblerX86Common::branchTest8(cond, Address(scratchRegister()), mask);
+     }
+ 
++    Jump branchTest32(ResultCondition cond, RegisterID reg, RegisterID mask)
++    {
++        m_assembler.testl_rr(reg, mask);
++        return Jump(m_assembler.jCC(x86Condition(cond)));
++    }
++
+     Jump branchTest32(ResultCondition cond, AbsoluteAddress address, TrustedImm32 mask = TrustedImm32(-1))
+     {
+         load32(address.m_ptr, scratchRegister());

@@ -1,0 +1,16 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MaxFrameExtentForSlowPathCall.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MaxFrameExtentForSlowPathCall.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MaxFrameExtentForSlowPathCall.h	2016-07-25 22:48:27.930931797 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MaxFrameExtentForSlowPathCall.h	2016-07-25 23:02:57.565875677 -0700
+@@ -77,8 +77,12 @@
+ 
+ #if ENABLE(JIT)
+ // Make sure that cfr - maxFrameExtentForSlowPathCall bytes will make the stack pointer aligned
++#if CPU(X32)
++COMPILE_ASSERT((maxFrameExtentForSlowPathCall % 8) == 8 - sizeof(CallerFrameAndPC), extent_must_align_stack_from_callframe_pointer);
++#else
+ COMPILE_ASSERT((maxFrameExtentForSlowPathCall % 16) == 16 - sizeof(CallerFrameAndPC), extent_must_align_stack_from_callframe_pointer);
+ #endif
++#endif
+ 
+ static const size_t maxFrameExtentForSlowPathCallInRegisters = maxFrameExtentForSlowPathCall / sizeof(Register);
+ 

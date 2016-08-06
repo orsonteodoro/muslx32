@@ -1,0 +1,172 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-07-24 21:55:42.892711676 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-07-25 00:00:40.592227829 -0700
+@@ -225,7 +225,7 @@
+ 
+ const CallOpCodeSize = 9
+ 
+-if X86_64 or ARM64 or C_LOOP
++if X86_64 or ARM64 or C_LOOP or X32
+     const maxFrameExtentForSlowPathCall = 0
+ elsif ARM or ARMv7_TRADITIONAL or ARMv7 or SH4
+     const maxFrameExtentForSlowPathCall = 24
+@@ -237,7 +237,7 @@
+     const maxFrameExtentForSlowPathCall = 64
+ end
+ 
+-if X86_64 or X86_64_WIN or ARM64
++if X86_64 or X86_64_WIN or ARM64 or X32
+     const CalleeSaveSpaceAsVirtualRegisters = 3
+ else
+     const CalleeSaveSpaceAsVirtualRegisters = 0
+@@ -263,7 +263,7 @@
+         const PB = csr7
+         const tagTypeNumber = csr8
+         const tagMask = csr9
+-    elsif X86_64
++    elsif X86_64 or X32
+         const PB = csr2
+         const tagTypeNumber = csr3
+         const tagMask = csr4
+@@ -447,7 +447,7 @@
+     end
+ end
+ 
+-if C_LOOP or ARM64 or X86_64 or X86_64_WIN
++if C_LOOP or ARM64 or X86_64 or X86_64_WIN or X32
+     const CalleeSaveRegisterCount = 0
+ elsif ARM or ARMv7_TRADITIONAL or ARMv7
+     const CalleeSaveRegisterCount = 7
+@@ -466,7 +466,7 @@
+ const VMEntryTotalFrameSize = (CalleeRegisterSaveSize + sizeof VMEntryRecord + StackAlignment - 1) & ~StackAlignmentMask
+ 
+ macro pushCalleeSaves()
+-    if C_LOOP or ARM64 or X86_64 or X86_64_WIN
++    if C_LOOP or ARM64 or X86_64 or X86_64_WIN or X32
+     elsif ARM or ARMv7_TRADITIONAL
+         emit "push {r4-r10}"
+     elsif ARMv7
+@@ -494,7 +494,7 @@
+ end
+ 
+ macro popCalleeSaves()
+-    if C_LOOP or ARM64 or X86_64 or X86_64_WIN
++    if C_LOOP or ARM64 or X86_64 or X86_64_WIN or X32
+     elsif ARM or ARMv7_TRADITIONAL
+         emit "pop {r4-r10}"
+     elsif ARMv7
+@@ -523,7 +523,7 @@
+     if C_LOOP or ARM or ARMv7 or ARMv7_TRADITIONAL or MIPS or SH4
+         push lr
+         push cfr
+-    elsif X86 or X86_WIN or X86_64 or X86_64_WIN
++    elsif X86 or X86_WIN or X86_64 or X86_64_WIN or X32
+         push cfr
+     elsif ARM64
+         push cfr, lr
+@@ -538,7 +538,7 @@
+     if C_LOOP or ARM or ARMv7 or ARMv7_TRADITIONAL or MIPS or SH4
+         pop cfr
+         pop lr
+-    elsif X86 or X86_WIN or X86_64 or X86_64_WIN
++    elsif X86 or X86_WIN or X86_64 or X86_64_WIN or X32
+         pop cfr
+     elsif ARM64
+         pop lr, cfr
+@@ -565,6 +565,10 @@
+         storep csr6, -8[cfr]
+         storep csr5, -16[cfr]
+         storep csr4, -24[cfr]
++    elsif X32
++        storep csr4, -4[cfr]
++        storep csr3, -8[cfr]
++        storep csr2, -12[cfr]
+     end
+ end
+ 
+@@ -587,11 +591,15 @@
+         loadp -24[cfr], csr4
+         loadp -16[cfr], csr5
+         loadp -8[cfr], csr6
++    elsif X32
++        loadp -12[cfr], csr2
++        loadp -8[cfr], csr3
++        loadp -4[cfr], csr4
+     end
+ end
+ 
+ macro copyCalleeSavesToVMCalleeSavesBuffer(vm, temp)
+-    if ARM64 or X86_64 or X86_64_WIN
++    if ARM64 or X86_64 or X86_64_WIN or X32
+         leap VM::calleeSaveRegistersBuffer[vm], temp
+         if ARM64
+             storep csr0, [temp]
+@@ -626,12 +634,18 @@
+             storep csr4, 32[temp]
+             storep csr5, 40[temp]
+             storep csr6, 48[temp]
++        elsif X32
++            storep csr0, [temp]
++            storep csr1, 4[temp]
++            storep csr2, 8[temp]
++            storep csr3, 12[temp]
++            storep csr4, 16[temp]
+         end
+     end
+ end
+ 
+ macro restoreCalleeSavesFromVMCalleeSavesBuffer(vm, temp)
+-    if ARM64 or X86_64 or X86_64_WIN
++    if ARM64 or X86_64 or X86_64_WIN or X32
+         leap VM::calleeSaveRegistersBuffer[vm], temp
+         if ARM64
+             loadp [temp], csr0
+@@ -666,6 +680,12 @@
+             loadp 32[temp], csr4
+             loadp 40[temp], csr5
+             loadp 48[temp], csr6
++	elsif X32
++            loadp [temp], csr0
++            loadp 4[temp], csr1
++            loadp 8[temp], csr2
++            loadp 12[temp], csr3
++            loadp 16[temp], csr4
+         end
+     end
+ end
+@@ -686,7 +706,7 @@
+ end
+ 
+ macro functionPrologue()
+-    if X86 or X86_WIN or X86_64 or X86_64_WIN
++    if X86 or X86_WIN or X86_64 or X86_64_WIN or X32
+         push cfr
+     elsif ARM64
+         push cfr, lr
+@@ -698,7 +718,7 @@
+ end
+ 
+ macro functionEpilogue()
+-    if X86 or X86_WIN or X86_64 or X86_64_WIN
++    if X86 or X86_WIN or X86_64 or X86_64_WIN or X32
+         pop cfr
+     elsif ARM64
+         pop lr, cfr
+@@ -1089,7 +1109,7 @@
+         crash()
+ else
+     macro initPCRelative(pcBase)
+-        if X86_64 or X86_64_WIN or X86 or X86_WIN
++        if X86_64 or X86_64_WIN or X86 or X86_WIN or X32
+             call _relativePCBase
+         _relativePCBase:
+             pop pcBase
+@@ -1121,7 +1141,7 @@
+         leap (label - _relativePCBase)[t1], t3
+         move index, t4
+         storep t3, [a0, t4, 8]
+-    elsif X86 or X86_WIN
++    elsif X86 or X86_WIN or X32
+         leap (label - _relativePCBase)[t1], t3
+         move index, t4
+         storep t3, [a0, t4, 4]

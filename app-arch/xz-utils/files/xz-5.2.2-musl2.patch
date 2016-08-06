@@ -1,0 +1,71 @@
+diff -ur xz-5.2.2.orig/Makefile.in xz-5.2.2/Makefile.in
+--- xz-5.2.2.orig/Makefile.in	2016-06-12 01:03:48.011228958 +0000
++++ xz-5.2.2/Makefile.in	2016-06-12 01:07:52.789231504 +0000
+@@ -571,8 +571,8 @@
+ 	  echo "$$d$$p"; \
+ 	done | $(am__base_list) | \
+ 	while read files; do \
+-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(examplesdir)'"; \
+-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(examplesdir)" || exit $$?; \
++	  echo " $(INSTALL_DATA) $(srcdir)/$$files '$(DESTDIR)$(examplesdir)'"; \
++	  $(INSTALL_DATA) $(srcdir)/$$files "$(DESTDIR)$(examplesdir)" || exit $$?; \
+ 	done
+ 
+ uninstall-dist_examplesDATA:
+@@ -592,8 +592,8 @@
+ 	  echo "$$d$$p"; \
+ 	done | $(am__base_list) | \
+ 	while read files; do \
+-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(examplesolddir)'"; \
+-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(examplesolddir)" || exit $$?; \
++	  echo " $(INSTALL_DATA) $(srcdir)/$$files '$(DESTDIR)$(examplesolddir)'"; \
++	  $(INSTALL_DATA) $(srcdir)/$$files "$(DESTDIR)$(examplesolddir)" || exit $$?; \
+ 	done
+ 
+ uninstall-dist_examplesoldDATA:
+diff -ur xz-5.2.2.orig/src/Makefile.in xz-5.2.2/src/Makefile.in
+--- xz-5.2.2.orig/src/Makefile.in	2015-09-29 11:03:41.000000000 +0000
++++ xz-5.2.2/src/Makefile.in	2016-06-12 01:05:51.417230242 +0000
+@@ -436,7 +436,7 @@
+ 	  else \
+ 	    local_target="$$target"; \
+ 	  fi; \
+-	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
++	  $(am__cd) $(CURDIR)/$$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target \
+ 	  || eval $$failcom; \
+ 	done; \
+ 	if test "$$dot_seen" = "no"; then \
+diff -ur xz-5.2.2.orig/src/liblzma/Makefile.in xz-5.2.2/src/liblzma/Makefile.in
+--- xz-5.2.2.orig/src/liblzma/Makefile.in	2015-09-29 11:03:41.000000000 +0000
++++ xz-5.2.2/src/liblzma/Makefile.in	2016-06-12 01:06:58.672230941 +0000
+@@ -1509,8 +1509,8 @@
+ 	  echo "$$d$$p"; \
+ 	done | $(am__base_list) | \
+ 	while read files; do \
+-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(docdir)'"; \
+-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(docdir)" || exit $$?; \
++	  echo " $(INSTALL_DATA) $(srcdir)/$$files '$(DESTDIR)$(docdir)'"; \
++	  $(INSTALL_DATA) $(srcdir)/$$files "$(DESTDIR)$(docdir)" || exit $$?; \
+ 	done
+ 
+ uninstall-docDATA:
+@@ -1530,8 +1530,8 @@
+ 	  echo "$$d$$p"; \
+ 	done | $(am__base_list) | \
+ 	while read files; do \
+-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(pkgconfigdir)'"; \
+-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(pkgconfigdir)" || exit $$?; \
++	  echo " $(INSTALL_DATA) $(srcdir)/$$files '$(DESTDIR)$(pkgconfigdir)'"; \
++	  $(INSTALL_DATA) $(srcdir)/$$files "$(DESTDIR)$(pkgconfigdir)" || exit $$?; \
+ 	done
+ 
+ uninstall-pkgconfigDATA:
+@@ -1567,7 +1567,7 @@
+ 	  else \
+ 	    local_target="$$target"; \
+ 	  fi; \
+-	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
++	  $(am__cd) $(CURDIR)/$$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target \
+ 	  || eval $$failcom; \
+ 	done; \
+ 	if test "$$dot_seen" = "no"; then \

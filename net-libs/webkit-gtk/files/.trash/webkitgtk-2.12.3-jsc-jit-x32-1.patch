@@ -1,0 +1,753 @@
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/ChangeLog2 webkitgtk-2.12.3/Source/JavaScriptCore/ChangeLog2
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/ChangeLog2	1969-12-31 16:00:00.000000000 -0800
++++ webkitgtk-2.12.3/Source/JavaScriptCore/ChangeLog2	2016-07-05 21:51:06.485732287 -0700
+@@ -0,0 +1,77 @@
++2013-03-21  Yuqiang Xian  <yuqiang.xian@intel.com>
++
++        x32 backend of the JIT compilers
++        https://bugs.webkit.org/show_bug.cgi?id=100450
++
++        Reviewed by NOBODY (OOPS!).
++
++        This patch adds necessary changes to support x32 in the JIT compilers.
++
++        * assembler/AbstractMacroAssembler.h:
++        (TrustedImm32):
++        (Imm32):
++        (TrustedImm64):
++        (Imm64):
++        * assembler/MacroAssembler.h:
++        (MacroAssembler):
++        (JSC::MacroAssembler::comparePtr):
++        (JSC::MacroAssembler::branchPtr):
++        (JSC::MacroAssembler::move):
++        (JSC::MacroAssembler::storePtr):
++        (JSC::MacroAssembler::rotateRightPtr):
++        (JSC::MacroAssembler::shouldBlind):
++        * assembler/MacroAssemblerX86Common.h:
++        (JSC::MacroAssemblerX86Common::push):
++        (JSC::MacroAssemblerX86Common::move):
++        (JSC::MacroAssemblerX86Common::jump):
++        (JSC::MacroAssemblerX86Common::call):
++        * assembler/MacroAssemblerX86_64.h:
++        (MacroAssemblerX86_64):
++        (JSC::MacroAssemblerX86_64::rotateRight32):
++        (JSC::MacroAssemblerX86_64::store32):
++        (JSC::MacroAssemblerX86_64::branch32):
++        (JSC::MacroAssemblerX86_64::convertibleLoadPtr):
++        (JSC::MacroAssemblerX86_64::moveWithPatch):
++        (JSC::MacroAssemblerX86_64::branchPtrWithPatch):
++        (JSC::MacroAssemblerX86_64::storePtrWithPatch):
++        (JSC::MacroAssemblerX86_64::startOfBranchPtrWithPatchOnRegister):
++        (JSC::MacroAssemblerX86_64::revertJumpReplacementToPatchableBranchPtrWithPatch):
++        (JSC::MacroAssemblerX86_64::revertJumpReplacementToBranchPtrWithPatch):
++        * assembler/X86Assembler.h:
++        (JSC::X86Assembler::rorl_i8r):
++        (X86Assembler):
++        (JSC::X86Assembler::testl_rm):
++        (JSC::X86Assembler::movl_mEAX):
++        (JSC::X86Assembler::movl_EAXm):
++        (JSC::X86Assembler::movq_mEAX):
++        (JSC::X86Assembler::movq_EAXm):
++        (JSC::X86Assembler::revertJumpTo_movl_i32r):
++
++        * dfg/DFGEdge.h:
++        (DFG):
++        (JSC::DFG::Edge::Edge):
++        (Edge):
++        (JSC::DFG::Edge::setNode):
++        (JSC::DFG::Edge::useKindUnchecked):
++        (JSC::DFG::Edge::setUseKind):
++        (JSC::DFG::Edge::setProofStatus):
++        (JSC::DFG::Edge::operator==):
++        * dfg/DFGNode.h:
++        (OpInfo):
++        * dfg/DFGSpeculativeJIT64.cpp:
++        (JSC::DFG::SpeculativeJIT::emitCall):
++        * jit/ExecutableAllocator.h:
++        (JSC):
++        * jit/JITCall.cpp:
++        (JSC::JIT::compileOpCall):
++        (JSC::JIT::compileOpCallSlowCase):
++        (JSC::JIT::privateCompileClosureCall):
++        * jit/JITPropertyAccess.cpp:
++        (JSC::JIT::emit_op_get_scoped_var):
++        (JSC::JIT::emit_op_put_scoped_var):
++        * jit/JITStubs.cpp:
++        * jit/JITStubs.h:
++        (JITStackFrame):
++        (JSC::JITStackFrame::returnAddressSlot):
++        * runtime/MatchResult.h:
++        (MatchResult):
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/AbstractMacroAssembler.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/AbstractMacroAssembler.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/AbstractMacroAssembler.h	2016-05-23 03:03:35.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/AbstractMacroAssembler.h	2016-07-05 20:55:27.634697549 -0700
+@@ -299,7 +299,7 @@
+         {
+         }
+ 
+-#if !CPU(X86_64)
++#if !CPU(X86_64) || CPU(X32)
+         explicit TrustedImm32(TrustedImmPtr ptr)
+             : m_value(ptr.asIntptr())
+         {
+@@ -315,7 +315,7 @@
+             : TrustedImm32(value)
+         {
+         }
+-#if !CPU(X86_64)
++#if !CPU(X86_64) || CPU(X32)
+         explicit Imm32(TrustedImmPtr ptr)
+             : TrustedImm32(ptr)
+         {
+@@ -339,7 +339,7 @@
+         {
+         }
+ 
+-#if CPU(X86_64) || CPU(ARM64)
++#if CPU(X86_64) || CPU(ARM64) || CPU(X32)
+         explicit TrustedImm64(TrustedImmPtr ptr)
+             : m_value(ptr.asIntptr())
+         {
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssembler.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssembler.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssembler.h	2016-05-23 03:03:35.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssembler.h	2016-07-05 21:10:15.663706788 -0700
+@@ -506,7 +506,7 @@
+     // Ptr methods
+     // On 32-bit platforms (i.e. x86), these methods directly map onto their 32-bit equivalents.
+     // FIXME: should this use a test for 32-bitness instead of this specific exception?
+-#if !CPU(X86_64) && !CPU(ARM64)
++#if !CPU(X86_64) && !CPU(ARM64) || CPU(X32)
+     void addPtr(Address src, RegisterID dest)
+     {
+         add32(src, dest);
+@@ -653,9 +653,9 @@
+         return load32WithCompactAddressOffsetPatch(address, dest);
+     }
+ 
+-    void move(ImmPtr imm, RegisterID dest)
++    void comparePtr(RelationalCondition cond, RegisterID left, RegisterID right, RegisterID dest)
+     {
+-        move(Imm32(imm.asTrustedImmPtr()), dest);
++        compare32(cond, left, right, dest);
+     }
+ 
+     void comparePtr(RelationalCondition cond, RegisterID left, TrustedImm32 right, RegisterID dest)
+@@ -688,11 +688,6 @@
+         store32(TrustedImm32(imm), address);
+     }
+     
+-    void storePtr(ImmPtr imm, Address address)
+-    {
+-        store32(Imm32(imm.asTrustedImmPtr()), address);
+-    }
+-
+     void storePtr(TrustedImmPtr imm, void* address)
+     {
+         store32(TrustedImm32(imm), address);
+@@ -723,11 +718,6 @@
+         return branch32(cond, left, TrustedImm32(right));
+     }
+     
+-    Jump branchPtr(RelationalCondition cond, RegisterID left, ImmPtr right)
+-    {
+-        return branch32(cond, left, Imm32(right.asTrustedImmPtr()));
+-    }
+-
+     Jump branchPtr(RelationalCondition cond, RegisterID left, Address right)
+     {
+         return branch32(cond, left, right);
+@@ -793,6 +783,29 @@
+         return MacroAssemblerBase::branchTest8(cond, Address(address.base, address.offset), mask);
+     }
+ 
++#if !CPU(X86_64)
++    void move(ImmPtr imm, RegisterID dest)
++    {
++        move(Imm32(imm.asTrustedImmPtr()), dest);
++    }
++
++    void storePtr(ImmPtr imm, Address address)
++    {
++        store32(Imm32(imm.asTrustedImmPtr()), address);
++    }
++
++    Jump branchPtr(RelationalCondition cond, RegisterID left, ImmPtr right)
++    {
++        return branch32(cond, left, Imm32(right.asTrustedImmPtr()));
++    }
++#else
++    void rotateRightPtr(TrustedImm32 imm, RegisterID srcDst)
++    {
++        rotateRight32(imm, srcDst);
++    }
++#endif
++
++
+ #else // !CPU(X86_64)
+ 
+     void addPtr(RegisterID src, RegisterID dest)
+@@ -1100,6 +1113,10 @@
+         return branchSub64(cond, src1, src2, dest);
+     }
+ 
++#endif // !CPU(X86_64) || CPU(X32)
++
++#if CPU(X86_64)
++
+     using MacroAssemblerBase::and64;
+     using MacroAssemblerBase::convertInt32ToDouble;
+     using MacroAssemblerBase::store64;
+@@ -1152,10 +1169,12 @@
+         case 0xffff:
+         case 0xffffff:
+         case 0xffffffffL:
++#if !CPU(X32)
+         case 0xffffffffffL:
+         case 0xffffffffffffL:
+         case 0xffffffffffffffL:
+         case 0xffffffffffffffffL:
++#endif
+             return false;
+         default: {
+             if (value <= 0xff)
+@@ -1211,10 +1230,12 @@
+         case 0xffff:
+         case 0xffffff:
+         case 0xffffffffL:
++#if !CPU(X32)
+         case 0xffffffffffL:
+         case 0xffffffffffffL:
+         case 0xffffffffffffffL:
+         case 0xffffffffffffffffL:
++#endif
+             return false;
+         default: {
+             if (value <= 0xff)
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86Common.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86Common.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86Common.h	2016-05-23 03:03:35.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86Common.h	2016-07-05 21:15:09.600709847 -0700
+@@ -1533,7 +1533,15 @@
+ 
+     void push(Address address)
+     {
++#if CPU(X32)
++        // On X86_64 (also in X32 mode), the default operand size for call/jump/push/pop
++        // is 64-bit. This means if we use a memory operand for those instructions,
++        // we'll be loading a 64-bit data from the memory address. It's not our intention.
++        load32(address, scratchRegister);
++        m_assembler.push_r(scratchRegister);
++#else
+         m_assembler.push_m(address.offset, address.base);
++#endif
+     }
+ 
+     void push(TrustedImm32 imm)
+@@ -1567,10 +1575,14 @@
+ 
+     void move(TrustedImmPtr imm, RegisterID dest)
+     {
++#if CPU(X32)
++        m_assembler.movl_i32r(imm.asIntptr(), dest);
++#else
+         if (!imm.m_value)
+             m_assembler.xorq_rr(dest, dest);
+         else
+             m_assembler.movq_i64r(imm.asIntptr(), dest);
++#elseif
+     }
+ 
+     void move(TrustedImm64 imm, RegisterID dest)
+@@ -2091,7 +2103,15 @@
+     // Address is a memory location containing the address to jump to
+     void jump(Address address)
+     {
++#if CPU(X32)
++        // On X86_64 (also in X32 mode), the default operand size for call/jump/push/pop
++        // is 64-bit. This means if we use a memory operand for those instructions,
++        // we'll be loading a 64-bit data from the memory address. It's not our intention.
++        load32(address, scratchRegister);
++        m_assembler.jmp_r(scratchRegister);
++#else
+         m_assembler.jmp_m(address.offset, address.base);
++#endif
+     }
+ 
+ 
+@@ -2275,7 +2295,15 @@
+ 
+     void call(Address address)
+     {
++#if CPU(X32)
++        // On X86_64 (also in X32 mode), the default operand size for call/jump/push/pop
++        // is 64-bit. This means if we use a memory operand for those instructions,
++        // we'll be loading a 64-bit data from the memory address. It's not our intention.
++        load32(address, scratchRegister);
++        m_assembler.call(scratchRegister);
++#else
+         m_assembler.call_m(address.offset, address.base);
++#endif
+     }
+ 
+     void ret()
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h	2016-05-23 03:03:35.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h	2016-07-05 21:25:33.206716335 -0700
+@@ -38,10 +38,15 @@
+ 
+ class MacroAssemblerX86_64 : public MacroAssemblerX86Common {
+ public:
++#if CPU(X32)
++    static const Scale ScalePtr = TimesFour;
++#else
+     static const Scale ScalePtr = TimesEight;
++#endif
+ 
+     using MacroAssemblerX86Common::add32;
+     using MacroAssemblerX86Common::and32;
++    using MacroAssemblerX86Common::branch32;
+     using MacroAssemblerX86Common::branchAdd32;
+     using MacroAssemblerX86Common::or32;
+     using MacroAssemblerX86Common::sub32;
+@@ -119,12 +124,39 @@
+         m_assembler.cvtsi2sd_rr(scratchRegister(), dest);
+     }
+ 
++    void rotateRight32(TrustedImm32 imm, RegisterID srcDst)
++    {
++        m_assembler.rorl_i8r(imm.m_value, srcDst);
++    }
++
+     void store32(TrustedImm32 imm, void* address)
+     {
+         move(TrustedImmPtr(address), scratchRegister());
+         store32(imm, scratchRegister());
+     }
+ 
++    void store32(RegisterID src, void* address)
++    {
++        if (src == X86Registers::eax)
++            m_assembler.movl_EAXm(address);
++        else {
++            move(TrustedImmPtr(address), scratchRegister);
++            store32(src, scratchRegister);
++        }
++    }
++
++    Jump branch32(RelationalCondition cond, AbsoluteAddress left, RegisterID right)
++    {
++        move(TrustedImmPtr(left.m_ptr), scratchRegister);
++        return branch32(cond, Address(scratchRegister), right);
++    }
++
++    Jump branch32(RelationalCondition cond, AbsoluteAddress left, TrustedImm32 right)
++    {
++        move(TrustedImmPtr(left.m_ptr), scratchRegister);
++        return branch32(cond, left, right);
++    }
++
+     void store32(RegisterID source, void* address)
+     {
+         if (source == X86Registers::eax)
+@@ -1147,14 +1179,22 @@
+     ConvertibleLoadLabel convertibleLoadPtr(Address address, RegisterID dest)
+     {
+         ConvertibleLoadLabel result = ConvertibleLoadLabel(this);
++#if CPU(X32)
++        m_assembler.movl_mr(address.offset, address.base, dest);
++#else
+         m_assembler.movq_mr(address.offset, address.base, dest);
++#endif
+         return result;
+     }
+ 
+     DataLabelPtr moveWithPatch(TrustedImmPtr initialValue, RegisterID dest)
+     {
+         padBeforePatch();
++#if CPU(X32)
++        m_assembler.movl_i32r(initialValue.asIntptr(), dest);
++#else
+         m_assembler.movq_i64r(initialValue.asIntptr(), dest);
++#endif
+         return DataLabelPtr(this);
+     }
+ 
+@@ -1168,13 +1208,21 @@
+     Jump branchPtrWithPatch(RelationalCondition cond, RegisterID left, DataLabelPtr& dataLabel, TrustedImmPtr initialRightValue = TrustedImmPtr(0))
+     {
+         dataLabel = moveWithPatch(initialRightValue, scratchRegister());
++#if CPU(X32)
++        return branch32(cond, left, scratchRegister());
++#else
+         return branch64(cond, left, scratchRegister());
++#endif
+     }
+ 
+     Jump branchPtrWithPatch(RelationalCondition cond, Address left, DataLabelPtr& dataLabel, TrustedImmPtr initialRightValue = TrustedImmPtr(0))
+     {
+         dataLabel = moveWithPatch(initialRightValue, scratchRegister());
+-        return branch64(cond, left, scratchRegister());
++#if CPU(X32)
++         return branch32(cond, left, scratchRegister());
++#else
++         return branch64(cond, left, scratchRegister());
++#endif
+     }
+ 
+     Jump branch32WithPatch(RelationalCondition cond, Address left, DataLabel32& dataLabel, TrustedImm32 initialRightValue = TrustedImm32(0))
+@@ -1188,7 +1236,11 @@
+     DataLabelPtr storePtrWithPatch(TrustedImmPtr initialValue, ImplicitAddress address)
+     {
+         DataLabelPtr label = moveWithPatch(initialValue, scratchRegister());
++#if CPU(X32)
++        store32(scratchRegister(), address);
++#else
+         store64(scratchRegister(), address);
++#endif
+         return label;
+     }
+ 
+@@ -1248,7 +1300,7 @@
+     {
+         const int rexBytes = 1;
+         const int opcodeBytes = 1;
+-        const int immediateBytes = 8;
++        const int immediateBytes = sizeof(void*);
+         const int totalBytes = rexBytes + opcodeBytes + immediateBytes;
+         ASSERT(totalBytes >= maxJumpReplacementSize());
+         return label.labelAtOffset(-totalBytes);
+@@ -1276,7 +1328,11 @@
+     
+     static void revertJumpReplacementToPatchableBranchPtrWithPatch(CodeLocationLabel instructionStart, Address, void* initialValue)
+     {
+-        X86Assembler::revertJumpTo_movq_i64r(instructionStart.executableAddress(), reinterpret_cast<intptr_t>(initialValue), s_scratchRegister);
++#if CPU(X32)
++        X86Assembler::revertJumpTo_movl_i32r(instructionStart.executableAddress(), reinterpret_cast<uintptr_t>(initialValue), scratchRegister);
++#else
++        X86Assembler::revertJumpTo_movq_i64r(instructionStart.executableAddress(), reinterpret_cast<uintptr_t>(initialValue), s_scratchRegister);
++#endif
+     }
+ 
+     static void revertJumpReplacementToPatchableBranch32WithPatch(CodeLocationLabel instructionStart, Address, int32_t initialValue)
+@@ -1286,7 +1342,11 @@
+ 
+     static void revertJumpReplacementToBranchPtrWithPatch(CodeLocationLabel instructionStart, RegisterID, void* initialValue)
+     {
+-        X86Assembler::revertJumpTo_movq_i64r(instructionStart.executableAddress(), reinterpret_cast<intptr_t>(initialValue), s_scratchRegister);
++#if CPU(X32)
++        X86Assembler::revertJumpTo_movl_i32r(instructionStart.executableAddress(), reinterpret_cast<uintptr_t>(initialValue), scratchRegister);
++#else
++        X86Assembler::revertJumpTo_movq_i64r(instructionStart.executableAddress(), reinterpret_cast<uintptr_t>(initialValue), s_scratchRegister);
++#endif
+     }
+ 
+     static void repatchCall(CodeLocationCall call, CodeLocationLabel destination)
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/X86Assembler.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/X86Assembler.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/X86Assembler.h	2016-05-23 03:03:35.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/X86Assembler.h	2016-07-05 21:31:04.225719779 -0700
+@@ -1015,6 +1015,17 @@
+     {
+         m_formatter.twoByteOp64(OP2_BSR, dst, base, offset);
+     }
++
++    void rorl_i8r(int imm, RegisterID dst)
++    {
++        if (imm == 1)
++            m_formatter.oneByteOp(OP_GROUP2_Ev1, GROUP2_OP_ROR, dst);
++        else {
++            m_formatter.oneByteOp(OP_GROUP2_EvIb, GROUP2_OP_ROR, dst);
++            m_formatter.immediate8(imm);
++        }
++    }
++
+ #endif
+ 
+     void sarl_i8r(int imm, RegisterID dst)
+@@ -1402,6 +1413,11 @@
+         m_formatter.oneByteOp64(OP_TEST_EvGv, src, base, offset);
+     }
+ 
++    void testl_rm(RegisterID src, int offset, RegisterID base)
++    {
++        m_formatter.oneByteOp(OP_TEST_EvGv, src, base, offset);
++    }
++
+     void testq_i32r(int imm, RegisterID dst)
+     {
+         if (dst == X86Registers::eax)
+@@ -1554,7 +1570,8 @@
+     {
+         m_formatter.oneByteOp(OP_MOV_EAXOv);
+ #if CPU(X86_64)
+-        m_formatter.immediate64(reinterpret_cast<int64_t>(addr));
++        // Make sure the addr is zero extended (if it's a 32-bit addr in X32 mode).
++        m_formatter.immediate64(reinterpret_cast<uintptr_t>(addr));
+ #else
+         m_formatter.immediate32(reinterpret_cast<int>(addr));
+ #endif
+@@ -1657,7 +1674,8 @@
+     {
+         m_formatter.oneByteOp(OP_MOV_OvEAX);
+ #if CPU(X86_64)
+-        m_formatter.immediate64(reinterpret_cast<int64_t>(addr));
++        // Make sure the addr is zero extended (if it's a 32-bit addr in X32 mode).
++        m_formatter.immediate64(reinterpret_cast<uintptr_t>(addr));
+ #else
+         m_formatter.immediate32(reinterpret_cast<int>(addr));
+ #endif
+@@ -1687,13 +1705,15 @@
+     void movq_mEAX(const void* addr)
+     {
+         m_formatter.oneByteOp64(OP_MOV_EAXOv);
+-        m_formatter.immediate64(reinterpret_cast<int64_t>(addr));
++        // Make sure the addr is zero extended (if it's a 32-bit addr in X32 mode).
++        m_formatter.immediate64(reinterpret_cast<uintptr_t>(addr));
+     }
+ 
+     void movq_EAXm(const void* addr)
+     {
+         m_formatter.oneByteOp64(OP_MOV_OvEAX);
+-        m_formatter.immediate64(reinterpret_cast<int64_t>(addr));
++        // Make sure the addr is zero extended (if it's a 32-bit addr in X32 mode).
++        m_formatter.immediate64(reinterpret_cast<uintptr_t>(addr));
+     }
+ 
+     void movq_mr(int offset, RegisterID base, RegisterID dst)
+@@ -2661,6 +2681,25 @@
+             ptr[i] = u.asBytes[i - rexBytes - opcodeBytes];
+     }
+ 
++    static void revertJumpTo_movl_i32r(void* instructionStart, int32_t imm, RegisterID dst)
++    {
++        const int rexBytes = (dst >= X86Registers::r8) ? 1 : 0;
++        const int opcodeBytes = 1;
++        ASSERT(rexBytes + opcodeBytes <= maxJumpReplacementSize());
++        uint8_t* ptr = reinterpret_cast<uint8_t*>(instructionStart);
++        if (dst >= X86Registers::r8)
++            ptr[0] = PRE_REX | (dst >> 3);
++        ptr[rexBytes] = OP_MOV_EAXIv | (dst & 7);
++
++        union {
++            uint32_t asWord;
++            uint8_t asBytes[4];
++        } u;
++        u.asWord = imm;
++        for (unsigned i = rexBytes + opcodeBytes; i < static_cast<unsigned>(maxJumpReplacementSize()); ++i)
++            ptr[i] = u.asBytes[i - rexBytes - opcodeBytes];
++    }
++
+     static void revertJumpTo_movl_i32r(void* instructionStart, int32_t imm, RegisterID dst)
+     {
+         // We only revert jumps on inline caches, and inline caches always use the scratch register (r11).
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/dfg/DFGEdge.h webkitgtk-2.12.3/Source/JavaScriptCore/dfg/DFGEdge.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/dfg/DFGEdge.h	2016-04-10 23:18:43.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/dfg/DFGEdge.h	2016-07-05 21:33:32.501721321 -0700
+@@ -33,12 +33,18 @@
+ 
+ namespace JSC { namespace DFG {
+ 
++#if USE(JSVALUE64) && !CPU(X32)
++#define ENCODE_IN_NODE_POINTER 1
++#else
++#define ENCODE_IN_NODE_POINTER 0
++#endif
++
+ class AdjacencyList;
+ 
+ class Edge {
+ public:
+     explicit Edge(Node* node = 0, UseKind useKind = UntypedUse, ProofStatus proofStatus = NeedsCheck, KillStatus killStatus = DoesNotKill)
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+         : m_encodedWord(makeWord(node, useKind, proofStatus, killStatus))
+ #else
+         : m_node(node)
+@@ -47,7 +53,7 @@
+     {
+     }
+     
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+     Node* node() const { return bitwise_cast<Node*>(m_encodedWord >> shift()); }
+ #else
+     Node* node() const { return m_node; }
+@@ -58,7 +64,7 @@
+     
+     void setNode(Node* node)
+     {
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+         m_encodedWord = makeWord(node, useKind(), proofStatus(), killStatus());
+ #else
+         m_node = node;
+@@ -67,7 +73,7 @@
+     
+     UseKind useKindUnchecked() const
+     {
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+         unsigned masked = m_encodedWord & (((1 << shift()) - 1));
+         unsigned shifted = masked >> 2;
+ #else
+@@ -86,7 +92,7 @@
+     void setUseKind(UseKind useKind)
+     {
+         ASSERT(node());
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+         m_encodedWord = makeWord(node(), useKind, proofStatus(), killStatus());
+ #else
+         m_encodedWord = makeWord(useKind, proofStatus(), killStatus());
+@@ -105,7 +111,7 @@
+     void setProofStatus(ProofStatus proofStatus)
+     {
+         ASSERT(node());
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+         m_encodedWord = makeWord(node(), useKind(), proofStatus, killStatus());
+ #else
+         m_encodedWord = makeWord(useKind(), proofStatus, killStatus());
+@@ -137,7 +143,7 @@
+     void setKillStatus(KillStatus killStatus)
+     {
+         ASSERT(node());
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+         m_encodedWord = makeWord(node(), useKind(), proofStatus(), killStatus);
+ #else
+         m_encodedWord = makeWord(useKind(), proofStatus(), killStatus);
+@@ -151,7 +157,7 @@
+     Edge sanitized() const
+     {
+         Edge result = *this;
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+         result.m_encodedWord = makeWord(node(), useKindUnchecked(), NeedsCheck, DoesNotKill);
+ #else
+         result.m_encodedWord = makeWord(useKindUnchecked(), NeedsCheck, DoesNotKill);
+@@ -164,7 +170,7 @@
+     
+     bool operator==(Edge other) const
+     {
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+         return m_encodedWord == other.m_encodedWord;
+ #else
+         return m_node == other.m_node && m_encodedWord == other.m_encodedWord;
+@@ -179,7 +185,7 @@
+     
+     unsigned hash() const
+     {
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+         return IntHash<uintptr_t>::hash(m_encodedWord);
+ #else
+         return PtrHash<Node*>::hash(m_node) + m_encodedWord;
+@@ -189,7 +195,7 @@
+ private:
+     friend class AdjacencyList;
+     
+-#if USE(JSVALUE64)
++#if ENCODE_IN_NODE_POINTER
+     static uint32_t shift() { return 7; }
+     
+     static uintptr_t makeWord(Node* node, UseKind useKind, ProofStatus proofStatus, KillStatus killStatus)
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/dfg/DFGNode.h webkitgtk-2.12.3/Source/JavaScriptCore/dfg/DFGNode.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/dfg/DFGNode.h	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/dfg/DFGNode.h	2016-07-05 21:34:02.497721634 -0700
+@@ -226,7 +226,7 @@
+     OpInfo() : m_value(0) { }
+     explicit OpInfo(int32_t value) : m_value(static_cast<uintptr_t>(value)) { }
+     explicit OpInfo(uint32_t value) : m_value(static_cast<uintptr_t>(value)) { }
+-#if OS(DARWIN) || USE(JSVALUE64)
++#if OS(DARWIN) || (CPU(X86_64) && !CPU(X32))
+     explicit OpInfo(size_t value) : m_value(static_cast<uintptr_t>(value)) { }
+ #endif
+     explicit OpInfo(void* value) : m_value(reinterpret_cast<uintptr_t>(value)) { }
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/dfg/DFGSpeculativeJIT64.cpp webkitgtk-2.12.3/Source/JavaScriptCore/dfg/DFGSpeculativeJIT64.cpp
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/dfg/DFGSpeculativeJIT64.cpp	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/dfg/DFGSpeculativeJIT64.cpp	2016-07-05 21:36:10.528722966 -0700
+@@ -830,6 +830,9 @@
+ 
+     JITCompiler::DataLabelPtr targetToCheck;
+     JITCompiler::Jump slowPath = m_jit.branchPtrWithPatch(MacroAssembler::NotEqual, calleeGPR, targetToCheck, MacroAssembler::TrustedImmPtr(0));
++#if CPU(X32)
++    slowPath.append(m_jit.branchTest64(MacroAssembler::NonZero, calleeGPR, GPRInfo::tagMaskRegister));
++#endif
+ 
+     if (isTail) {
+         if (node->op() == TailCall) {
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/jit/ExecutableAllocator.h webkitgtk-2.12.3/Source/JavaScriptCore/jit/ExecutableAllocator.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/jit/ExecutableAllocator.h	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/jit/ExecutableAllocator.h	2016-07-05 21:37:36.604723861 -0700
+@@ -78,7 +78,7 @@
+ static const size_t fixedExecutableMemoryPoolSize = 16 * 1024 * 1024;
+ #elif CPU(ARM64)
+ static const size_t fixedExecutableMemoryPoolSize = 32 * 1024 * 1024;
+-#elif CPU(X86_64)
++#elif CPU(X86_64) && !CPU(X32)
+ static const size_t fixedExecutableMemoryPoolSize = 1024 * 1024 * 1024;
+ #else
+ static const size_t fixedExecutableMemoryPoolSize = 32 * 1024 * 1024;
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/jit/JITCall.cpp webkitgtk-2.12.3/Source/JavaScriptCore/jit/JITCall.cpp
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/jit/JITCall.cpp	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/jit/JITCall.cpp	2016-07-05 21:41:50.546726503 -0700
+@@ -185,6 +185,11 @@
+     Jump slowCase = branchPtrWithPatch(NotEqual, regT0, addressOfLinkedFunctionCheck, TrustedImmPtr(0));
+     addSlowCase(slowCase);
+ 
++#if CPU(X32)
++    // The above branchPtr doesn't catch the case where the callee isn't a cell.
++    addSlowCase(branchTest64(NonZero, regT0, tagMaskRegister));
++#endif
++
+     ASSERT(m_callCompilationInfo.size() == callLinkInfoIndex);
+     info->setUpCall(CallLinkInfo::callTypeFor(opcodeID), CodeOrigin(m_bytecodeOffset), regT0);
+     m_callCompilationInfo.append(CallCompilationInfo());
+@@ -238,6 +243,10 @@
+ 
+     linkSlowCase(iter);
+ 
++#if CPU(X32)
++    linkSlowCase(iter);
++#endif
++
+     if (opcodeID == op_tail_call || opcodeID == op_tail_call_varargs)
+         emitRestoreCalleeSaves();
+ 
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/MatchResult.h webkitgtk-2.12.3/Source/JavaScriptCore/runtime/MatchResult.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/MatchResult.h	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/runtime/MatchResult.h	2016-07-05 21:46:19.093729297 -0700
+@@ -64,8 +64,17 @@
+         return start == end;
+     }
+ 
++#if CPU(X32)
++    // On X32, size_t is 32-bit while the register size is 64-bit.
++    // Make each member to be 64-bit so that they will be placed in two registers
++    // when a function (a Yarr JIT function) returns a MatchResult structure,
++    // a behavior consistent with any other architecture.
++    uint64_t start;
++    uint64_t end;
++#else
+     size_t start;
+     size_t end;
++#endif
+ };
+ 
+ #endif
+diff -urN webkitgtk-2.12.3.orig/Source/WTF/ChangeLog webkitgtk-2.12.3/Source/WTF/ChangeLog
+--- webkitgtk-2.12.3.orig/Source/WTF/ChangeLog	1969-12-31 16:00:00.000000000 -0800
++++ webkitgtk-2.12.3/Source/WTF/ChangeLog	2016-07-05 21:46:50.767729627 -0700
+@@ -0,0 +1,11 @@
++2013-03-21  Yuqiang Xian  <yuqiang.xian@intel.com>
++
++        x32 backend of the JIT compilers
++        https://bugs.webkit.org/show_bug.cgi?id=100450
++
++        Reviewed by NOBODY (OOPS!).
++
++       This patch adds necessary changes to support x32 in the JIT compilers.
++
++        * wtf/Platform.h: Add the definition of CPU(X32)
++

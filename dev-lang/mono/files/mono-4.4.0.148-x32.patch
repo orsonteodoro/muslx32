@@ -1,0 +1,110 @@
+diff -ur mono-4.4.0.orig/libgc/include/private/gc_locks.h mono-4.4.0/libgc/include/private/gc_locks.h
+--- mono-4.4.0.orig/libgc/include/private/gc_locks.h	2016-02-22 07:08:44.000000000 -0800
++++ mono-4.4.0/libgc/include/private/gc_locks.h	2016-07-03 23:56:20.346012613 -0700
+@@ -437,9 +437,15 @@
+ 						       GC_word new_val) 
+          {
+ 	   char result;
++#     if defined(__ILP32__)
++	   __asm__ __volatile__("lock; cmpxchg  %2, %0; setz %1"
++	    	: "+m"(*(addr)), "=r"(result)
++		: "r" (new_val), "a"(old) : "memory");
++#     else
+ 	   __asm__ __volatile__("lock; cmpxchgq %2, %0; setz %1"
+ 	    	: "+m"(*(addr)), "=r"(result)
+ 		: "r" (new_val), "a"(old) : "memory");
++#     endif
+ 	   return (GC_bool) result;
+          }
+ #      endif /* !GENERIC_COMPARE_AND_SWAP */
+diff -ur mono-4.4.0.orig/mono/metadata/sgen-mono.c mono-4.4.0/mono/metadata/sgen-mono.c
+--- mono-4.4.0.orig/mono/metadata/sgen-mono.c	2016-03-16 09:00:32.000000000 -0700
++++ mono-4.4.0/mono/metadata/sgen-mono.c	2016-07-04 00:09:48.632021022 -0700
+@@ -1537,7 +1537,7 @@
+ find_card_offset (mword card)
+ {
+ /*XXX Use assembly as this generates some pretty bad code */
+-#if defined(__i386__) && defined(__GNUC__)
++#if (defined(__i386__) || (defined(__x86_64__) && defined(__ILP32__))) && defined(__GNUC__)
+ 	return  (__builtin_ffs (card) - 1) / 8;
+ #elif defined(__x86_64__) && defined(__GNUC__)
+ 	return (__builtin_ffsll (card) - 1) / 8;
+diff -ur mono-4.4.0.orig/mono/mini/mini-codegen.c mono-4.4.0/mono/mini/mini-codegen.c
+--- mono-4.4.0.orig/mono/mini/mini-codegen.c	2016-03-16 09:00:32.000000000 -0700
++++ mono-4.4.0/mono/mini/mini-codegen.c	2016-07-03 23:59:13.427014413 -0700
+@@ -164,7 +164,7 @@
+ {
+ 	regmask_t mask = allow & rs->ifree_mask;
+ 
+-#if defined(__x86_64__) && defined(__GNUC__)
++#if defined(__x86_64__) && defined(__GNUC__) && !defined(__ILP32__)
+  {
+ 	guint64 i;
+ 
+diff -ur mono-4.4.0.orig/mono/mini/regalloc.h mono-4.4.0/mono/mini/regalloc.h
+--- mono-4.4.0.orig/mono/mini/regalloc.h	2016-02-22 07:08:49.000000000 -0800
++++ mono-4.4.0/mono/mini/regalloc.h	2016-07-04 00:01:04.123015565 -0700
+@@ -1,4 +1,4 @@
+-#if defined(__native_client__) && defined(__x86_64__)
++#if defined(__native_client__) && defined(__x86_64__) && !defined(__ILP32__)
+ typedef guint64 regmask_t;
+ #else
+ typedef size_t regmask_t;
+diff -ur mono-4.4.0.orig/mono/profiler/proflog.c mono-4.4.0/mono/profiler/proflog.c
+--- mono-4.4.0.orig/mono/profiler/proflog.c	2016-03-16 09:00:32.000000000 -0700
++++ mono-4.4.0/mono/profiler/proflog.c	2016-07-04 00:05:14.344018168 -0700
+@@ -2567,8 +2567,14 @@
+ {
+ 	attr->size = PERF_ATTR_SIZE_VER0;
+ 	//printf ("perf attr size: %d\n", attr->size);
++#if defined(__NR_perf_event_open)
++        return syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
+-#if defined(__x86_64__)
++#elif defined(__x86_64__)
+-	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
++#  if defined(__ILP32__)
++        return syscall(/*__NR_perf_event_open*/ 0x40000000+298, attr, pid, cpu, group_fd, flags);
++#  else
++ 	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
++#  endif
+ #elif defined(__i386__)
+ 	return syscall(/*__NR_perf_event_open*/ 336, attr, pid, cpu, group_fd, flags);
+ #elif defined(__arm__) || defined (__aarch64__)
+diff -ur mono-4.4.0.orig/mono/sgen/sgen-marksweep.c mono-4.4.0/mono/sgen/sgen-marksweep.c
+--- mono-4.4.0.orig/mono/sgen/sgen-marksweep.c	2016-03-16 09:00:32.000000000 -0700
++++ mono-4.4.0/mono/sgen/sgen-marksweep.c	2016-07-04 00:24:42.024030317 -0700
+@@ -2144,7 +2144,7 @@
+ 	if (i == CARD_WORDS_PER_BLOCK)
+ 		return card_data + CARDS_PER_BLOCK;
+ 
+-#if defined(__i386__) && defined(__GNUC__)
++#if (defined(__i386__) || (defined(__x86_64__) && defined(__ILP32__))) && defined(__GNUC__)
+ 	return card_data + i * 4 +  (__builtin_ffs (card) - 1) / 8;
+ #elif defined(__x86_64__) && defined(__GNUC__)
+ 	return card_data + i * 8 +  (__builtin_ffsll (card) - 1) / 8;
+diff -ur mono-4.4.0.orig/mono/utils/monobitset.c mono-4.4.0/mono/utils/monobitset.c
+--- mono-4.4.0.orig/mono/utils/monobitset.c	2016-02-22 07:08:49.000000000 -0800
++++ mono-4.4.0/mono/utils/monobitset.c	2016-07-04 00:03:05.496016828 -0700
+@@ -280,8 +280,12 @@
+ #if defined(__native_client__) && (defined(__i386__) || defined(__x86_64))
+ #define USE_X86_32BIT_INSTRUCTIONS 1
+ #endif
++#if defined(__x86_64) && defined(__ILP32__)
++#define ARCH_x32
++#endif
++
+ 
+-#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
++#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS) || defined(ARCH_x32)
+  {
+ 	 int r;
+ 	 /* This depends on mask != 0 */
+@@ -311,7 +315,7 @@
+ my_g_bit_nth_lsf_nomask (gsize mask)
+ {
+ 	/* Mask is expected to be != 0 */
+-#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
++#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS) || defined(ARCH_x32)
+ 	int r;
+ 
+ 	__asm__("bsfl %1,%0\n\t"

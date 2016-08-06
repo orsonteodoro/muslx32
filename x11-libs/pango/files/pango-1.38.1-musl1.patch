@@ -1,0 +1,12 @@
+diff -ur pango-1.38.1.orig/pango/Makefile.in pango-1.38.1/pango/Makefile.in
+--- pango-1.38.1.orig/pango/Makefile.in	2016-06-20 01:00:10.003890477 +0000
++++ pango-1.38.1/pango/Makefile.in	2016-06-20 01:01:59.483886971 +0000
+@@ -1109,7 +1109,7 @@
+ _headers_dest_posix = $(subst $(includedir),,$($(_proj_name)_HEADERS_DIR))
+ _headers_destdir = $(subst /,\\,$(_headers_dest_posix))
+ TESTS = check.defs
+-all: $(BUILT_SOURCES)
++all: libpango-1.0.la $(BUILT_SOURCES)
+ 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
+ 
+ .SUFFIXES:

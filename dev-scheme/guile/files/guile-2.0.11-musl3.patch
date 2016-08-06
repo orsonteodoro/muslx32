@@ -1,0 +1,11 @@
+diff -ur guile-2.0.11.orig/libguile/struct.c guile-2.0.11/libguile/struct.c
+--- guile-2.0.11.orig/libguile/struct.c	2013-03-18 14:30:13.000000000 -0700
++++ guile-2.0.11/libguile/struct.c	2016-06-25 20:15:24.550208921 -0700
+@@ -23,6 +23,7 @@
+ 
+ #include <alloca.h>
+ #include <assert.h>
++#include <stdarg.h>
+ 
+ #define SCM_BUILDING_DEPRECATED_CODE
+ 

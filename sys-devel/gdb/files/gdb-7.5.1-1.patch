@@ -1,0 +1,176 @@
+diff -ur gdb-7.5.1.orig/bfd/hosts/x86-64linux.h gdb-7.5.1/bfd/hosts/x86-64linux.h
+--- gdb-7.5.1.orig/bfd/hosts/x86-64linux.h	2011-06-16 15:08:12.000000000 -0700
++++ gdb-7.5.1/bfd/hosts/x86-64linux.h	2016-06-24 15:37:19.896459336 -0700
+@@ -128,6 +128,11 @@
+     int tv_usec;
+   };
+ 
++#include <sys/types.h>
++#ifndef __pid_t
++#define __pid_t pid_t
++#endif
++
+ struct elf_prstatus32
+   {
+     struct elf_siginfo pr_info;		/* Info associated with signal.  */
+diff -ur gdb-7.5.1.orig/gdb/amd64-linux-nat.c gdb-7.5.1/gdb/amd64-linux-nat.c
+--- gdb-7.5.1.orig/gdb/amd64-linux-nat.c	2016-06-24 15:35:58.042461957 -0700
++++ gdb-7.5.1/gdb/amd64-linux-nat.c	2016-06-24 15:49:21.888436217 -0700
+@@ -31,9 +31,7 @@
+ #include "elf/common.h"
+ #include <sys/uio.h>
+ #include <sys/ptrace.h>
+-#ifdef HAVE_SYS_DEBUGREG_H
+-#include <sys/debugreg.h>
+-#endif
++#include "debugreg.h"
+ #include <sys/syscall.h>
+ #include <sys/procfs.h>
+ #include <sys/user.h>
+Only in gdb-7.5.1/gdb: debugreg.h
+diff -ur gdb-7.5.1.orig/gdb/gdbserver/linux-low.c gdb-7.5.1/gdb/gdbserver/linux-low.c
+--- gdb-7.5.1.orig/gdb/gdbserver/linux-low.c	2012-07-07 05:13:57.000000000 -0700
++++ gdb-7.5.1/gdb/gdbserver/linux-low.c	2016-06-24 15:40:10.946453859 -0700
+@@ -16,6 +16,7 @@
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+ 
++#include "../stopcode.h"
+ #include "server.h"
+ #include "linux-low.h"
+ #include "linux-osdata.h"
+@@ -66,10 +67,6 @@
+ #define O_LARGEFILE 0
+ #endif
+ 
+-#ifndef W_STOPCODE
+-#define W_STOPCODE(sig) ((sig) << 8 | 0x7f)
+-#endif
+-
+ /* This is the kernel's hard limit.  Not to be confused with
+    SIGRTMIN.  */
+ #ifndef __SIGRTMIN
+@@ -114,6 +111,10 @@
+ } Elf64_auxv_t;
+ #endif
+ 
++#ifndef __WCLONE
++#define __WCLONE        0x80000000
++#endif
++
+ /* ``all_threads'' is keyed by the LWP ID, which we use as the GDB protocol
+    representation of the thread ID.
+ 
+diff -ur gdb-7.5.1.orig/gdb/gdbserver/linux-x86-low.c gdb-7.5.1/gdb/gdbserver/linux-x86-low.c
+--- gdb-7.5.1.orig/gdb/gdbserver/linux-x86-low.c	2012-04-13 07:39:41.000000000 -0700
++++ gdb-7.5.1/gdb/gdbserver/linux-x86-low.c	2016-06-24 15:40:45.976452738 -0700
+@@ -28,6 +28,8 @@
+ #include "i386-xstate.h"
+ #include "elf/common.h"
+ 
++#include "reg.h"
++
+ #include "gdb_proc_service.h"
+ #include "agent.h"
+ 
+Only in gdb-7.5.1/gdb/gdbserver: reg.h
+diff -ur gdb-7.5.1.orig/gdb/gdbserver/thread-db.c gdb-7.5.1/gdb/gdbserver/thread-db.c
+--- gdb-7.5.1.orig/gdb/gdbserver/thread-db.c	2012-01-04 00:17:24.000000000 -0800
++++ gdb-7.5.1/gdb/gdbserver/thread-db.c	2016-06-24 15:44:21.746445828 -0700
+@@ -20,6 +20,8 @@
+ 
+ #include "server.h"
+ 
++#include "../threadpathhack.h"
++
+ #include "linux-low.h"
+ 
+ extern int debug_threads;
+@@ -312,7 +314,9 @@
+     return 0;
+ 
+   lwp->thread_known = 1;
++#ifdef HAVE_THREAD_DB_H
+   lwp->th = th;
++#endif
+ 
+   return 1;
+ }
+@@ -337,7 +341,9 @@
+     }
+ 
+   lwp->thread_known = 1;
++#ifdef HAVE_THREAD_DB_H
+   lwp->th = *th_p;
++#endif
+ 
+   if (thread_db_use_events)
+     {
+@@ -507,12 +513,18 @@
+ 
+   saved_inferior = current_inferior;
+   current_inferior = thread;
++#ifdef HAVE_THREAD_DB_H
+   /* Note the cast through uintptr_t: this interface only works if
+      a target address fits in a psaddr_t, which is a host pointer.
+      So a 32-bit debugger can not access 64-bit TLS through this.  */
+   err = thread_db->td_thr_tls_get_addr_p (&lwp->th,
+ 					  (psaddr_t) (uintptr_t) load_module,
+ 					  offset, &addr);
++
++#else
++       err = ~TD_OK;
++#endif
++
+   current_inferior = saved_inferior;
+   if (err == TD_OK)
+     {
+diff -ur gdb-7.5.1.orig/gdb/linux-nat.c gdb-7.5.1/gdb/linux-nat.c
+--- gdb-7.5.1.orig/gdb/linux-nat.c	2016-06-24 15:35:57.819461965 -0700
++++ gdb-7.5.1/gdb/linux-nat.c	2016-06-24 15:45:26.877443743 -0700
+@@ -17,6 +17,7 @@
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+ 
++#include "stopcode.h"
+ #include "defs.h"
+ #include "inferior.h"
+ #include "target.h"
+@@ -78,6 +79,10 @@
+ # endif
+ #endif /* HAVE_PERSONALITY */
+ 
++#ifndef __SIGRTMIN
++#define __SIGRTMIN SIGRTMIN
++#endif
++
+ /* This comment documents high-level logic of this file.
+ 
+ Waiting for events in sync mode
+diff -ur gdb-7.5.1.orig/gdb/linux-thread-db.c gdb-7.5.1/gdb/linux-thread-db.c
+--- gdb-7.5.1.orig/gdb/linux-thread-db.c	2012-07-07 05:11:31.000000000 -0700
++++ gdb-7.5.1/gdb/linux-thread-db.c	2016-06-24 15:46:39.213441426 -0700
+@@ -46,6 +46,8 @@
+ #include <signal.h>
+ #include <ctype.h>
+ 
++#include "threadpathhack.h"
++
+ /* GNU/Linux libthread_db support.
+ 
+    libthread_db is a library, provided along with libpthread.so, which
+@@ -721,10 +723,10 @@
+ static const char *
+ dladdr_to_soname (const void *addr)
+ {
+-  Dl_info info;
++  /*Dl_info info;
+ 
+   if (dladdr (addr, &info) != 0)
+-    return info.dli_fname;
++    return info.dli_fname;*/
+   return NULL;
+ }
+ 
+Only in gdb-7.5.1/gdb: stopcode.h
+Only in gdb-7.5.1/gdb: threadpathhack.h

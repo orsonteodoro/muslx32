@@ -1,0 +1,12 @@
+diff -ur portage-2.2.28.orig/pym/portage/package/ebuild/doebuild.py portage-2.2.28/pym/portage/package/ebuild/doebuild.py
+--- portage-2.2.28.orig/pym/portage/package/ebuild/doebuild.py	2016-03-07 00:08:33.000000000 +0000
++++ portage-2.2.28/pym/portage/package/ebuild/doebuild.py	2016-06-13 16:53:43.507720877 +0000
+@@ -2346,6 +2346,8 @@
+ 
+ 		filename = os.path.join(image_dir,
+ 			entry.filename.lstrip(os.sep))
++		if os.path.isdir(filename):
++			continue
+ 		with open(_unicode_encode(filename, encoding=_encodings['fs'],
+ 			errors='strict'), 'rb') as f:
+ 			elf_header = ELFHeader.read(f)

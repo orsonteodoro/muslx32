@@ -1,0 +1,15 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssembler.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssembler.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssembler.h	2016-07-25 11:05:15.249654607 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssembler.h	2016-07-25 21:08:57.738317070 -0700
+@@ -602,6 +602,11 @@
+         or32(imm, dest);
+     }
+ 
++    void orPtr(TrustedImm32 imm, RegisterID src, RegisterID dest)
++    {
++        or32(imm, src, dest);
++    }
++    
+     void subPtr(RegisterID src, RegisterID dest)
+     {
+         sub32(src, dest);

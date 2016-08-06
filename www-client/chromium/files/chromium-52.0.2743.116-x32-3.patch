@@ -1,0 +1,43 @@
+Only in chromium-52.0.2743.116/v8/gypfiles: OWNERS
+Only in chromium-52.0.2743.116/v8/gypfiles: README.txt
+Only in chromium-52.0.2743.116/v8/gypfiles: all.gyp
+Only in chromium-52.0.2743.116/v8/gypfiles: config
+Only in chromium-52.0.2743.116/v8/gypfiles: coverage_wrapper.py
+Only in chromium-52.0.2743.116/v8/gypfiles: detect_v8_host_arch.py
+Only in chromium-52.0.2743.116/v8/gypfiles: download_gold_plugin.py
+Only in chromium-52.0.2743.116/v8/gypfiles: features.gypi
+Only in chromium-52.0.2743.116/v8/gypfiles: get_landmines.py
+Only in chromium-52.0.2743.116/v8/gypfiles: gyp_environment.py
+Only in chromium-52.0.2743.116/v8/gypfiles: gyp_v8
+Only in chromium-52.0.2743.116/v8/gypfiles: gyp_v8.py
+Only in chromium-52.0.2743.116/v8/gypfiles: has_valgrind.py
+Only in chromium-52.0.2743.116/v8/gypfiles: isolate.gypi
+Only in chromium-52.0.2743.116/v8/gypfiles: landmine_utils.py
+Only in chromium-52.0.2743.116/v8/gypfiles: landmines.py
+Only in chromium-52.0.2743.116/v8/gypfiles: mac
+Only in chromium-52.0.2743.116/v8/gypfiles: set_clang_warning_flags.gypi
+Only in chromium-52.0.2743.116/v8/gypfiles: shim_headers.gypi
+Only in chromium-52.0.2743.116/v8/gypfiles: standalone.gypi
+diff -ur chromium-52.0.2743.116.orig/v8/gypfiles/toolchain.gypi chromium-52.0.2743.116/v8/gypfiles/toolchain.gypi
+--- chromium-52.0.2743.116.orig/v8/gypfiles/toolchain.gypi	2016-08-04 11:56:54.522245421 -0700
++++ chromium-52.0.2743.116/v8/gypfiles/toolchain.gypi	2016-08-04 12:09:56.272232907 -0700
+@@ -37,7 +37,8 @@
+     'tsan%': 0,
+     'ubsan%': 0,
+     'ubsan_vptr%': 0,
+-    'v8_target_arch%': '<(target_arch)',
++    'v8_target_arch%': '<(target_arch)',
++    'v8_target_arch_abi%': '<(target_arch_abi)',
+     'v8_host_byteorder%': '<!(python -c "import sys; print sys.byteorder")',
+     # Native Client builds currently use the V8 ARM JIT and
+     # arm/simulator-arm.cc to defer the significant effort required
+@@ -1042,7 +1042,7 @@
+         ],
+       }],
+       ['(OS=="linux" or OS=="android") and \
+-        (v8_target_arch=="x64" or v8_target_arch=="arm64" or \
++        ((v8_target_arch=="x64" and v8_target_arch_abi=="x64") or v8_target_arch=="arm64" or \
+          v8_target_arch=="ppc64" or v8_target_arch=="s390x")', {
+         'target_conditions': [
+           ['_toolset=="host"', {
+Only in chromium-52.0.2743.116/v8/gypfiles: vs_toolchain.py

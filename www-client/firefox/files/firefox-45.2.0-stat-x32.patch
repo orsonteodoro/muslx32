@@ -1,0 +1,28 @@
+diff -ur firefox-45.2.0esr.orig/toolkit/crashreporter/google-breakpad/src/common/linux/memory_mapped_file.cc firefox-45.2.0esr/toolkit/crashreporter/google-breakpad/src/common/linux/memory_mapped_file.cc
+--- firefox-45.2.0esr.orig/toolkit/crashreporter/google-breakpad/src/common/linux/memory_mapped_file.cc	2016-07-30 15:11:13.343441566 -0700
++++ firefox-45.2.0esr/toolkit/crashreporter/google-breakpad/src/common/linux/memory_mapped_file.cc	2016-07-30 15:24:04.519466978 -0700
+@@ -71,7 +71,7 @@
+ 
+ #if defined(__x86_64__)
+   struct kernel_stat st;
+-  if (sys_fstat(fd, &st) == -1 || st.st_size < 0) {
++  if (sys_fstat(fd, (struct stat*)&st) == -1 || st.st_size < 0) {
+ #else
+   struct kernel_stat64 st;
+   if (sys_fstat64(fd, &st) == -1 || st.st_size < 0) {
+diff -ur firefox-45.2.0esr.orig/toolkit/crashreporter/google-breakpad/src/common/linux/safe_readlink.cc firefox-45.2.0esr/toolkit/crashreporter/google-breakpad/src/common/linux/safe_readlink.cc
+--- firefox-45.2.0esr.orig/toolkit/crashreporter/google-breakpad/src/common/linux/safe_readlink.cc	2016-05-12 10:10:05.000000000 -0700
++++ firefox-45.2.0esr/toolkit/crashreporter/google-breakpad/src/common/linux/safe_readlink.cc	2016-07-30 15:19:28.710457889 -0700
+@@ -31,9 +31,12 @@
+ // See safe_readlink.h for details.
+ 
+ #include <stddef.h>
++#include <unistd.h>
+ 
+ #include "third_party/lss/linux_syscall_support.h"
+ 
++#define sys_readlink readlink
++
+ namespace google_breakpad {
+ 
+ bool SafeReadLink(const char* path, char* buffer, size_t buffer_size) {

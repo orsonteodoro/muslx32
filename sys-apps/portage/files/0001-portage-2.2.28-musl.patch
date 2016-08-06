@@ -1,0 +1,19 @@
+diff -ur portage-2.2.28.orig/bin/isolated-functions.sh portage-2.2.28/bin/isolated-functions.sh
+--- portage-2.2.28.orig/bin/isolated-functions.sh	2016-06-08 17:05:40.383423188 +0000
++++ portage-2.2.28/bin/isolated-functions.sh	2016-06-08 17:06:56.588423980 +0000
+@@ -11,10 +11,11 @@
+ alias restore_IFS='if [ "${old_IFS:-unset}" != "unset" ]; then IFS="${old_IFS}"; unset old_IFS; else unset IFS; fi'
+ 
+ assert() {
+-	local x pipestatus=${PIPESTATUS[*]}
+-	for x in $pipestatus ; do
+-		[[ $x -eq 0 ]] || die "$@"
+-	done
++	#local x pipestatus=${PIPESTATUS[*]}
++	#for x in $pipestatus ; do
++	#	[[ $x -eq 0 ]] || die "$@"
++	#done
++	[[ $? -eq 0 ]] || die "$@"
+ }
+ 
+ __assert_sigpipe_ok() {

@@ -1,0 +1,12 @@
+diff -ur gstreamer-1.6.3.orig/gst/gst.h gstreamer-1.6.3/gst/gst.h
+--- gstreamer-1.6.3.orig/gst/gst.h	2015-12-07 09:54:40.000000000 +0000
++++ gstreamer-1.6.3/gst/gst.h	2016-06-19 23:03:40.450114291 +0000
+@@ -28,7 +28,7 @@
+ 
+ #include <gst/glib-compat.h>
+ 
+-#include <gst/gstenumtypes.h>
++#include "gstenumtypes.h"
+ #include <gst/gstversion.h>
+ 
+ #include <gst/gstatomicqueue.h>

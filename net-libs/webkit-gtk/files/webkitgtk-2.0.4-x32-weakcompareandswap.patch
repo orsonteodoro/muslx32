@@ -1,0 +1,12 @@
+diff -ur webkitgtk-2.0.4.orig/Source/WTF/wtf/Atomics.h webkitgtk-2.0.4/Source/WTF/wtf/Atomics.h
+--- webkitgtk-2.0.4.orig/Source/WTF/wtf/Atomics.h	2016-07-22 08:37:48.404204636 -0700
++++ webkitgtk-2.0.4/Source/WTF/wtf/Atomics.h	2016-07-22 08:38:29.810203973 -0700
+@@ -179,7 +179,7 @@
+ inline bool weakCompareAndSwap(void*volatile* location, void* expected, void* newValue)
+ {
+ #if ENABLE(COMPARE_AND_SWAP)
+-#if CPU(X86_64)
++#if CPU(X86_64) && !CPU(X32)
+     bool result;
+     asm volatile(
+         "lock; cmpxchgq %3, %2\n\t"

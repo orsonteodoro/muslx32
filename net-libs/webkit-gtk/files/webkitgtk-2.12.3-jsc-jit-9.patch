@@ -1,0 +1,16 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h	2016-07-26 02:49:37.954998007 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h	2016-07-26 02:57:47.328966426 -0700
+@@ -1279,6 +1279,12 @@
+         return MacroAssemblerX86Common::branchTest8(cond, Address(scratchRegister()), mask);
+     }
+ 
++    Jump branchTest32(ResultCondition cond, AbsoluteAddress address, TrustedImm32 mask = TrustedImm32(-1))
++    {
++        load32(address.m_ptr, scratchRegister());
++        return branchTest32(cond, scratchRegister(), mask);
++    }
++
+     void convertInt64ToDouble(RegisterID src, FPRegisterID dest)
+     {
+         m_assembler.cvtsi2sdq_rr(src, dest);

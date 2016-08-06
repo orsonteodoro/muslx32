@@ -1,0 +1,12 @@
+diff -ur harfbuzz-1.2.7.orig/src/Makefile.in harfbuzz-1.2.7/src/Makefile.in
+--- harfbuzz-1.2.7.orig/src/Makefile.in	2016-06-20 00:39:45.288929694 +0000
++++ harfbuzz-1.2.7/src/Makefile.in	2016-06-20 00:42:04.643925231 +0000
+@@ -1290,7 +1290,7 @@
+ @HAVE_INTROSPECTION_TRUE@gir_DATA = $(INTROSPECTION_GIRS)
+ @HAVE_INTROSPECTION_TRUE@typelibdir = $(libdir)/girepository-1.0
+ @HAVE_INTROSPECTION_TRUE@typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+-all: $(BUILT_SOURCES)
++all: libharfbuzz.la $(BUILT_SOURCES)
+ 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
+ 
+ .SUFFIXES:

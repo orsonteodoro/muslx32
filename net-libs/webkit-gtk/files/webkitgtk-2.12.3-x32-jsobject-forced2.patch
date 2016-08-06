@@ -1,0 +1,12 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/JSObject.h webkitgtk-2.12.3/Source/JavaScriptCore/runtime/JSObject.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/JSObject.h	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/runtime/JSObject.h	2016-07-24 21:53:24.303720620 -0700
+@@ -890,7 +890,7 @@
+ 
+ protected:
+     CopyBarrier<Butterfly> m_butterfly;
+-#if USE(JSVALUE32_64)
++#if USE(JSVALUE32_64) || CPU(X32)
+ private:
+     uint32_t m_padding;
+ #endif

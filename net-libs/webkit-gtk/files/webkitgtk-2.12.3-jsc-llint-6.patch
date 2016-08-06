@@ -1,0 +1,14 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/interpreter/JSStack.h webkitgtk-2.12.3/Source/JavaScriptCore/interpreter/JSStack.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/interpreter/JSStack.h	2016-04-10 23:18:43.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/interpreter/JSStack.h	2016-07-25 11:03:15.100662361 -0700
+@@ -50,6 +50,10 @@
+     struct CallerFrameAndPC {
+         CallFrame* callerFrame;
+         Instruction* pc;
++#if CPU(X32)
++        int32_t padding1;
++        int32_t padding2;
++#endif
+     };
+ 
+     class JSStack {

@@ -1,0 +1,30 @@
+diff -ur v8-x32.orig/tools/generate-x64-patch.sh v8-x32/tools/generate-x64-patch.sh
+--- v8-x32.orig/tools/generate-x64-patch.sh	2014-06-24 23:09:17.000000000 -0700
++++ v8-x32/tools/generate-x64-patch.sh	2016-08-05 05:23:13.835240449 -0700
+@@ -1,2 +1,2 @@
+-python ./tools/generate-x64-sources.py debug ./src/x32/assembler-x32-inl.h ./src/x32/assembler-x32.h ./src/x32/code-stubs-x32.h ./src/x32/codegen-x32.h ./src/x32/frames-x32.h ./src/x32/lithium-codegen-x32.h ./src/x32/lithium-gap-resolver-x32.h ./src/x32/lithium-x32.h ./src/x32/macro-assembler-x32.h ./src/x32/regexp-macro-assembler-x32.h ./src/x32/simulator-x32.h ./src/x64/assembler-x64-inl.h ./src/x64/assembler-x64.h ./src/x64/code-stubs-x64.h ./src/x64/codegen-x64.h ./src/x64/frames-x64.h ./src/x64/lithium-codegen-x64.h ./src/x64/lithium-gap-resolver-x64.h ./src/x64/lithium-x64.h ./src/x64/macro-assembler-x64.h ./src/x64/regexp-macro-assembler-x64.h ./src/x64/simulator-x64.h
+-python ./tools/generate-x64-sources.py debug ./src/x32/assembler-x32.cc ./src/x32/builtins-x32.cc ./src/x32/code-stubs-x32.cc ./src/x32/codegen-x32.cc ./src/x32/cpu-x32.cc ./src/x32/debug-x32.cc ./src/x32/deoptimizer-x32.cc ./src/x32/disasm-x32.cc ./src/x32/frames-x32.cc ./src/x32/full-codegen-x32.cc ./src/x32/ic-x32.cc ./src/x32/lithium-codegen-x32.cc ./src/x32/lithium-gap-resolver-x32.cc ./src/x32/lithium-x32.cc ./src/x32/macro-assembler-x32.cc ./src/x32/regexp-macro-assembler-x32.cc ./src/x32/stub-cache-x32.cc ./src/x32/simulator-x32.cc ./src/x64/assembler-x64.cc ./src/x64/builtins-x64.cc ./src/x64/code-stubs-x64.cc ./src/x64/codegen-x64.cc ./src/x64/cpu-x64.cc ./src/x64/debug-x64.cc ./src/x64/deoptimizer-x64.cc ./src/x64/disasm-x64.cc ./src/x64/frames-x64.cc ./src/x64/full-codegen-x64.cc ./src/x64/ic-x64.cc ./src/x64/lithium-codegen-x64.cc ./src/x64/lithium-gap-resolver-x64.cc ./src/x64/lithium-x64.cc ./src/x64/macro-assembler-x64.cc ./src/x64/regexp-macro-assembler-x64.cc ./src/x64/stub-cache-x64.cc ./src/x64/simulator-x64.cc
++python2.7 ./tools/generate-x64-sources.py debug ./src/crankshaft/x32/lithium-codegen-x32.h ./src/crankshaft/x32/lithium-gap-resolver-x32.h ./src/crankshaft/x32/lithium-x32.h ./src/x32/assembler-x32-inl.h ./src/x32/assembler-x32.h ./src/x32/code-stubs-x32.h ./src/x32/codegen-x32.h ./src/x32/frames-x32.h ./src/x32/macro-assembler-x32.h ./src/regexp/x32/regexp-macro-assembler-x32.h ./src/compiler/x32/instruction-codes-x32.h ./src/crankshaft/x64/lithium-codegen-x64.h ./src/crankshaft/x64/lithium-gap-resolver-x64.h ./src/crankshaft/x64/lithium-x64.h ./src/x64/assembler-x64-inl.h ./src/x64/assembler-x64.h ./src/x64/code-stubs-x64.h ./src/x64/codegen-x64.h ./src/x64/frames-x64.h ./src/x64/macro-assembler-x64.h ./src/regexp/x64/regexp-macro-assembler-x64.h ./src/compiler/x64/instruction-codes-x64.h
++python2.7 ./tools/generate-x64-sources.py debug ./src/crankshaft/x32/lithium-codegen-x32.cc ./src/crankshaft/x32/lithium-gap-resolver-x32.cc ./src/crankshaft/x32/lithium-x32.cc ./src/x32/assembler-x32.cc ./src/x32/builtins-x32.cc ./src/x32/code-stubs-x32.cc ./src/x32/codegen-x32.cc ./src/x32/cpu-x32.cc ./src/x32/deoptimizer-x32.cc ./src/x32/disasm-x32.cc ./src/x32/frames-x32.cc ./src/x32/interface-descriptors-x32.cc ./src/x32/macro-assembler-x32.cc ./src/debug/x32/debug-x32.cc ./src/full-codegen/x32/full-codegen-x32.cc ./src/ic/x32/access-compiler-x32.cc ./src/ic/x32/handler-compiler-x32.cc ./src/ic/x32/ic-x32.cc ./src/ic/x32/ic-compiler-x32.cc ./src/ic/x32/stub-cache-x32.cc ./src/regexp/x32/regexp-macro-assembler-x32.cc ./src/compiler/x32/code-generator-x32.cc ./src/compiler/x32/instruction-scheduler-x32.cc ./src/compiler/x32/instruction-selector-x32.cc ./src/crankshaft/x64/lithium-codegen-x64.cc ./src/crankshaft/x64/lithium-gap-resolver-x64.cc ./src/crankshaft/x64/lithium-x64.cc ./src/x64/assembler-x64.cc ./src/x64/builtins-x64.cc ./src/x64/code-stubs-x64.cc ./src/x64/codegen-x64.cc ./src/x64/cpu-x64.cc ./src/x64/deoptimizer-x64.cc ./src/x64/disasm-x64.cc ./src/x64/frames-x64.cc ./src/x64/interface-descriptors-x64.cc ./src/x64/macro-assembler-x64.cc ./src/debug/x64/debug-x64.cc ./src/full-codegen/x64/full-codegen-x64.cc ./src/ic/x64/access-compiler-x64.cc ./src/ic/x64/handler-compiler-x64.cc ./src/ic/x64/ic-x64.cc ./src/ic/x64/ic-compiler-x64.cc ./src/ic/x64/stub-cache-x64.cc ./src/regexp/x64/regexp-macro-assembler-x64.cc ./src/compiler/x64/code-generator-x64.cc ./src/compiler/x64/instruction-scheduler-x64.cc ./src/compiler/x64/instruction-selector-x64.cc
+diff -ur v8-x32.orig/tools/generate-x64-sources.py v8-x32/tools/generate-x64-sources.py
+--- v8-x32.orig/tools/generate-x64-sources.py	2014-06-24 23:09:17.000000000 -0700
++++ v8-x32/tools/generate-x64-sources.py	2016-08-05 04:26:06.470295314 -0700
+@@ -47,7 +47,7 @@
+ # be processed according to the operator_handlers (see below).
+ 
+ def HandleKeep(line):
+-  return (False, line)
++  return (True, line)
+ 
+ annotation_handlers = {
+   " __k" : [" ", HandleKeep],
+@@ -201,7 +201,8 @@
+ 
+ # Replace x64 with x32 to form the name "../../src/x32/code-stubs-x32.[h|cc]"
+ # Create x32 folder if it does not exist
+-  out_filename = name
++  out_filename = name.replace("x64","x32")
++  print(out_filename)
+   if not os.path.exists(os.path.dirname(out_filename)):
+     os.makedirs(os.path.dirname(out_filename))
+ 

@@ -1,0 +1,14 @@
+--- a/mozilla-release/toolkit/crashreporter/google-breakpad/src/common/stabs_reader.h
++++ b/mozilla-release/toolkit/crashreporter/google-breakpad/src/common/stabs_reader.h
+@@ -53,9 +53,10 @@
+ #include <config.h>
+ #endif
+ 
+-#ifdef HAVE_A_OUT_H
++#if 0
+ #include <a.out.h>
+ #endif
++
+ #ifdef HAVE_MACH_O_NLIST_H
+ #include <mach-o/nlist.h>
+ #endif

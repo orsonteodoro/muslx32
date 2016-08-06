@@ -1,0 +1,11 @@
+diff -ur gdb-7.5.1.orig/gdb/common/linux-ptrace.h gdb-7.5.1/gdb/common/linux-ptrace.h
+--- gdb-7.5.1.orig/gdb/common/linux-ptrace.h	2012-07-07 05:13:56.000000000 -0700
++++ gdb-7.5.1/gdb/common/linux-ptrace.h	2016-06-24 17:01:26.987297723 -0700
+@@ -22,6 +22,7 @@
+ 
+ #include <sys/ptrace.h>
+ 
++#include <sys/types.h>
+ #ifndef PTRACE_GETSIGINFO
+ # define PTRACE_GETSIGINFO 0x4202
+ # define PTRACE_SETSIGINFO 0x4203

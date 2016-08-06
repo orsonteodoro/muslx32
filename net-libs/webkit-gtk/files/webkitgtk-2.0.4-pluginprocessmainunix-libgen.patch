@@ -1,0 +1,11 @@
+diff -ur webkitgtk-2.0.4.orig/Source/WebKit2/PluginProcess/unix/PluginProcessMainUnix.cpp webkitgtk-2.0.4/Source/WebKit2/PluginProcess/unix/PluginProcessMainUnix.cpp
+--- webkitgtk-2.0.4.orig/Source/WebKit2/PluginProcess/unix/PluginProcessMainUnix.cpp	2013-07-19 00:04:19.000000000 -0700
++++ webkitgtk-2.0.4/Source/WebKit2/PluginProcess/unix/PluginProcessMainUnix.cpp	2016-07-22 15:48:39.954790803 -0700
+@@ -34,6 +34,7 @@
+ #include "NetscapePlugin.h"
+ #include "PluginProcess.h"
+ #include "ScriptController.h"
++#include <libgen.h>
+ #include <WebCore/RunLoop.h>
+ #if PLATFORM(GTK)
+ #include <gdk/gdkx.h>

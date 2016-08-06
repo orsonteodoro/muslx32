@@ -1,0 +1,12 @@
+diff -ur libgpg-error-9999.orig/doc/gpgrt.texi libgpg-error-9999/doc/gpgrt.texi
+--- libgpg-error-9999.orig/doc/gpgrt.texi	2016-06-11 01:10:38.438334302 +0000
++++ libgpg-error-9999/doc/gpgrt.texi	2016-06-11 01:16:46.970338137 +0000
+@@ -1,7 +1,7 @@
+ \input texinfo                  @c -*- Texinfo -*-
+ @c %**start of header
+ @setfilename gpgrt.info
+-@include version.texi
++@c @include version.texi
+ @settitle The Libgpg-error Reference Manual
+ @c Unify some of the indices.
+ @syncodeindex tp fn

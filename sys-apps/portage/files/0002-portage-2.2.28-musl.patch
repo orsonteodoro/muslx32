@@ -1,0 +1,13 @@
+diff -ur portage-2.2.28.orig/bin/ebuild-helpers/prepstrip portage-2.2.28/bin/ebuild-helpers/prepstrip
+--- portage-2.2.28.orig/bin/ebuild-helpers/prepstrip	2015-10-07 21:49:58.000000000 +0000
++++ portage-2.2.28/bin/ebuild-helpers/prepstrip	2016-06-13 16:30:40.696706490 +0000
+@@ -280,6 +280,9 @@
+ fi
+ cd "${tmpdir}/inodes" || die "cd failed unexpectedly"
+ while read -r x ; do
++	if [[ -z "${x}" ]]; then
++		continue
++	fi
+ 	inode_link=$(get_inode_number "${x}") || die "stat failed unexpectedly"
+ 	echo "${x}" >> "${inode_link}" || die "echo failed unexpectedly"
+ done < <(

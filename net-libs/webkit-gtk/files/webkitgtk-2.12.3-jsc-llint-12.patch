@@ -1,0 +1,16 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	2016-07-27 18:49:10.623331225 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	2016-07-27 21:36:04.686661213 -0700
+@@ -1376,7 +1376,11 @@
+     jmp .opPutByIdSlow
+ 
+ .opPutByIdTypeCheckObjectWithStructure:
+-    urshiftp 3, t1
++    if X32
++        rshiftp 2, t1
++    else
++        rshiftp 3, t1
++    end
+     bineq t1, JSCell::m_structureID[t3], .opPutByIdSlow
+ 
+ .opPutByIdDoneCheckingTypes:

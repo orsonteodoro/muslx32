@@ -1,0 +1,21 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	2016-07-24 21:55:42.893711676 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	2016-07-25 00:11:34.520185629 -0700
+@@ -108,7 +108,7 @@
+ # This barely works. arg3 and arg4 should probably be immediates.
+ macro cCall4(function)
+     checkStackPointerAlignment(t4, 0xbad0c004)
+-    if X86_64 or ARM64
++    if X86_64 or ARM64 or X32
+         call function
+     elsif X86_64_WIN
+         # On Win64, rcx, rdx, r8, and r9 are used for passing the first four parameters.
+@@ -979,7 +979,7 @@
+ 
+ _llint_op_div:
+     traceExecution()
+-    if X86_64 or X86_64_WIN
++    if X86_64 or X86_64_WIN or X32
+         binaryOpCustomStore(
+             macro (left, right, slow, index)
+                 # Assume t3 is scratchable.

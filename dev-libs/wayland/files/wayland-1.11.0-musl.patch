@@ -1,0 +1,13 @@
+diff -ur wayland-1.11.0.orig/Makefile.in wayland-1.11.0/Makefile.in
+--- wayland-1.11.0.orig/Makefile.in	2016-05-31 17:29:09.000000000 -0700
++++ wayland-1.11.0/Makefile.in	2016-06-27 21:36:46.671892963 -0700
+@@ -1289,8 +1289,8 @@
+ 	    test -z "$$files" || { \
+ 	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
+ 	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	    } \
+-	; done
++	done
+ 
+ uninstall-binPROGRAMS:
+ 	@$(NORMAL_UNINSTALL)

@@ -1,0 +1,23 @@
+diff -ur xz-5.2.2.orig/Makefile.in xz-5.2.2/Makefile.in
+--- xz-5.2.2.orig/Makefile.in	2015-09-29 11:03:41.000000000 +0000
++++ xz-5.2.2/Makefile.in	2016-06-12 00:56:47.252224580 +0000
+@@ -550,8 +550,8 @@
+ 	  echo "$$d$$p"; \
+ 	done | $(am__base_list) | \
+ 	while read files; do \
+-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(docdir)'"; \
+-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(docdir)" || exit $$?; \
++	  echo " $(INSTALL_DATA) $(srcdir)/$$files '$(DESTDIR)$(docdir)'"; \
++	  $(INSTALL_DATA) $(srcdir)/$$files "$(DESTDIR)$(docdir)" || exit $$?; \
+ 	done
+ 
+ uninstall-dist_docDATA:
+@@ -629,7 +629,7 @@
+ 	  else \
+ 	    local_target="$$target"; \
+ 	  fi; \
+-	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
++	  $(am__cd) $(CURDIR)/$$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target \
+ 	  || eval $$failcom; \
+ 	done; \
+ 	if test "$$dot_seen" = "no"; then \

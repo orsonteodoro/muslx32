@@ -1,0 +1,32 @@
+diff -ur libtool-2.4.6.orig/Makefile.in libtool-2.4.6/Makefile.in
+--- libtool-2.4.6.orig/Makefile.in	2016-06-12 00:42:13.501215489 +0000
++++ libtool-2.4.6/Makefile.in	2016-06-12 00:45:31.079217545 +0000
+@@ -1588,8 +1588,10 @@
+ 	  echo "$$d$$p"; \
+ 	done | $(am__base_list) | \
+ 	while read files; do \
+-	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(ltdlincludedir)'"; \
+-	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(ltdlincludedir)" || exit $$?; \
++         test -z "$$files" || { \
++	  echo " $(INSTALL_HEADER) $(srcdir)/$$files '$(DESTDIR)$(ltdlincludedir)'"; \
++	  $(INSTALL_HEADER) $(srcdir)/$$files "$(DESTDIR)$(ltdlincludedir)" || exit $$?; \
++         }; \
+ 	done
+ 
+ uninstall-ltdlincludeHEADERS:
+diff -ur libtool-2.4.6.orig/libltdl/Makefile.in libtool-2.4.6/libltdl/Makefile.in
+--- libtool-2.4.6.orig/libltdl/Makefile.in	2016-06-12 00:42:54.345215914 +0000
++++ libtool-2.4.6/libltdl/Makefile.in	2016-06-12 00:45:57.953217824 +0000
+@@ -828,8 +828,10 @@
+ 	  echo "$$d$$p"; \
+ 	done | $(am__base_list) | \
+ 	while read files; do \
+-	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(ltdlincludedir)'"; \
+-	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(ltdlincludedir)" || exit $$?; \
++         test -z "$$files" || { \
++	  echo " $(INSTALL_HEADER) $(srcdir)/$$files '$(DESTDIR)$(ltdlincludedir)'"; \
++	  $(INSTALL_HEADER) $(srcdir)/$$files "$(DESTDIR)$(ltdlincludedir)" || exit $$?; \
++         }; \
+ 	done
+ 
+ uninstall-ltdlincludeHEADERS:

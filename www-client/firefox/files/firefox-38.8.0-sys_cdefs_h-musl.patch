@@ -1,0 +1,10 @@
+--- mozilla-esr38.orig/media/libstagefright/system/core/include/cutils/properties.h	2152-07-29 08:06:43.828802014 -0700
++++ mozilla-esr38/media/libstagefright/system/core/include/cutils/properties.h	2152-07-29 08:07:02.986801400 -0700
+@@ -17,7 +17,6 @@
+ #ifndef __CUTILS_PROPERTIES_H
+ #define __CUTILS_PROPERTIES_H
+ 
+-#include <sys/cdefs.h>
+ #include <stddef.h>
+ 
+ #ifdef __cplusplus

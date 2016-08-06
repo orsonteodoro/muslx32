@@ -1,0 +1,19 @@
+diff -ur firefox-47.0.1.orig/xpcom/reflect/xptcall/md/unix/xptcinvoke_x86_64_unix.cpp firefox-47.0.1/xpcom/reflect/xptcall/md/unix/xptcinvoke_x86_64_unix.cpp
+--- firefox-47.0.1.orig/xpcom/reflect/xptcall/md/unix/xptcinvoke_x86_64_unix.cpp	2016-05-31 21:11:44.000000000 -0700
++++ firefox-47.0.1/xpcom/reflect/xptcall/md/unix/xptcinvoke_x86_64_unix.cpp	2016-07-31 15:14:55.574295979 -0700
+@@ -170,9 +170,15 @@
+     a0 = (uint64_t) that;
+ 
+     // Get pointer to method
++#if defined(__ILP32__)
++    uint32_t methodAddress = *((uint32_t *)that);
++    methodAddress += 4 * methodIndex;
++    methodAddress = *((uint32_t *)methodAddress);
++#else
+     uint64_t methodAddress = *((uint64_t *)that);
+     methodAddress += 8 * methodIndex;
+     methodAddress = *((uint64_t *)methodAddress);
++#endif
+     
+     typedef nsresult (*Method)(uint64_t, uint64_t, uint64_t, uint64_t,
+                                uint64_t, uint64_t, double, double, double,

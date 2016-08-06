@@ -1,0 +1,12 @@
+diff -ur pkg-config-0.28.orig/Makefile.in pkg-config-0.28/Makefile.in
+--- pkg-config-0.28.orig/Makefile.in	2016-06-16 09:09:52.926128098 +0000
++++ pkg-config-0.28/Makefile.in	2016-06-16 09:12:21.244129641 +0000
+@@ -954,7 +954,7 @@
+ 	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(docdir)" "$(DESTDIR)$(m4dir)"; do \
+ 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+ 	done
+-install: install-recursive
++install: install-dist_docDATA install-recursive
+ install-exec: install-exec-recursive
+ install-data: install-data-recursive
+ uninstall: uninstall-recursive

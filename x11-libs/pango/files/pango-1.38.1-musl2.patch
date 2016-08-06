@@ -1,0 +1,17 @@
+diff -ur pango-1.38.1.orig/pango/Makefile.in pango-1.38.1/pango/Makefile.in
+--- pango-1.38.1.orig/pango/Makefile.in	2016-06-20 01:04:50.030881510 +0000
++++ pango-1.38.1/pango/Makefile.in	2016-06-20 01:09:57.501871665 +0000
+@@ -1109,9 +1109,12 @@
+ _headers_dest_posix = $(subst $(includedir),,$($(_proj_name)_HEADERS_DIR))
+ _headers_destdir = $(subst /,\\,$(_headers_dest_posix))
+ TESTS = check.defs
+-all: libpango-1.0.la $(BUILT_SOURCES)
++all: sub libpangoxft-1.0.la libpango-1.0.la libpangoft2-1.0.la libpangocairo-1.0.la $(BUILT_SOURCES)
+ 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
+ 
++sub:
++	$(MAKE) -C mini-fribidi
++
+ .SUFFIXES:
+ .SUFFIXES: .c .lo .log .o .obj .test .test$(EXEEXT) .trs
+ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/build/Makefile.msvcproj $(am__configure_deps)

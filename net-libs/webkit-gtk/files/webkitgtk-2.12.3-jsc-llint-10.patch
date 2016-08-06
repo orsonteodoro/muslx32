@@ -1,0 +1,60 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntData.cpp webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntData.cpp
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntData.cpp	2016-07-26 16:21:04.434856134 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntData.cpp	2016-07-26 21:25:16.760678261 -0700
+@@ -77,10 +77,11 @@
+ #if USE(JSVALUE64)
+ #if CPU(X32)
+     const ptrdiff_t PtrSize = 4;
++    const ptrdiff_t CallFrameHeaderSlots = 4;
+ #else
+     const ptrdiff_t PtrSize = 8;
+-#endif
+     const ptrdiff_t CallFrameHeaderSlots = 5;
++#endif
+ #else // USE(JSVALUE64) // i.e. 32-bit version
+     const ptrdiff_t PtrSize = 4;
+     const ptrdiff_t CallFrameHeaderSlots = 4;
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/offlineasm/x86.rb webkitgtk-2.12.3/Source/JavaScriptCore/offlineasm/x86.rb
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/offlineasm/x86.rb	2016-07-26 16:21:04.580856124 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/offlineasm/x86.rb	2016-07-26 21:29:12.826663027 -0700
+@@ -273,7 +273,16 @@
+     when :int
+         register("e" + name16)
+     when :ptr
+-        register((isX64 && !isX32 ? "r" : "e") + name16)
++        case name
++        when "esi", "edi", "ebp", "esp"
++            register((isX64 && !isX32 ? "r" : "e") + name16)
++        when "rax", "rbx", "rcx", "rdx"
++            register(isX32 ? "e" + name16 : name)
++        when "r8", "r9", "r10", "r12", "r13", "r14", "r15"
++            register(isX32 ? name + "d" : name)
++        else
++            register((isX64 && !isX32 ? "r" : "e") + name16)
++        end
+     when :quad
+         isX64 ? register("r" + name16) : raise
+     else
+@@ -363,10 +372,10 @@
+     end
+ 
+     def x86CallOperand(kind)
+-        "#{callPrefix}#{x86Operand(:ptr)}"
++        isX64 ? "#{callPrefix}#{x86Operand(:quad)}" : "#{callPrefix}#{x86Operand(:ptr)}"
+     end
+     def x86PushOperand(kind)
+-        "#{x86Operand(:ptr)}"
++        isX64 ? "#{x86Operand(:quad)}" : "#{x86Operand(:ptr)}"
+     end
+ end
+ 
+@@ -430,6 +439,9 @@
+     def x86CallOperand(kind)
+         "#{value}"
+     end
++    def x86PushOperand(kind)
++        "$#{x86Operand(kind)}"
++    end
+ end
+ 
+ class Address

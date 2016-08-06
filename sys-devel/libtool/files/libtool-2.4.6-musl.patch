@@ -1,0 +1,16 @@
+diff -ur libtool-2.4.6.orig/Makefile.in libtool-2.4.6/Makefile.in
+--- libtool-2.4.6.orig/Makefile.in	2016-06-11 23:26:15.787168070 +0000
++++ libtool-2.4.6/Makefile.in	2016-06-11 23:29:35.903170152 +0000
+@@ -1565,8 +1565,10 @@
+ 	  echo "$$d$$p"; \
+ 	done | $(am__base_list) | \
+ 	while read files; do \
+-	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
+-	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
++         test -z "$$files" || { \
++	  echo " $(INSTALL_HEADER) $(srcdir)/$$files '$(DESTDIR)$(includedir)'"; \
++	  $(INSTALL_HEADER) $(srcdir)/$$files "$(DESTDIR)$(includedir)" || exit $$?; \
++         }; \
+ 	done
+ 
+ uninstall-includeHEADERS:

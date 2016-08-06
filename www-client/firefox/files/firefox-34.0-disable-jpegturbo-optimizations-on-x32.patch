@@ -1,0 +1,28 @@
+Description: Disable jpegturbo optimizations on x32.
+ While assembly code in jpegturbo is usable on both amd64 and x32, yasm can't
+ produce elfx32 objects.
+Author: Adam Borowski <kilobyte@angband.pl>
+--- iceweasel-34.0.orig/configure.in
++++ iceweasel-34.0/configure.in
+@@ -6045,10 +6045,17 @@ if test -n "$MOZ_LIBJPEG_TURBO"; then
+     fi
+   ;;
+   *:x86_64)
+-    if $CC -E -dM -</dev/null | grep -q __ELF__; then
+-      LIBJPEG_TURBO_ASFLAGS="-f elf64 -rnasm -pnasm -D__x86_64__ -DPIC -DELF"
+-      LIBJPEG_TURBO_X64_ASM=1
+-    fi
++    case "$target" in
++    *-gnux32 | *-muslx32)
++      # yasm doesn't support elfx32.
++      ;;
++    *)
++      if $CC -E -dM -</dev/null | grep -q __ELF__; then
++        LIBJPEG_TURBO_ASFLAGS="-f elf64 -rnasm -pnasm -D__x86_64__ -DPIC -DELF"
++        LIBJPEG_TURBO_X64_ASM=1
++      fi
++      ;;
++    esac
+   ;;
+   esac
+ 

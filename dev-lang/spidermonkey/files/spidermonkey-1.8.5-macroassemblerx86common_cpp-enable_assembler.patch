@@ -1,0 +1,17 @@
+diff -ur js-1.8.5.orig/js/src/assembler/assembler/MacroAssemblerX86Common.cpp js-1.8.5/js/src/assembler/assembler/MacroAssemblerX86Common.cpp
+--- js-1.8.5.orig/js/src/assembler/assembler/MacroAssemblerX86Common.cpp	2011-03-31 12:08:36.000000000 -0700
++++ js-1.8.5/js/src/assembler/assembler/MacroAssemblerX86Common.cpp	2016-08-03 00:01:06.579270558 -0700
+@@ -39,6 +39,8 @@
+ 
+ #include "assembler/wtf/Platform.h"
+ 
++#if ENABLE_ASSEMBLER
++
+ /* SSE checks only make sense on Intel platforms. */
+ #if WTF_CPU_X86 || WTF_CPU_X86_64
+ 
+@@ -49,3 +51,4 @@
+ 
+ #endif /* WTF_CPU_X86 || WTF_CPU_X86_64 */
+ 
++#endif /* ENABLE_ASSEMBLER */

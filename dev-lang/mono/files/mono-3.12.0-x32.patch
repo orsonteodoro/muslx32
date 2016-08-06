@@ -1,0 +1,124 @@
+diff -ur mono-3.12.0/libgc/include/private/gc_locks.h mono-3.12.0-x32/libgc/include/private/gc_locks.h
+--- mono-3.12.0/libgc/include/private/gc_locks.h	2014-10-30 23:11:01.000000000 +0100
++++ mono-3.12.0-x32/libgc/include/private/gc_locks.h	2015-03-13 19:53:30.391221738 +0100
+@@ -437,7 +437,7 @@
+ 						       GC_word new_val) 
+          {
+ 	   char result;
+-	   __asm__ __volatile__("lock; cmpxchgq %2, %0; setz %1"
++	   __asm__ __volatile__("lock; cmpxchg %2, %0; setz %1"
+ 	    	: "+m"(*(addr)), "=r"(result)
+ 		: "r" (new_val), "a"(old) : "memory");
+ 	   return (GC_bool) result;
+--- mono-3.12.1/mono/metadata/decimal.c.orig	2015-03-06 18:26:50.000000000 +0100
++++ mono-3.12.1/mono/metadata/decimal.c	2015-03-14 07:46:21.958919177 +0100
+@@ -555,12 +555,15 @@
+ #if defined(__native_client__) && (defined(__i386__) || defined(__x86_64))
+ #define USE_X86_32BIT_INSTRUCTIONS 1
+ #endif
++#if defined(__x86_64) && defined(__ILP32__)
++#define ARCH_x32
++#endif
+ 
+ static inline gint
+ my_g_bit_nth_msf (gsize mask)
+ {
+ 	/* Mask is expected to be != 0 */
+-#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
++#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS) || defined(ARCH_x32)
+ 	int r;
+ 
+ 	__asm__("bsrl %1,%0\n\t"
+--- mono-3.12.1/mono/metadata/sgen-cardtable.c.orig	2015-03-06 18:26:50.000000000 +0100
++++ mono-3.12.1/mono/metadata/sgen-cardtable.c	2015-03-14 08:06:01.178869685 +0100
+@@ -504,7 +504,7 @@ static inline int
+ find_card_offset (mword card)
+ {
+ /*XXX Use assembly as this generates some pretty bad code */
+-#if defined(__i386__) && defined(__GNUC__)
++#if (defined(__i386__) || (defined(__x86_64__) && defined(__ILP32__))) && defined(__GNUC__)
+ 	return  (__builtin_ffs (card) - 1) / 8;
+ #elif defined(__x86_64__) && defined(__GNUC__)
+ 	return (__builtin_ffsll (card) - 1) / 8;
+--- mono-3.12.1/mono/metadata/sgen-marksweep.c.orig	2015-03-06 18:26:50.000000000 +0100
++++ mono-3.12.1/mono/metadata/sgen-marksweep.c	2015-03-14 08:14:18.488848812 +0100
+@@ -1748,7 +1748,7 @@ initial_skip_card (guint8 *card_data)
+ 	if (i == CARD_WORDS_PER_BLOCK)
+ 		return card_data + CARDS_PER_BLOCK;
+ 
+-#if defined(__i386__) && defined(__GNUC__)
++#if (defined(__i386__) || (defined(__x86_64__) && (defined(__ILP32__))) && defined(__GNUC__)
+ 	return card_data + i * 4 +  (__builtin_ffs (card) - 1) / 8;
+ #elif defined(__x86_64__) && defined(__GNUC__)
+ 	return card_data + i * 8 +  (__builtin_ffsll (card) - 1) / 8;
+diff -ur mono-3.12.0/mono/mini/mini-codegen.c mono-3.12.0-x32-2/mono/mini/mini-codegen.c
+--- mono-3.12.0/mono/mini/mini-codegen.c	2015-01-12 18:15:08.000000000 +0100
++++ mono-3.12.0-x32-2/mono/mini/mini-codegen.c	2015-03-13 20:24:21.044619503 +0100
+@@ -164,7 +164,7 @@
+ {
+ 	regmask_t mask = allow & rs->ifree_mask;
+ 
+-#if defined(__x86_64__) && defined(__GNUC__)
++#if defined(__x86_64__) && defined(__GNUC__) && !defined(__ILP32__)
+  {
+ 	guint64 i;
+ 
+diff -ur mono-3.12.0/mono/mini/regalloc.h mono-3.12.0-x32-2/mono/mini/regalloc.h
+--- mono-3.12.0/mono/mini/regalloc.h	2014-10-30 23:11:02.000000000 +0100
++++ mono-3.12.0-x32-2/mono/mini/regalloc.h	2015-03-13 20:23:14.031283837 +0100
+@@ -1,4 +1,4 @@
+-#if defined(__native_client__) && defined(__x86_64__)
++#if defined(__native_client__) && defined(__x86_64__) && !defined(__ILP32__)
+ typedef guint64 regmask_t;
+ #else
+ typedef size_t regmask_t;
+--- mono-3.12.1/mono/utils/monobitset.c.orig	2015-03-14 08:21:15.042164662 +0100
++++ mono-3.12.1/mono/utils/monobitset.c	2015-03-14 08:21:19.602164473 +0100
+@@ -280,8 +280,11 @@ my_g_bit_nth_lsf (gsize mask, gint nth_b
+ #if defined(__native_client__) && (defined(__i386__) || defined(__x86_64))
+ #define USE_X86_32BIT_INSTRUCTIONS 1
+ #endif
++#if defined(__x86_64) && defined(__ILP32__)
++#define ARCH_x32
++#endif
+ 
+-#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
++#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS) || defined(ARCH_x32)
+  {
+ 	 int r;
+ 	 /* This depends on mask != 0 */
+@@ -311,7 +314,7 @@ static inline gint
+ my_g_bit_nth_lsf_nomask (gsize mask)
+ {
+ 	/* Mask is expected to be != 0 */
+-#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
++#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS) || defined(ARCH_x32)
+ 	int r;
+ 
+ 	__asm__("bsfl %1,%0\n\t"
+--- mono-3.12.1/mono/profiler/proflog.c.orig	2015-03-06 18:26:50.000000000 +0100
++++ mono-3.12.1/mono/profiler/proflog.c	2015-03-14 08:45:51.238769378 +0100
+@@ -1783,8 +1783,14 @@ perf_event_syscall (struct perf_event_at
+ {
+ 	attr->size = PERF_ATTR_SIZE_VER0;
+ 	//printf ("perf attr size: %d\n", attr->size);
++#if defined(__NR_perf_event_open)
++	return syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
+-#if defined(__x86_64__)
++#elif defined(__x86_64__)
++#  if defined(__ILP32__)
++	return syscall(/*__NR_perf_event_open*/ 0x40000000+298, attr, pid, cpu, group_fd, flags);
++#  else
+ 	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
++#  endif
+ #elif defined(__i386__)
+ 	return syscall(/*__NR_perf_event_open*/ 336, attr, pid, cpu, group_fd, flags);
+ #elif defined(__arm__)
+========
+TODO:
+mono/metadata/mono-config.c (CPU config)
+mono/utils/mono-compiler.h (MONO_THREAD_VAR_OFFSET - needs x32 ABI knowledge)
+mono/utils/mono-context.g (MONO_CONTEXT_*)
+mono/utils/valgrind.h
+mono/mini/*-x86.* vs mono/mini/*-amd64.* ???
+mono/arch/x86 vs mono/arch/amd64 ???

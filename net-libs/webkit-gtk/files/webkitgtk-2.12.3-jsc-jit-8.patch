@@ -1,0 +1,16 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86Common.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86Common.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86Common.h	2016-07-26 02:08:44.721156321 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86Common.h	2016-07-26 02:20:04.857112429 -0700
+@@ -1992,6 +1992,12 @@
+         return Jump(m_assembler.jCC(x86Condition(cond)));
+     }
+     
++    Jump branch32(RelationalCondition cond, AbsoluteAddress left, RegisterID right)
++    {
++        move(TrustedImmPtr(left.m_ptr), scratchRegister());
++        return branch32(cond, Address(scratchRegister()), right);
++    }
++
+     Jump branch32(RelationalCondition cond, Address left, RegisterID right)
+     {
+         m_assembler.cmpl_rm(right, left.offset, left.base);

@@ -1,0 +1,24 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h	2016-07-05 22:42:35.574764427 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h	2016-07-05 22:51:08.594769765 -0700
+@@ -94,7 +94,7 @@
+ #endif
+ 
+ #if CPU(X86_64) && CPU(X32)
+-#define OFFLINE_ASM_X32 1
++#define OFFLINE_ASM_X32 0
+ #else
+ #define OFFLINE_ASM_X32 0
+ #endif
+diff -ur webkitgtk-2.12.3.orig/Source/WTF/wtf/Platform.h webkitgtk-2.12.3/Source/WTF/wtf/Platform.h
+--- webkitgtk-2.12.3.orig/Source/WTF/wtf/Platform.h	2016-07-05 22:42:35.437764426 -0700
++++ webkitgtk-2.12.3/Source/WTF/wtf/Platform.h	2016-07-05 22:53:59.551771543 -0700
+@@ -696,7 +696,7 @@
+ #endif
+ 
+ #if !defined(USE_JSVALUE64) && !defined(USE_JSVALUE32_64)
+-#if (CPU(X86_64) && (OS(UNIX) || OS(WINDOWS))) \
++#if (CPU(X86_64) && !CPU(X32) && (OS(UNIX) || OS(WINDOWS))) \
+     || (CPU(IA64) && !CPU(IA64_32)) \
+     || CPU(ALPHA) \
+     || CPU(ARM64) \

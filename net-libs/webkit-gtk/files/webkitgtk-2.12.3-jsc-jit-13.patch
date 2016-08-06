@@ -1,0 +1,28 @@
+diff -ur webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h	2016-07-26 03:31:03.238837624 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/assembler/MacroAssemblerX86_64.h	2016-07-26 03:40:03.990802728 -0700
+@@ -1307,6 +1307,24 @@
+         return branchTest32(cond, scratchRegister(), mask);
+     }
+ 
++    Jump branchTest32(ResultCondition cond, Address address, TrustedImm32 mask = TrustedImm32(-1))
++    {
++        if (mask.m_value == -1)
++            m_assembler.cmpl_im(0, address.offset, address.base);
++        else
++            m_assembler.testl_i32m(mask.m_value, address.offset, address.base);
++        return Jump(m_assembler.jCC(x86Condition(cond)));
++    }
++
++    Jump branchTest32(ResultCondition cond, BaseIndex address, TrustedImm32 mask = TrustedImm32(-1))
++    {
++        if (mask.m_value == -1)
++            m_assembler.cmpl_im(0, address.offset, address.base, address.index, address.scale);
++        else
++            m_assembler.testl_i32m(mask.m_value, address.offset, address.base, address.index, address.scale);
++        return Jump(m_assembler.jCC(x86Condition(cond)));
++    }
++
+     Jump branchTest32(ResultCondition cond, RegisterID reg, TrustedImm32 mask = TrustedImm32(-1))
+     {
+         // if we are only interested in the low seven bits, this can be tested with a testb

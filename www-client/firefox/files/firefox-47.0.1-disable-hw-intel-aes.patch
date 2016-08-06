@@ -1,0 +1,13 @@
+diff -ur firefox-47.0.1.orig/security/nss/lib/freebl/rijndael.c firefox-47.0.1/security/nss/lib/freebl/rijndael.c
+--- firefox-47.0.1.orig/security/nss/lib/freebl/rijndael.c	2016-07-31 18:00:38.605623626 -0700
++++ firefox-47.0.1/security/nss/lib/freebl/rijndael.c	2016-07-31 17:59:52.192622096 -0700
+@@ -1066,6 +1066,9 @@
+     }
+     use_hw_aes = (PRBool)
+ 		(has_intel_aes > 0 && (keysize % 8) == 0 && blocksize == 16);
++#if defined(__x86_64__) && defined(__ILP32__)
++	use_hw_aes = 0; // disable on x32 for now
++#endif
+ #ifdef INTEL_GCM
+     use_hw_gcm = (PRBool)
+ 		(use_hw_aes && has_intel_avx>0 && has_intel_clmul>0);

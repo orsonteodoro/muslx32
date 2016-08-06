@@ -1,0 +1,15 @@
+File pkgconfig-0.28-r2.orig/.ipc_in is a fifo while file pkgconfig-0.28-r2/.ipc_in is a fifo
+File pkgconfig-0.28-r2.orig/.ipc_out is a fifo while file pkgconfig-0.28-r2/.ipc_out is a fifo
+Only in pkgconfig-0.28-r2.orig: pkgconfig-0.28-r2
+diff -ur pkgconfig-0.28-r2.orig/work/pkg-config-0.28/Makefile.in pkgconfig-0.28-r2/work/pkg-config-0.28/Makefile.in
+--- pkgconfig-0.28-r2.orig/work/pkg-config-0.28/Makefile.in	2016-06-13 10:53:53.219496247 +0000
++++ pkgconfig-0.28-r2/work/pkg-config-0.28/Makefile.in	2016-06-13 16:10:15.765693746 +0000
+@@ -1107,7 +1107,7 @@
+ 	uninstall-man1
+ 
+ @HOST_TOOL_TRUE@install-exec-hook:
+-@HOST_TOOL_TRUE@	cd $(DESTDIR)$(bindir) && $(LN) pkg-config$(EXEEXT) $(host_tool)
++@HOST_TOOL_TRUE@	cd $(DESTDIR)$(bindir) && $(LN) pkg-config$(EXEEXT) $(host_tool) || true
+ @HOST_TOOL_TRUE@uninstall-hook:
+ @HOST_TOOL_TRUE@	cd $(DESTDIR)$(bindir) && rm -f $(host_tool)
+ 

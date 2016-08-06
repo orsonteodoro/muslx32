@@ -1,0 +1,18 @@
+--- mono-4.4.0.orig/libgc/os_dep.c	2016-02-22 07:08:44.000000000 -0800
++++ mono-4.4.0/libgc/os_dep.c	2016-07-04 09:09:29.379357919 -0700
+@@ -16,6 +16,7 @@
+ 
+ # include "private/gc_priv.h"
+ 
++#if 0
+ # if defined(LINUX) && !defined(POWERPC)
+ #   include <linux/version.h>
+ #   if (LINUX_VERSION_CODE <= 0x10400)
+@@ -45,6 +46,7 @@
+ #     endif /* 2 <= __GLIBC__ */
+ #   endif
+ # endif
++#endif
+ # if !defined(OS2) && !defined(PCR) && !defined(AMIGA) && !defined(MACOS) \
+     && !defined(MSWINCE)
+ #   include <sys/types.h>

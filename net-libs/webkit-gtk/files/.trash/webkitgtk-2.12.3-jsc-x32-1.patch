@@ -1,0 +1,506 @@
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/ChangeLog webkitgtk-2.12.3/Source/JavaScriptCore/ChangeLog
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/ChangeLog	1969-12-31 16:00:00.000000000 -0800
++++ webkitgtk-2.12.3/Source/JavaScriptCore/ChangeLog	2016-06-28 02:35:18.128177820 -0700
+@@ -0,0 +1,21 @@
++2012-11-06  Yuqiang Xian  <yuqiang.xian@intel.com>
++
++        x32 backend of the LLInt
++        https://bugs.webkit.org/show_bug.cgi?id=101325
++
++        Reviewed by NOBODY (OOPS!).
++
++        The basic shape.
++
++        * llint/LLIntData.cpp:
++        (JSC::LLInt::Data::performAssertions):
++        * llint/LLIntOfflineAsmConfig.h:
++        * llint/LLIntSlowPaths.h:
++        (SlowPathReturnType):
++        (JSC::LLInt::encodeResult):
++        (JSC::LLInt::decodeResult):
++        * llint/LowLevelInterpreter.asm:
++        * llint/LowLevelInterpreter64.asm:
++        * offlineasm/backends.rb:
++        * offlineasm/x86.rb:
++
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntData.cpp webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntData.cpp
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntData.cpp	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntData.cpp	2016-06-28 03:53:06.421226390 -0700
+@@ -74,7 +74,7 @@
+     // Assertions to match LowLevelInterpreter.asm.  If you change any of this code, be
+     // prepared to change LowLevelInterpreter.asm as well!!
+ 
+-#if USE(JSVALUE64)
++#if USE(JSVALUE64) && !CPU(X32)
+     const ptrdiff_t PtrSize = 8;
+     const ptrdiff_t CallFrameHeaderSlots = 5;
+ #else // USE(JSVALUE64) // i.e. 32-bit version
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h	2016-04-10 23:18:43.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h	2016-06-28 02:42:50.086182522 -0700
+@@ -40,6 +40,7 @@
+ #define OFFLINE_ASM_ARM64 0
+ #define OFFLINE_ASM_X86_64 0
+ #define OFFLINE_ASM_X86_64_WIN 0
++#define OFFLINE_ASM_X32 0
+ #define OFFLINE_ASM_ARMv7k 0
+ #define OFFLINE_ASM_ARMv7s 0
+ #define OFFLINE_ASM_MIPS 0
+@@ -92,7 +93,13 @@
+ #define OFFLINE_ASM_ARM 0
+ #endif
+ 
+-#if CPU(X86_64) && !PLATFORM(WIN)
++#if CPU(X86_64) && CPU(X32)
++#define OFFLINE_ASM_X32 1
++#else
++#define OFFLINE_ASM_X32 0
++#endif
++
++#if CPU(X86_64) && !PLATFORM(WIN) && !CPU(X32)
+ #define OFFLINE_ASM_X86_64 1
+ #else
+ #define OFFLINE_ASM_X86_64 0
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter.asm	2016-06-28 03:03:13.456195250 -0700
+@@ -277,18 +277,31 @@
+         const tagMask = csr2
+     end
+ 
+-    macro loadisFromInstruction(offset, dest)
+-        loadis offset * 8[PB, PC, 8], dest
+-    end
++    if X32
++        macro loadisFromInstruction(offset, dest)
++            loadis offset * 4[PB, PC, 4], dest
++        end
++
++        macro loadpFromInstruction(offset, dest)
++            loadp offset * 4[PB, PC, 4], dest
++        end
+     
+-    macro loadpFromInstruction(offset, dest)
+-        loadp offset * 8[PB, PC, 8], dest
+-    end
++        macro storepToInstruction(value, offset)
++            storep value, offset * 4[PB, PC, 4]
++        end
++    else
++        macro loadisFromInstruction(offset, dest)
++            loadis offset * 8[PB, PC, 8], dest
++        end
++
++        macro loadpFromInstruction(offset, dest)
++            loadp offset * 8[PB, PC, 8], dest
++        end
+     
+-    macro storepToInstruction(value, offset)
+-        storep value, offset * 8[PB, PC, 8]
++        macro storepToInstruction(value, offset)
++            storep value, offset * 8[PB, PC, 8]
++        end
+     end
+-
+ else
+     const PC = t4 # When changing this, make sure LLIntPC is up to date in LLIntPCRanges.h
+     macro loadisFromInstruction(offset, dest)
+@@ -375,7 +388,11 @@
+ 
+ # Allocation constants
+ if JSVALUE64
+-    const JSFinalObjectSizeClassIndex = 1
++    if X32
++        const JSFinalObjectSizeClassIndex = 3
++    else
++        const JSFinalObjectSizeClassIndex = 1
++    end
+ else
+     const JSFinalObjectSizeClassIndex = 3
+ end
+@@ -383,7 +400,11 @@
+ # This must match wtf/Vector.h
+ const VectorBufferOffset = 0
+ if JSVALUE64
+-    const VectorSizeOffset = 12
++    if X32
++        const VectorBufferOffset = 8
++    else
++        const VectorBufferOffset = 12
++    end
+ else
+     const VectorSizeOffset = 8
+ end
+@@ -653,7 +674,7 @@
+     if C_LOOP or ARM or ARMv7 or ARMv7_TRADITIONAL or ARM64 or MIPS or SH4
+         # In C_LOOP case, we're only preserving the bytecode vPC.
+         move lr, destinationRegister
+-    elsif X86 or X86_WIN or X86_64 or X86_64_WIN
++    elsif X86 or X86_WIN or X86_64 or X86_64_WIN or X32
+         pop destinationRegister
+     else
+         error
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	2016-05-23 03:03:36.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	2016-06-28 02:57:22.090191594 -0700
+@@ -24,7 +24,11 @@
+ 
+ # Utilities.
+ macro jumpToInstruction()
+-    jmp [PB, PC, 8]
++    if X32
++        jmp [PB, PC, 4]
++    else
++        jmp [PB, PC, 8]
++    end
+ end
+ 
+ macro dispatch(advance)
+@@ -38,7 +42,11 @@
+ end
+ 
+ macro dispatchIntIndirect(offset)
+-    dispatchInt(offset * 8[PB, PC, 8])
++    if X32
++        dispatchInt(offset * 4[PB, PC, 4])
++    else
++        dispatchInt(offset * 8[PB, PC, 8])
++    end
+ end
+ 
+ macro dispatchAfterCall()
+@@ -53,7 +61,7 @@
+ 
+ macro cCall2(function)
+     checkStackPointerAlignment(t4, 0xbad0c002)
+-    if X86_64 or ARM64
++    if X86_64 or ARM64 or X32
+         call function
+     elsif X86_64_WIN
+         # Note: this implementation is only correct if the return type size is > 8 bytes.
+@@ -100,7 +108,7 @@
+ # This barely works. arg3 and arg4 should probably be immediates.
+ macro cCall4(function)
+     checkStackPointerAlignment(t4, 0xbad0c004)
+-    if X86_64 or ARM64
++    if X86_64 or ARM64 or X32
+         call function
+     elsif X86_64_WIN
+         # On Win64, rcx, rdx, r8, and r9 are used for passing the first four parameters.
+@@ -295,13 +303,21 @@
+ 
+ 
+ macro prepareStateForCCall()
+-    leap [PB, PC, 8], PC
++    if X32
++        leap [PB, PC, 4], PC
++    else
++        leap [PB, PC, 8], PC
++    end
+ end
+ 
+ macro restoreStateAfterCCall()
+     move r0, PC
+     subp PB, PC
+-    rshiftp 3, PC
++    if X32
++        rshiftp 2, PC
++    else
++        rshiftp 3, PC
++    end
+ end
+ 
+ macro callSlowPath(slowPath)
+@@ -1633,7 +1649,11 @@
+     loadisFromInstruction(2, t1)
+     loadp CodeBlock[cfr], t2
+     loadp CodeBlock::m_globalObject[t2], t2
+-    loadp JSGlobalObject::m_specialPointers[t2, t1, 8], t1
++    if X32
++        loadp JSGlobalObject::m_specialPointers[t2, t1, 4], t1
++    else
++        loadp JSGlobalObject::m_specialPointers[t2, t1, 8], t1
++    end
+     bpneq t1, [cfr, t0, 8], .opJneqPtrTarget
+     dispatch(4)
+ 
+@@ -1823,7 +1843,11 @@
+     loadp CodeBlock::m_instructions[PB], PB
+     loadp VM::targetInterpreterPCForThrow[t3], PC
+     subp PB, PC
+-    rshiftp 3, PC
++    if X32
++        rshiftp 2, PC
++    else
++        rshiftp 3, PC
++    end
+ 
+     callSlowPath(_llint_slow_path_check_if_exception_is_uncatchable_and_notify_profiler)
+     bpeq r1, 0, .isCatchableException
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/offlineasm/backends.rb webkitgtk-2.12.3/Source/JavaScriptCore/offlineasm/backends.rb
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/offlineasm/backends.rb	2016-04-10 23:18:43.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/offlineasm/backends.rb	2016-06-28 03:08:00.528198237 -0700
+@@ -34,6 +34,7 @@
+     [
+      "X86",
+      "X86_WIN",
++     "X32",
+      "X86_64",
+      "X86_64_WIN",
+      "ARM",
+@@ -54,6 +55,7 @@
+     [
+      "X86",
+      "X86_WIN",
++     "X32",
+      "X86_64",
+      "X86_64_WIN",
+      "ARM",
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/offlineasm/x86.rb webkitgtk-2.12.3/Source/JavaScriptCore/offlineasm/x86.rb
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/offlineasm/x86.rb	2016-04-10 23:18:43.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/offlineasm/x86.rb	2016-06-28 04:08:26.366235961 -0700
+@@ -88,6 +88,21 @@
+         false
+     when "X86_64"
+         true
++    when "X32"
++        true # X32 is a special mode of X86_64
++    else
++        raise "bad value for $activeBackend: #{$activeBackend}"
++    end
++end
++
++def isX32
++    case $activeBackend
++    when "X86"
++        false
++    when "X86_64"
++        false
++    when "X32"
++        true
+     when "X86_64_WIN"
+         true
+     else
+@@ -197,7 +212,7 @@
+         when :int
+             register(@name + "d")
+         when :ptr
+-            register(@name)
++            register(isX32 ? @name + "d" : @name)
+         when :quad
+             register(@name)
+         else
+@@ -208,6 +223,9 @@
+         # Call operands are not allowed to be partial registers.
+         "#{callPrefix}#{x86Operand(:quad)}"
+     end
++    def x86PushOperand(kind)
++       "#{x86Operand(:quad)}"
++    end
+ end
+ 
+ X64_SCRATCH_REGISTER = SpecialRegister.new("r11")
+@@ -232,7 +250,7 @@
+         when :int
+             return register(name + "d")
+         when :ptr
+-            return register(name)
++            return register(isX32 ? name + "d" : name)
+         when :quad
+             return register(name)
+         end
+@@ -306,7 +324,7 @@
+             when "cfr"
+                 "ebp"
+             when "sp"
+-                "esp"
++                "esp"
+             else
+                 raise "cannot use register #{name} on X86"
+             end
+@@ -339,6 +357,9 @@
+     def x86CallOperand(kind)
+         "#{callPrefix}#{x86Operand(:ptr)}"
+     end
++    def x86PushOperand(kind)
++        "#{x86Operand(:ptr)}"
++    end
+ end
+ 
+ class FPRegisterID
+@@ -382,6 +403,9 @@
+     def x86CallOperand(kind)
+         "#{callPrefix}#{x86Operand(kind)}"
+     end
++    def x86PushOperand(kind)
++        "#{x86Operand(kind)}"
++    end
+ end
+ 
+ class Immediate
+@@ -398,6 +422,9 @@
+     def x86CallOperand(kind)
+         "#{value}"
+     end
++    def x86PushOperand(kind)
++        "$#{value}"
++    end
+ end
+ 
+ class Address
+@@ -414,6 +441,9 @@
+     def x86CallOperand(kind)
+         "#{callPrefix}#{x86Operand(kind)}"
+     end
++    def x86PushOperand(kind)
++        "#{x86Operand(kind)}"
++    end
+ end
+ 
+ class BaseIndex
+@@ -440,6 +470,9 @@
+     def x86CallOperand(kind)
+         "#{callPrefix}#{x86Operand(kind)}"
+     end
++    def x86PushOperand(kind)
++        "#{x86Operand(kind)}"
++    end
+ end
+ 
+ class AbsoluteAddress
+@@ -458,12 +491,18 @@
+     def x86CallOperand(kind)
+         "#{callPrefix}#{address.value}"
+     end
++    def x86PushOperand(kind)
++        "#{address.value}"
++    end
+ end
+ 
+ class LabelReference
+     def x86CallOperand(kind)
+         asmLabel
+     end
++    def getModifiedListX32
++        return getModifiedListX86_64
++    end
+ end
+ 
+ class LocalLabelReference
+@@ -546,7 +585,7 @@
+         when :int
+             "l"
+         when :ptr
+-            isX64 ? "q" : "l"
++            isX64 && !isX32 ? "q" : "l"
+         when :quad
+             isX64 ? "q" : raise
+         when :double
+@@ -565,7 +604,7 @@
+         when :int
+             4
+         when :ptr
+-            isX64 ? 8 : 4
++            isX64 && !isX32 ? 8 : 4
+         when :quad
+             isX64 ? 8 : raise
+         when :double
+@@ -593,6 +632,19 @@
+     def handleX86Op(opcode, kind)
+         handleX86OpWithNumOperands(opcode, kind, operands.size)
+     end
++
++    def handleX86Jump(opcode, kind)
++        if isX32
++            if operands[0].is_a? Address or operands[0].is_a? BaseIndex or operands[0].is_a? AbsoluteAddress
++                $asm.puts "mov#{x86Suffix(kind)} #{operands[0].x86Operand(kind)}, #{X64_SCRATCH_REGISTER.x86Operand(kind)}"
++                $asm.puts "#{opcode} #{X64_SCRATCH_REGISTER.x86CallOperand(kind)}"
++            else
++                $asm.puts "#{opcode} #{operands[0].x86CallOperand(kind)}"
++            end
++        else
++            $asm.puts "#{opcode} #{operands[0].x86CallOperand(kind)}"
++        end
++    end
+     
+     def handleX86Shift(opcode, kind)
+         if operands[0].is_a? Immediate or operands[0].x86GPR == "ecx"
+@@ -848,6 +900,11 @@
+         lowerX86Common
+     end
+ 
++    def lowerX32
++        raise unless $activeBackend == "X32"
++        lowerX86Common
++    end
++
+     def lowerX86_WIN
+         raise unless $activeBackend == "X86_WIN" 
+         lowerX86Common
+@@ -1141,12 +1198,12 @@
+         when "pop"
+             operands.each {
+                 | op |
+-                $asm.puts "pop #{op.x86Operand(:ptr)}"
++                $asm.puts "pop #{op.x86PushOperand(:ptr)}"
+             }
+         when "push"
+             operands.each {
+                 | op |
+-                $asm.puts "push #{op.x86Operand(:ptr)}"
++                $asm.puts "push #{op.x86PushOperand(:ptr)}"
+             }
+         when "move"
+             handleMove
+@@ -1265,7 +1322,8 @@
+         when "btbnz"
+             handleX86BranchTest("jnz", :byte)
+         when "jmp"
+-            $asm.puts "jmp #{operands[0].x86CallOperand(:ptr)}"
++            #$asm.puts "jmp #{operands[0].x86CallOperand(:ptr)}"
++            handleX86Jump("jmp", :ptr)
+         when "baddio"
+             handleX86OpBranch("add#{x86Suffix(:int)}", "jo", :int)
+         when "baddpo"
+@@ -1327,7 +1385,8 @@
+             if operands[0].is_a? LabelReference
+                 operands[0].used
+             end
+-            $asm.puts "call #{op}"
++            #$asm.puts "call #{op}"
++            handleX86Jump("call", :ptr)
+         when "ret"
+             $asm.puts "ret"
+         when "cieq"
+diff -urN webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/SlowPathReturnType.h webkitgtk-2.12.3/Source/JavaScriptCore/runtime/SlowPathReturnType.h
+--- webkitgtk-2.12.3.orig/Source/JavaScriptCore/runtime/SlowPathReturnType.h	2016-04-10 23:18:43.000000000 -0700
++++ webkitgtk-2.12.3/Source/JavaScriptCore/runtime/SlowPathReturnType.h	2016-06-28 03:48:05.606223260 -0700
+@@ -35,22 +35,22 @@
+ // 'extern "C"') needs to be POD; hence putting any constructors into it could cause either compiler
+ // warnings, or worse, a change in the ABI used to return these types.
+ struct SlowPathReturnType {
+-    void* a;
+-    void* b;
++    int64_t a;
++    int64_t b;
+ };
+ 
+ inline SlowPathReturnType encodeResult(void* a, void* b)
+ {
+     SlowPathReturnType result;
+-    result.a = a;
+-    result.b = b;
++    result.a = reinterpret_cast<uintptr_t>(a);
++    result.b = reinterpret_cast<uintptr_t>(b);
+     return result;
+ }
+ 
+ inline void decodeResult(SlowPathReturnType result, void*& a, void*& b)
+ {
+-    a = result.a;
+-    b = result.b;
++    a = reinterpret_cast<void*>(result.a);
++    b = reinterpret_cast<ExecState*>(result.b);
+ }
+ 
+ #else // USE(JSVALUE32_64)

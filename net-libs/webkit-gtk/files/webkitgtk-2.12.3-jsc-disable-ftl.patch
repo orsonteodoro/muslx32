@@ -1,0 +1,12 @@
+diff -ur webkitgtk-2.12.3.orig/Source/WTF/wtf/Platform.h webkitgtk-2.12.3/Source/WTF/wtf/Platform.h
+--- webkitgtk-2.12.3.orig/Source/WTF/wtf/Platform.h	2016-07-26 04:31:14.020604611 -0700
++++ webkitgtk-2.12.3/Source/WTF/wtf/Platform.h	2016-07-26 04:42:08.977562344 -0700
+@@ -717,7 +717,7 @@
+ #endif
+ 
+ /* The FTL *does not* work on 32-bit platforms. Disable it even if someone asked us to enable it. */
+-#if USE(JSVALUE32_64)
++#if USE(JSVALUE32_64) || CPU(X32)
+ #undef ENABLE_FTL_JIT
+ #define ENABLE_FTL_JIT 0
+ #endif

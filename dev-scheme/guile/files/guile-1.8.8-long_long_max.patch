@@ -1,0 +1,18 @@
+Index: libguile/fports.c
+===================================================================
+--- libguile/fports.c.orig      2008-05-28 18:14:10.894643700 +0000
++++ libguile/fports.c   2008-05-28 18:15:07.183102061 +0000
+@@ -78,6 +78,12 @@
+ #define OFF_T_MAX  LONG_MAX
+ #define OFF_T_MIN  LONG_MIN
+ #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
++#ifndef LONG_LONG_MAX
++#define LONG_LONG_MAX 9223372036854775807LL
++#endif
++#ifndef LONG_LONG_MIN
++#define LONG_LONG_MIN (-LONG_LONG_MAX - 1LL)
++#endif
+ #define OFF_T_MAX  LONG_LONG_MAX
+ #define OFF_T_MIN  LONG_LONG_MIN
+ #else
+

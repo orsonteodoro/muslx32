@@ -1,0 +1,13 @@
+--- gdb-7.10.1.orig/gdb/x86-linux-nat.c	2015-12-05 07:16:45.000000000 -0800
++++ gdb-7.10.1/gdb/x86-linux-nat.c	2016-06-24 01:08:33.377478427 -0700
+@@ -137,8 +137,8 @@
+     errno = 0;
+     cs = ptrace (PTRACE_PEEKUSER, tid,
+ 		 offsetof (struct user_regs_struct, cs), 0);
+-    if (errno != 0)
+-      perror_with_name (_("Couldn't get CS register"));
++    /*if (errno != 0)
++      perror_with_name (_("Couldn't get CS register"));*/
+ 
+     is_64bit = cs == AMD64_LINUX_USER64_CS;
+ 

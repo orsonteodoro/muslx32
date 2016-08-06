@@ -1,0 +1,217 @@
+# ChangeLog for media-libs/gstreamer
+# Copyright 1999-2016 Gentoo Foundation; Distributed under the GPL v2
+# (auto-generated from git log)
+
+*gstreamer-1.4.5 (09 Aug 2015)
+*gstreamer-1.2.4-r2 (09 Aug 2015)
+*gstreamer-0.10.36-r2 (09 Aug 2015)
+
+  09 Aug 2015; Robin H. Johnson <robbat2@gentoo.org>
+  +files/gstreamer-0.10.36-disable-test_fail_abstract_new.patch,
+  +files/gstreamer-make-grammar.y-work-with-bison-3.patch,
+  +gstreamer-0.10.36-r2.ebuild, +gstreamer-1.2.4-r2.ebuild,
+  +gstreamer-1.4.5.ebuild, +metadata.xml:
+  proj/gentoo: Initial commit
+
+  This commit represents a new era for Gentoo:
+  Storing the gentoo-x86 tree in Git, as converted from CVS.
+
+  This commit is the start of the NEW history.
+  Any historical data is intended to be grafted onto this point.
+
+  Creation process:
+  1. Take final CVS checkout snapshot
+  2. Remove ALL ChangeLog* files
+  3. Transform all Manifests to thin
+  4. Remove empty Manifests
+  5. Convert all stale $Header$/$Id$ CVS keywords to non-expanded Git $Id$
+  5.1. Do not touch files with -kb/-ko keyword flags.
+
+  Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
+  X-Thanks: Alec Warner <antarus@gentoo.org> - did the GSoC 2006 migration
+  tests
+  X-Thanks: Robin H. Johnson <robbat2@gentoo.org> - infra guy, herding this
+  project
+  X-Thanks: Nguyen Thai Ngoc Duy <pclouds@gentoo.org> - Former Gentoo
+  developer, wrote Git features for the migration
+  X-Thanks: Brian Harring <ferringb@gentoo.org> - wrote much python to improve
+  cvs2svn
+  X-Thanks: Rich Freeman <rich0@gentoo.org> - validation scripts
+  X-Thanks: Patrick Lauer <patrick@gentoo.org> - Gentoo dev, running new 2014
+  work in migration
+  X-Thanks: Michał Górny <mgorny@gentoo.org> - scripts, QA, nagging
+  X-Thanks: All of other Gentoo developers - many ideas and lots of paint on
+  the bikeshed
+
+  24 Aug 2015; Justin Lecher <jlec@gentoo.org> metadata.xml:
+  Use https by default
+
+  Convert all URLs for sites supporting encrypted connections from http to
+  https
+
+  Signed-off-by: Justin Lecher <jlec@gentoo.org>
+
+  24 Aug 2015; Justin Lecher <jlec@gentoo.org> gstreamer-0.10.36-r2.ebuild,
+  gstreamer-1.2.4-r2.ebuild, gstreamer-1.4.5.ebuild:
+  Use https by default
+
+  Convert all URLs for sites supporting encrypted connections from http to
+  https
+
+  Signed-off-by: Justin Lecher <jlec@gentoo.org>
+
+  24 Aug 2015; Mike Gilbert <floppym@gentoo.org> metadata.xml:
+  Revert DOCTYPE SYSTEM https changes in metadata.xml
+
+  repoman does not yet accept the https version.
+  This partially reverts eaaface92ee81f30a6ac66fe7acbcc42c00dc450.
+
+  Bug: https://bugs.gentoo.org/552720
+
+*gstreamer-1.6.0 (25 Oct 2015)
+
+  25 Oct 2015; Gilles Dartiguelongue <eva@gentoo.org> +gstreamer-1.6.0.ebuild:
+  version bump to 1.6.0
+
+  Package-Manager: portage-2.2.23
+
+  25 Oct 2015; Gilles Dartiguelongue <eva@gentoo.org> gstreamer-1.6.0.ebuild:
+  add missing bash-completion support
+
+  Package-Manager: portage-2.2.23
+
+*gstreamer-1.6.1 (08 Nov 2015)
+
+  08 Nov 2015; Gilles Dartiguelongue <eva@gentoo.org> +gstreamer-1.6.1.ebuild:
+  version bump to 1.6.1
+
+  Package-Manager: portage-2.2.23
+
+*gstreamer-1.6.2 (26 Dec 2015)
+
+  26 Dec 2015; Gilles Dartiguelongue <eva@gentoo.org> +gstreamer-1.6.2.ebuild:
+  version bump to 1.6.2
+
+  Package-Manager: portage-2.2.26
+
+  26 Dec 2015; Gilles Dartiguelongue <eva@gentoo.org>
+  -gstreamer-1.2.4-r2.ebuild, -gstreamer-1.6.0.ebuild:
+  drop old revisions
+
+  Package-Manager: portage-2.2.26
+
+  24 Jan 2016; Michał Górny <mgorny@gentoo.org> metadata.xml:
+  Replace all herds with appropriate projects (GLEP 67)
+
+  Replace all uses of herd with appropriate project maintainers, or no
+  maintainers in case of herds requested to be disbanded.
+
+  24 Jan 2016; Michał Górny <mgorny@gentoo.org> metadata.xml:
+  Set appropriate maintainer types in metadata.xml (GLEP 67)
+
+*gstreamer-1.6.3 (31 Jan 2016)
+
+  31 Jan 2016; Gilles Dartiguelongue <g.dartiguelongue@lexfo.fr>
+  +gstreamer-1.6.3.ebuild:
+  version bump to 1.6.3
+
+  Package-Manager: portage-2.2.27
+
+  21 Feb 2016; Pacho Ramos <pacho@gentoo.org> gstreamer-1.6.3.ebuild:
+  amd64 stable, bug 566378
+
+  Package-Manager: portage-2.2.27
+  RepoMan-Options: --include-arches="amd64"
+
+*gstreamer-1.6.3-r1 (25 Feb 2016)
+
+  25 Feb 2016; Andreas K. Hüttel <dilfridge@gentoo.org>
+  +gstreamer-1.6.3-r1.ebuild:
+  Clean up XDG environment, bug 567192
+
+  Package-Manager: portage-2.2.27
+
+  28 Feb 2016; Pacho Ramos <pacho@gentoo.org> -gstreamer-1.6.1.ebuild,
+  -gstreamer-1.6.2.ebuild:
+  Drop old
+
+  Package-Manager: portage-2.2.27
+
+  28 Feb 2016; Pacho Ramos <pacho@gentoo.org> -gstreamer-1.6.3-r1.ebuild:
+  Revert previous bump as this package was not affected by that bug
+
+  Package-Manager: portage-2.2.27
+
+  06 Mar 2016; Mikle Kolyada <zlogene@gentoo.org> gstreamer-1.6.3.ebuild:
+  x86 stable wrt bug #566378
+
+  Package-Manager: portage-2.2.26
+
+  07 Apr 2016; Jeroen Roovers <jer@gentoo.org> gstreamer-1.6.3.ebuild:
+  Stable for HPPA PPC64 (bug #566378).
+
+  Package-Manager: portage-2.2.28
+  RepoMan-Options: --ignore-arches
+
+  20 Apr 2016; Anthony Ryan <anthonyryan1@gmail.com>
+  gstreamer-0.10.36-r2.ebuild, gstreamer-1.4.5.ebuild, gstreamer-1.6.3.ebuild:
+  HTTPS for *.freedesktop.org
+
+  * Excluding xorg.freedesktop.org
+  * Excluding tango.freedesktop.org
+
+  The following modified ebuilds were found to have problems after
+  modification
+  but the problems were determined to not be a regression.
+
+  Upstream tarball has a new hash:
+  * app-misc/evtest-1.29
+  * app-misc/evtest-1.30
+  * dev-embedded/scratchbox2-2.0-r1
+  * dev-ml/cairo-ocaml-1.2.0
+  * net-libs/libqmi-1.0.0
+  * sys-auth/libfprint-0.4.0
+  * sys-auth/libfprint-0.5.0
+  * sys-auth/libfprint-0.5.1
+
+  Upstream tarball has been deleted:
+  * dev-libs/liblazy-0.2
+  * dev-util/pkgconfig-openbsd-20130507-r1
+  * x11-libs/xvba-video-0.8.0-r3
+  * x11-misc/driconf-0.9.1-r1
+  * x11-misc/xdg-utils-1.1.0_rc2-r1
+
+  03 May 2016; Markus Meier <maekke@gentoo.org> gstreamer-1.6.3.ebuild:
+  arm stable, bug #566378
+
+  Package-Manager: portage-2.2.28
+  RepoMan-Options: --include-arches="arm"
+
+  10 May 2016; Anthony G. Basile <blueness@gentoo.org>
+  +files/gstreamer-1.6.3-fix-strsignal.patch, gstreamer-1.6.3.ebuild:
+  fix bug #577312
+
+  Package-Manager: portage-2.2.26
+
+  10 May 2016; Anthony G. Basile <blueness@gentoo.org>
+  -files/gstreamer-1.6.3-fix-strsignal.patch, gstreamer-1.6.3.ebuild:
+  Revert "media-libs/gstreamer: fix bug #577312"
+
+  This reverts commit f59f39fb234fe5ce1c2a4c1c63be575fa494302c.
+
+  The gstreamer folks made a mistake in backporting this form libcheck.
+
+  See https://bugzilla.gnome.org/show_bug.cgi?id=763567#c12
+
+  11 May 2016; Anthony G. Basile <blueness@gentoo.org>
+  +files/gstreamer-1.6.3-fix-strsignal.patch, gstreamer-1.6.3.ebuild:
+  correctly fix bug #577312
+
+  Package-Manager: portage-2.2.26
+
+  11 Jun 2016; Pacho Ramos <pacho@gentoo.org> gstreamer-1.6.3.ebuild:
+  alpha stable, bug 584468
+
+  Package-Manager: portage-2.3.0_rc1
+  RepoMan-Options: --include-arches="alpha"
+
