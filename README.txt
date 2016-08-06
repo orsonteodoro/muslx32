@@ -42,9 +42,9 @@ x-portage
     priority: 3
 
 Works:
-firefox - except when using alsa audio and jit.  javascript works but through interpreter.  pulseaudio untested.
-strace (for debugging)
-gdb (for debugging)
+firefox 45.x only - except when using alsa audio and jit.  javascript works but through interpreter.  pulseaudio untested.
+strace (for debugging) from this overlay
+gdb (for debugging) from this overlay
 X (for windowing system)
 wpa_supplicant (for wifi)
 xf86-video-nouveau
@@ -55,7 +55,7 @@ mpd
 geany
 dwm
 xfce4
-aterm
+aterm from this overlay
 xfce4-terminal
 gimp
 xscreensaver
@@ -74,7 +74,7 @@ grub2-install (doesn't work in x32 use lilo)
 xterm (works in root but not as user)
 mono (incomplete patch from pldlinux... was testing)
 chrony and ntp or musl's timezone stuff is broken.  use the hw clock instead.  do not automatically update time though ntp protocol
-import (from imagematick) - cannot take screenshot use imlib2 
+import (from imagematick) - cannot take a screenshot use imlib2 
 clang - cannot compile it yet
 
 Unconfirmed broken:
