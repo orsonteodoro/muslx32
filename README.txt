@@ -74,7 +74,8 @@ grub2-install (doesn't work in x32 use lilo)
 xterm (works in root but not as user)
 mono (incomplete patch from pldlinux... was testing)
 chrony and ntp or musl's timezone stuff is broken.  use the hw clock instead.  do not automatically update time though ntp protocol
-import (from imagematick) - cannot take screenshot use imlib2 instead
+import (from imagematick) - cannot take screenshot use imlib2 
+clang - cannot compile it yet
 
 Unconfirmed broken:
 revdep-rebuild - it always says linking is fine.
