@@ -36,6 +36,7 @@ wayland (dunno)
 weston (segfaults)
 pulseaudio (cannot connect pavucontrol or pulseaudio apps)
 webkit-gtk (just blank screen, jit is broken)
+evdev (semi broken and quirky; dev permissions need to be manually set or devices reloaded)
 
 Masks:
 >sys-libs/ncurses-5.9-r5
