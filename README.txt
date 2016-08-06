@@ -13,14 +13,13 @@ You need use crossdev to build this.  Crossdev is used to build the cross-compil
 
 Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), .... (will update this list)
 
-Expected Repositories and priorities:
+Expected Repositories and priorities (negative less important and positive is highest ebuilds used):
 
 gentoo
     location: /usr/portage
     sync-type: rsync
     sync-uri: rsync://rsync.gentoo.org/gentoo-portage
     priority: -1000
-
 
 musl
     location: /var/lib/layman/musl
