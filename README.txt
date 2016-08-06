@@ -61,7 +61,7 @@ gimp
 xscreensaver
 glxgears from mesa-progs
 
-Broken: 
+Broken (do not use the ebuild and associated patches from this overlay if broken.  my personal patches may add more complications so do it from scratch again): 
 Makefile.in or make system - use my bashrc scripts to fix it see below.
 Chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
 Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.
