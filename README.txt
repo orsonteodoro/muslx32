@@ -3,21 +3,21 @@ This is an unofficial muslx32 (musl libc and x32 abi) overlay for Gentoo Linux.
 
 Current goals:  get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
-Why musl and x32 and Gentoo?  Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  I was really disappointed about Alpine and the shortcomings of the other previously tested distros.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux packages were pretty much outdated.  blueness said that he wouldn't make muslx32 as top priority or it wasn't his job to do or after the hardened gcc patches for the platform were ready, so I decided to just do it myself without the hardened part.
+Why musl and x32 and Gentoo?  Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  I was really disappointed about Alpine and the shortcomings of the other previously tested distros.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux and Slax packages were pretty much outdated.  blueness said that he wouldn't make muslx32 as top priority or it wasn't his job to do or after the hardened gcc patches for the platform were ready, so I decided to just do it myself without the hardened part.
 
 Disadvantages of this platform:  No binary packages work (e.g. spotify, genymotion, virtualbox, etc.).  Some assembly optimizations are not enabled.  Some assembly based packages don't work.  It is not multilib.
 
 Other recommendations?  Use -Os and use kernel zswap+zbud to significantly reduce swapping.  Use cache to ram for Firefox if using Gentoo from a usbstick.
 
-You need use crossdev to build this.  Crossdev is used to build the cross-compile toolchain.  Use the cross-compile toolchain to build system.  Use the system to build world.  The result is a stage 3/4 image like the tarball you download from Gentoo.  It sound easy but there are a lot of broken ebuilds and packages that need patches.  It took me several weeks to get it right.  I give you the overlay this time so it will only take you a few days.
+You need use crossdev to build this.  Crossdev is used to build the cross-compile toolchain.  Use the cross-compile toolchain to build system.  Use the system to build world.  The result is a stage 3/4 image like the tarball you download from Gentoo.  It sounds easy but there are a lot of broken ebuilds and packages that need patches.  It took me several weeks to get it right.  I give you the overlay this time, so it will only take you a few days.
 
 Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi)) .... (will update this list)
 
 What you can do to help?:  
-Clean the ebuilds with proper x32 abi and musl chost checks and submit them to Gentoo.
-Write assembly code for the jit based packages and assembly based packages.
-Test and patch new ebuilds for these use cases: server, web, gaming, etc, entertainment, developer.
-Fix the build system to get rid of the bashrc script and odd quirks.
+-Clean the ebuilds with proper x32 abi and musl chost checks and submit them to Gentoo.
+-Write assembly code for the jit based packages and assembly based packages.
+-Test and patch new ebuilds for these use cases: server, web, gaming, etc, entertainment, developer.
+-Fix the build system to get rid of the bashrc script and odd quirks.
 
 Expected Repositories and priorities (negative less important and positive is highest ebuilds used):
 
@@ -48,40 +48,40 @@ x-portage
     priority: 3
 
 Works:
-firefox 45.x only - except when using alsa audio and jit.  javascript works but through interpreter.  pulseaudio untested.
-strace (for debugging) from this overlay
-gdb (for debugging) from this overlay
-X (for windowing system)
-wpa_supplicant (for wifi)
-xf86-video-nouveau
-xf86-video-ati
-see bottom of readme for details emerged packages
-mplayer (but without simd optimizations)
-mpd
-geany
-dwm
-xfce4
-aterm from this overlay
-xfce4-terminal
-gimp
-xscreensaver
-glxgears from mesa-progs
+-firefox 45.x only - except when using alsa audio and jit.  javascript works but through interpreter.  pulseaudio untested.
+-strace (for debugging) from this overlay
+-gdb (for debugging) from this overlay
+-X (for windowing system)
+-wpa_supplicant (for wifi)
+-xf86-video-nouveau
+-xf86-video-ati
+*see bottom of readme for details emerged packages
+-mplayer (but without simd optimizations)
+-mpd
+-geany
+-dwm
+-xfce4
+-aterm from this overlay
+-xfce4-terminal
+-gimp
+-xscreensaver
+-glxgears from mesa-progs
 
 Broken (do not use the ebuild and associated patches from this overlay if broken.  my personal patches may add more complications so do it from scratch again): 
-Makefile.in or make system - use my bashrc scripts to fix it see below.
-Chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
+-Makefile.in or make system - use my bashrc scripts to fix it see below.
+-Chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
 Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.
-wayland (dunno)
-weston (segfaults)
-pulseaudio (cannot connect pavucontrol or pulseaudio apps)
-webkit-gtk just blank screen, jit is broken it works for 2.0.4 but it doesn't work when applied to 2.12.3. 2.0.4. is unstable and crashes out a lot.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
-evdev (semi broken and quirky; dev permissions need to be manually set or devices reloaded)
-grub2-install (doesn't work in x32 use lilo)
-xterm (works in root but not as user)
-mono C# (incomplete patch from pldlinux... was testing) details (https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html) on what needs to be done.
-chrony and ntp or musl's timezone stuff is broken.  use the hw clock instead.  do not automatically update time though ntp protocol
-import (from imagematick) - cannot take a screenshot use imlib2 
-clang - cannot compile it yet
+-wayland (dunno)
+-weston (segfaults)
+-pulseaudio (cannot connect pavucontrol or pulseaudio apps)
+-webkit-gtk just blank screen, jit is broken it works for 2.0.4 but it doesn't work when applied to 2.12.3. 2.0.4. is unstable and crashes out a lot.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
+-evdev (semi broken and quirky; dev permissions need to be manually set or devices reloaded)
+-grub2-install (doesn't work in x32 use lilo)
+-xterm (works in root but not as user)
+-mono C# (incomplete patch from PLD Linux... was testing) details (https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html) on what needs to be done.
+-chrony and ntp or musl's timezone stuff is broken.  use the hw clock instead.  do not automatically update time though ntp protocol
+-import (from imagematick) - cannot take a screenshot use imlib2 
+-clang - cannot compile it yet
 
 Unconfirmed broken:
 revdep-rebuild - it always says linking is fine.
@@ -98,27 +98,12 @@ sys-apps/which
 ----cutnpaste
 
 #bashrc script
-#contents of /etc/portage/bashrc script to fix Makefile.in/make system.  add this before running emerge
-#use only MAKEOPTS=-j1 some packages may be able to get away with MAKEOPTS=-j5 or whatever or system can handle
+#This is the contents of /etc/portage/bashrc script to fix Makefile.in/libtool/Automake system.  Add this before running emerge.
+#Use only MAKEOPTS="-j1" .  Some packages may be able to get away with MAKEOPTS="-j5" or whatever or system can handle.
 
-#      "${CATEGORY}/${PN}" != "dev-lang/perl" 
-#if [[ "${CATEGORY}/${PN}" != "sys-apps/gawk" ]]; then
-if [[ "${CATEGORY}/${PN}" != "sys-scheme/guile" ]]; then
-#      "${CATEGORY}/${PN}" != "dev-libs/mpfr" ]]; then
+if [[ "${CATEGORY}/${PN}" != "sys-scheme/guile" ]]; then #this if bay be disabled/removed
 
-#echo "$EBUILD_PHASE"
 if [[ $EBUILD_PHASE == configure ]]; then
-	#einfo "Applying automake musl patch"
-        #for file in $(grep -l -r -e "\$(am__cd) \$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target" "${WORKDIR}"); do
-	#	einfo "Editing $file"
-	#	sed -i 's|(\$(am__cd) \$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target) |$(am__cd) $(CURDIR)/$$subdir \&\& $(MAKE) $(AM_MAKEFLAGS) $$local_target |g' "$file"
-        #done
-
-        #for file in $(grep -l -r -e "\$(am__cd) \$(srcdir)/\$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target" "${WORKDIR}"); do
-	#	einfo "Editing $file"
-	#	sed -i 's|\$(am__cd) \$(srcdir)/\$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target |$(am__cd) $(CURDIR)/$$subdir \&\& $(MAKE) $(AM_MAKEFLAGS) $$local_target |g' "$file"
-        #done
-	
 	einfo "Applying automake/libtool musl patch"
 	for file in $(find "${WORKDIR}" -name "Makefile" -o -name "Makefile.in" -o -name "Makefile.in.in" -o -name "Make-in"); do
 		einfo "Editing $file"
@@ -186,34 +171,6 @@ if [[ $EBUILD_PHASE == configure ]]; then
 			sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall-am: Makefile \$(LTLIBRARIES) \$(DATA) \$(HEADERS) config.h\n|\nall-am: Makefile \$(SOURCES) \$(LTLIBRARIES) \$(DATA) \$(HEADERS) config.h\n|g" "$file"
 		fi
 	done
-
-	#einfo "Applying /po/Makefile.in.in patch"
-	#for file in $(find "${WORKDIR}" -name "Makefile.in.in"); do
-	#	if [[ $file =~ "/po/" ]]; then
-	#		einfo "Editing $file"
-	#		sed -i -e ':a' -e 'N' -e '$!ba' -e 's|all: \([-a-zA-Z ]*\)all-@USE_NLS@\n\n|all: \1 all-@USE_NLS@\nall-am:\ninstall-am:\n\n|g' "$file"
-	#	fi
-	#done
-
-	#einfo "Applying /po/Make-in patch"
-	#for file in $(find "${WORKDIR}" -name "Make-in"); do
-	#	if [[ $file =~ "/po/" ]]; then
-	#		einfo "Editing $file"
-	#		sed -i -e ':a' -e 'N' -e '$!ba' -e 's|all: all-@USE_NLS@\n\n|all: all-@USE_NLS@\nall-am:\ninstall-am:\ninfo-am:\n\n|g' "$file"
-	#	fi
-	#done
-
-	#einfo "Applying libtool musl patch"
-        #for file in $(grep -l -r -e "\$\$files" "${WORKDIR}"); do
-	#	einfo "Editing $file"
-	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|if test -f "\$(CURDIR)/\$\$p"; then d="\$(CURDIR)/"\; else d="\$(srcdir)/"\; fi\; \\|if [[ -f "$(CURDIR)/$$p" ]]\; then \\\n\t    d="$(CURDIR)/"\; \\\n\telif [[ -f "$(srcdir)/$$p" ]]\; then \\\n\t    d="$(srcdir)/"\; \\\n\telif [[ -f "$$p" ]]; then \\\n\t    d=""\; \\\n\tfi\; \\|g' "$file"
-	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|if test -f \$\$p\; then d=\; else d="\$(srcdir)\/"\; fi\; \\\n\t  echo "\$\$d\$\$p"\; echo "\$\$\p"\; \\|if [[ -f "$(CURDIR)/$$p" ]]; then \\\n\t    d="$(CURDIR)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$(srcdir)/$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$$p" ]]; then \\\n\t    echo "$$p"; \\\n\t  fi; \\|g' "$file"
-	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|for p in \$\$list\; do \\\n\t  if test -f "\$\$p"\; then d=\; else d="\$(srcdir)\/"\; fi\; \\\n\t  echo "\$$d\$\$p"\; \\|for p in $$list; do \\\n\t  if [[ -f "$(CURDIR)/$$p" ]]; then \\\n\t    d="$(CURDIR)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$(srcdir)/$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$p"; \\\n\t  fi; \\|g' "$file"
-	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|echo " \$(\([-_a-zA-Z0-9]*\)) \$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t  \$([-_a-zA-Z0-9]*) \$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"	
-	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|test -z "\$\$files" \|\| { echo " \$(\([-_a-zA-Z0-9]*\)) \$(srcdir)\/\$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t  \$([-_a-zA-Z0-9]*) \$(srcdir)\/\$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; }\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"	
-        #       sed -i -e ':a' -e 'N' -e '$!ba' -e 's|test -z "\$\$files" \|\| { \\\n\t    echo " \$(\([-_a-zA-Z0-9]*\)) \$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t    \$([-_a-zA-Z0-9]*) \$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; }\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"
-	#	sed -i -e ':a' -e 'N' -e '$!ba' -e 's|echo " \$(INSTALL_SCRIPT) \$\$files \x27\$(DESTDIR)\$(bindir)\$\$dir\x27"\; \\|if [[ -z "$$files" \|\| -d "$$files" ]]; then \\\n\t\t   continue; \\\n\t       fi; \\\n\t       echo " $(INSTALL_SCRIPT) $$files \x27$(DESTDIR)$(bindir)$$dir\x27"; \\|g' "$file"	
-	#done
 fi
 
 fi
@@ -221,8 +178,8 @@ fi
 
 ----cutnpaste
 
-Instructions to build stage 4 from stage 1 to 3 cross compile toolchain, system cross-compiled toolchain (x86_64-pc-muslx32-emerge -e system), system native toolchain (emerge -e system), to world (emerge -e world).  
-These are incomplete instructions so backup!  Adjust these steps to your needs.
+These are the instructions to build stage 4 image from a 1 to 3 cross compile toolchain, system cross-compiled toolchain (x86_64-pc-muslx32-emerge -e system), system native toolchain (emerge -e system), and the world set (emerge -e world).  
+These are incomplete instructions and may be out of order steps so backup!  Adjust these steps to your needs.
 
 
 assuming sysrescuecd
@@ -288,6 +245,11 @@ cross-x86_64-pc-linux-muslx32/gcc -sanitize -fortran -vtv
 sys-devel/gcc -sanitize -fortran -vtv
 
 crossdev -S -A x32 --g "=5.3.0" --target x86_64-pc-linux-muslx32
+
+######################
+# Post-crossdev phase
+#
+
 
 edit /etc/portage/make.conf
 add line: source /var/lib/layman/make.conf
@@ -393,15 +355,22 @@ chroot ./ /bin/bash
 
 #set the root password
 
+########################################
+# Post cross system toolchain phase (stage 3 image)
+#
+
 #build the native toolchain
 emerge -ve system
 
-#remember to build mpfr, which, gettext as cross-compile if it fails then continue --resuming
+#remember to build mpfr, which, gettext as cross-compile if it fails then continue `emerge --resume`  You will need to change  the symlink make.conf between make.conf.cross and make.conf.native and to exit and enter the chroot to switch between cross-compiled `x86_64-pc-linux-muslx32` and native `emerge`.  See bottom of page for contents of make.conf.cross and make.conf.native.
+
+#########################################################
+# Post native system toolchain phase (stage 4 image)
 
 #build the world
 emerge -ve world
 
-#remember to build mpfr, which, gettext as cross-compile if it fails then continue --resuming
+#remember to build mpfr, which, gettext as cross-compile if it fails then continue `emerge --resume`  You will need to change  the symlink make.conf between make.conf.cross and make.conf.native and to exit and enter the chroot to switch between cross-compiled `x86_64-pc-linux-muslx32` and native `emerge`  See bottom of page for contents of make.conf.cross and make.conf.native.
 
 #IMPORTANT
 #remember to set your root password and users
@@ -447,10 +416,11 @@ sync
 
 reboot
 
-#alsa-sound needs permissions corrected
+#alsa-sound needs permissions corrected because bugged evdev
 #to fix add the following /etc/init.d/fixalsa
 #do a     find /sys/devices -name "pcm*"         to find them all
 
+#contents of /etc/init.d/fixalsa
 #!/sbin/runscript
 # Copyright (c) 2016 Orson Teodoro <orsonteodoro@yahoo.com>
 # Released under MIT.
@@ -459,26 +429,87 @@ description="Fixing ALSA for non-root user"
 
 depend()
 {
-        after udev
+	after udev
 }
 
 start()
 {
-        udevadm test /sys/devices/pci0000:00/0000:00:11.5/sound/card0/controlC0 2&>1 >/dev/null
-        udevadm test /sys/devices/pci0000:00/0000:00:11.5/sound/card0/pcmC0D0c 2&>1 >/dev/null
-        udevadm test /sys/devices/pci0000:00/0000:00:11.5/sound/card0/pcmC0D0p 2&>1 >/dev/null
-        udevadm test /sys/devices/pci0000:00/0000:00:11.5/sound/card0/pcmC0D1c 2&>1 >/dev/null
-        udevadm test /sys/devices/pci0000:00/0000:00:11.5/sound/card0/pcmC0D1p 2&>1 >/dev/null
-        return 0
+	einfo "Fixing ALSA for non-root"
+	udevadm test /sys/devices/pci*/*/sound/card0/controlC0 2&>1 >/dev/null
+	udevadm test /sys/devices/pci*/*/sound/card0/pcmC0D0c 2&>1 >/dev/null
+	udevadm test /sys/devices/pci*/*/sound/card0/pcmC0D0p 2&>1 >/dev/null
+	udevadm test /sys/devices/pci*/*/sound/card0/pcmC0D1c 2&>1 >/dev/null
+	udevadm test /sys/devices/pci*/*/sound/card0/pcmC0D1p 2&>1 >/dev/null
+	return 0
 }
+
 
 #add fixalsa service
 rc-update add fixalsa
 
+
+#fix permissions for /dev/tty
+#contents of /dev/init.d/fixtty
+#!/sbin/runscript
+# Copyright (c) 2016 Orson Teodoro <orsonteodoro@yahoo.com>
+# Released under MIT.
+
+description="Fixing tty permissions"
+
+depend()
+{
+	need localmount
+	after udev
+}
+
+start()
+{
+	einfo "Fixing tty permissions"
+	chown root:tty /dev/pty*
+	chmod 660 /dev/pty*
+
+	chmod 666 /dev/ptmx
+
+	chown root:tty /dev/tty*
+	chmod 660 /dev/tty*
+
+	chmod 666 /dev/null
+	chmod 666 /dev/random
+	chmod 666 /dev/urandom
+
+	return 0
+}
+
+#rc-update add fixalsa
+
+#fix permissions for /dev/video
+#contents of /dev/init.d/fixvideo
+#!/sbin/runscript
+# Copyright (c) 2016 Orson Teodoro <orsonteodoro@yahoo.com>
+# Released under MIT.
+
+description="Fixing video permissions"
+
+depend()
+{
+	after localmount
+}
+
+start()
+{
+	einfo "Fixing video permissions"
+	chown root:video /dev/dri/card*
+	chmod 666 /dev/dri/card*
+	return 0
+}
+
+#rc-update add fixvideo
+
 #for xkeyboard-config
 ln -s /usr/lib/gcc/x86_64-pc-linux-muslx32/4.9.3/libgomp.so.1 /lib/libgomp.so.1
+#other softlinks may need to be created in /lib
 
-#xorg.conf needs to be told explicity which modules to load.  It doesn't work the way it should like with glib under musl.
+#xorg.conf needs to be told explicity which modules to load.  It doesn't work the way it should with `X =configure` like with glibc under musl.
 contents of /etc/X11/xorg.conf.d/20-nouveau.conf
 
 Section "Module"
@@ -1515,4 +1546,94 @@ net-libs/webkit-gtk::musl
 net-libs/webkit-gtk::gentoo
 #>net-libs/webkit-gtk-2.0.4
 app-arch/xz-utils::gentoo
+
+----
+#contents of /etc/portage/make.conf.cross
+CHOST=x86_64-pc-linux-muslx32
+CBUILD=x86_64-pc-linux-gnux32
+ARCH=amd64
+
+HOSTCC=x86_64-pc-linux-gnux32-gcc
+
+ROOT=/usr/${CHOST}/
+
+#ACCEPT_KEYWORDS="amd64 ~amd64"
+ACCEPT_KEYWORDS="amd64"
+
+USE="${USE} -pam"
+USE="${USE} -hardened -pax_kernel"
+
+CFLAGS="-O2 -pipe"
+CXXFLAGS="${CFLAGS}"
+
+#FEATURES="-collision-protect sandbox buildpkg noman noinfo nodoc nostrip splitdebug"
+FEATURES="-collision-protect sandbox buildpkg"
+# Be sure we dont overwrite pkgs from another repo..
+PKGDIR=${ROOT}packages/
+PORTAGE_TMPDIR=${ROOT}tmp/
+
+#ELIBC="__LIBC__"
+ELIBC="musl"
+
+PKG_CONFIG_PATH="${ROOT}usr/lib/pkgconfig/"
+#PORTDIR_OVERLAY="/usr/portage/local/"
+
+PORTDIR_OVERLAY="${PORTDIR_OVERLAY} ${ROOT}var/lib/layman/musl"
+#PORTDIR_OVERLAY="${PORTDIR_OVERLAY} /usr/local/portage"
+PORTDIR_OVERLAY="${PORTDIR_OVERLAY} ${ROOT}usr/local/portage"
+ALSA_CARDS="emu10k1"
+VIDEO_CARDS="nouveau radeon"
+
+MAKEOPTS="-j1"
+
+-----
+#contents of /etc/portage/make.conf.native
+# These settings were set by the catalyst build script that automatically
+# built this stage.
+# Please consult /usr/share/portage/config/make.conf.example for a more
+# detailed example.
+CFLAGS="-O2 -pipe"
+#CFLAGS="-march=native -O2 -pipe"
+#CFLAGS="-O2 -pipe -fomit-frame-pointer"
+#CFLAGS="-O2 -pipe"
+#CFLAGS="-O0 -pipe -ggdb -g" #debug
+CXXFLAGS="${CFLAGS}"
+# WARNING: Changing your CHOST is not something that should be done lightly.
+# Please consult http://www.gentoo.org/doc/en/change-chost.xml before changing.
+CHOST="x86_64-pc-linux-muslx32"
+# These are the USE flags that were used in addition to what is provided by the
+# profile used for building.
+USE="bindist mmx sse sse2"
+#USE="${USE} -pam"
+USE="${USE} -hardened -pax_kernel"
+#USE="${USE} -introspection"
+
+#FEATURES="ccache -collision-protect sandbox buildpkg noman noinfo nodoc nostrip splitdebug"
+#FEATURES="ccache sandbox buildpkg nostrip"
+FEATURES="ccache sandbox buildpkg"
+#FEATURES="ccache sandbox nostrip splitdebug"
+
+ACCEPT_KEYWORDS="amd64"
+
+PORTDIR="/usr/portage"
+DISTDIR="${PORTDIR}/distfiles"
+PKGDIR="${PORTDIR}/packages"
+#PKGDIR="/packages"
+
+
+PORTDIR_OVERLAY="${PORTDIR_OVERLAY} /var/lib/layman/musl"
+#PORTDIR_OVERLAY="${PORTDIR_OVERLAY} /usr/local/musl-extras"
+PORTDIR_OVERLAY="${PORTDIR_OVERLAY} /usr/local/oiledmachine-overlay"
+PORTDIR_OVERLAY="${PORTDIR_OVERLAY} /usr/local/portage"
+
+ALSA_CARDS="emu10k1"
+VIDEO_CARDS="nouveau radeon r600"
+CPU_FLAGS_X86="3dnow 3dnowext mmx mmxext sse sse2 sse3"
+COLLISION_IGNORE="${COLLISION_IGNORE} /usr/share/locale/locale.alias"
+I_KNOW_WHAT_I_AM_DOING="yes"
+
+PORTAGE_IONICE_COMMAND="ionice -c 3 -p \${PID}"
+#PORTAGE_NICENESS="15"
+
+MAKEOPTS="-j1"
 
