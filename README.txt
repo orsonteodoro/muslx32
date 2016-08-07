@@ -186,6 +186,10 @@ assuming sysrescuecd
 
 setup wifi with nmtui
 
+#################################
+# Partition device
+#
+
 repartition the drive
 100M boot as ext4
 4G swap as linux swap
@@ -198,8 +202,16 @@ mkfs.ext4 /dev/sda3
 #important turn on swap before compiling
 swapon /dev/sda2
 
-get portage-latest from mirror
-get current-stage3-x32 from mirror
+mount /dev/sda3 /mnt/gentoo
+cd /mnt/gentoo
+links gentoo.org
+
+#######################################
+# Dump stage3 into system partition
+#
+
+get portage-latest from gentoo mirror
+get current-stage3-x32 from gentoo mirror
 
 unpack both
 
@@ -208,6 +220,10 @@ move portage into usr
 cp /etc/resolv.conf /mnt/gentoo/etc
 screen
 chroot /mnt/gentoo /bin/bash
+
+#########################################
+# Crossdev phase
+#
 
 emerge crossdev
 
@@ -247,9 +263,8 @@ sys-devel/gcc -sanitize -fortran -vtv
 crossdev -S -A x32 --g "=5.3.0" --target x86_64-pc-linux-muslx32
 
 ######################
-# Post-crossdev phase
+# Post-crossdev phase / build cross toolchain
 #
-
 
 edit /etc/portage/make.conf
 add line: source /var/lib/layman/make.conf
@@ -268,12 +283,8 @@ sys-devel/gcc -sanitize -fortran -vtv
 #build the cross compile toolchain
 x86_64-pc-linux-muslx32-emerge -pve system
 
-#OLD ignore block
-cp /usr/lib/libx32/
-cp -a libx32/python2.7/site-packages lib/python2.7/site-packages
-cp -a libx32/python3.4/site-packages lib/python3.4/site-packages
-
-#updated block to fix emerge
+#Required to fix emerge
+#portage or musl screws this up by making /lib an actual folder when it should be just a symlink.  These next steps fix it.
 cd /usr/x86_64-pc-linux-muslx32/
 cp -a ./usr/lib ./usr/lib/libx32
 rm ./usr/lib
@@ -283,19 +294,6 @@ ln -s ./usr/lib/libx32 ./usr/lib
 cp -a ./lib ./libx32
 rm ./lib
 ln -s ./libx32 ./lib
-
-#emerge the 64 bit of lilo and use it
-emerge lilo
-cp /etc/lilo.conf.example /etc/lilo.conf
-edit /etc/lilo.conf
-remove/comment out the readonly
-add line:
-append = "init=/sbin/init zswap.enabled=1"
-change to:
-boot = /dev/sda
-change to:
-root = /dev/sda3
-to install lilo run the command: lilo
 
 get the latest stable kernel from kernel.org instead
 extract contents into /usr/x86_64-pc-linux-muslx32/usr/src
@@ -319,20 +317,15 @@ cp /usr/x86_64-pc-linux-muslx32/usr/src/linux/arch/x86/boot/bzImage /boot
 cp /usr/x86_64-pc-linux-muslx32/usr/src/linux/System.map /boot
 cp /usr/x86_64-pc-linux-muslx32/usr/src/linux/.config /boot
 
-#the last confusing thing
-#do this correctly or expect to do this all over
-#you could create a snapshot of the system before proceeding.  restore if you mess up
-
+#you can use these make.conf.cross make.conf.native or the ones provided at the end of the readme
 cp /usr/x86_64-pc-linux-muslx32/etc/portage/make.conf /usr/x86_64-pc-linux-muslx32/etc/portage/make.conf.cross
-cp /etc/portage/make.conf /usr/x86_64-pc-linux-muslx32/etc/portage/make.conf #copy the catalyst makefile
+cp /etc/portage/make.conf /usr/x86_64-pc-linux-muslx32/etc/portage/make.conf.native #copy the catalyst makefile
 cd /usr/x86_64-pc-linux-muslx32/etc/portage
-ln -s make.conf.cat make.conf
+ln -s make.conf.native make.conf
 
 cd /usr/x86_64-pc-linux-muslx32
 mkdir proc
 mkdir dev
-
-mount -t proc proc proc
 
 #add missing dev
 cd dev
@@ -340,7 +333,10 @@ mknod console c 0 0
 mknod -m 666 null c 1 3
 mknod -m 666 zero c 1 5
 
-mount --bind /dev /usr/x86_64-pc-linux-muslx32/dev      #urandom fix
+cd /usr/x86_64-pc-linux-muslx32
+#this should be done before any chroot
+mount -t proc proc proc
+mount --bind /dev ./   #urandom fix
 
 cp /usr/bin/python-wrapper /usr/x86_64-pc-linux-muslx32/usr/bin #temporary workaround
 mkdir -p /usr/x86_64-pc-linux-muslx32/etc/env.d/python
@@ -353,27 +349,49 @@ cd /usr/x86_64-pc-linux-muslx32
 #copy the resolv.conf to ./etc
 chroot ./ /bin/bash
 
-#set the root password
-
-########################################
-# Post cross system toolchain phase (stage 3 image)
+###########################################################################
+# Post cross system toolchain phase (stage 3 image) / Build native toolchain
 #
+
+#Fix the settings in /etc/portage/make.conf.native before proceeding.
+#An example make.conf.native is provided at the end of this readme.
 
 #build the native toolchain
 emerge -ve system
 
-#remember to build mpfr, which, gettext as cross-compile if it fails then continue `emerge --resume`  You will need to change  the symlink make.conf between make.conf.cross and make.conf.native and to exit and enter the chroot to switch between cross-compiled `x86_64-pc-linux-muslx32` and native `emerge`.  See bottom of page for contents of make.conf.cross and make.conf.native.
+#Remember to build mpfr, which, gettext as cross-compile if it fails then continue `emerge --resume`  You will need to change  the symlink make.conf between make.conf.cross and make.conf.native and to exit and enter the chroot to switch between cross-compiled `x86_64-pc-linux-muslx32` and native `emerge`.  See bottom of page for contents of make.conf.cross and make.conf.native.
 
-#########################################################
-# Post native system toolchain phase (stage 4 image)
+#Important
+#Set the root password before reboot.  We are not rebooting yet.
 
-#build the world
+#emerge the 64 bit of lilo and use it
+emerge lilo
+cp /etc/lilo.conf.example /etc/lilo.conf
+edit /etc/lilo.conf
+remove/comment out the readonly
+add line:
+append = "init=/sbin/init zswap.enabled=1"
+change to:
+boot = /dev/sda
+change to:
+root = /dev/sda3
+to install lilo run the command: lilo
+
+######################################################################################################################
+# Post native system toolchain phase (stage 4 image) / Customize image to use case (desktop,server,etc) or your needs
+# You might consider skipping this phase and jump to the next phase.
+#
+
+#Fix the settings in /etc/portage/make.conf.native before proceeding.
+#An example make.conf.native is provided at the end of this readme.
+
+#Build the world
 emerge -ve world
 
-#remember to build mpfr, which, gettext as cross-compile if it fails then continue `emerge --resume`  You will need to change  the symlink make.conf between make.conf.cross and make.conf.native and to exit and enter the chroot to switch between cross-compiled `x86_64-pc-linux-muslx32` and native `emerge`  See bottom of page for contents of make.conf.cross and make.conf.native.
+#Remember to build mpfr, which, gettext as cross-compile if it fails then continue `emerge --resume`  You will need to change  the symlink make.conf between make.conf.cross and make.conf.native and to exit and enter the chroot to switch between cross-compiled `x86_64-pc-linux-muslx32` and native `emerge`  See bottom of page for contents of make.conf.cross and make.conf.native.
 
 #IMPORTANT
-#remember to set your root password and users
+#Remember to set your root password and users before rebooting.  We are not rebooting yet.
 
 add app-arch/gzip-1.7 to /usr/x86_64-pc-linux-muslx32/etc/package.accept_keywords
 
@@ -381,17 +399,14 @@ add app-arch/gzip-1.7 to /usr/x86_64-pc-linux-muslx32/etc/package.accept_keyword
 dev-util/pkgconfig internal-glib
 sys-apps/help2man -nls
 
-add to /etc/portage/make.conf
-FEATURES="${FEATURES} nostrip splitdebug"
-
 emerge wpa_supplicant #for wifi
 
 #recommended for wifi
 emerge wpa_supplicant
 emerge dhcpcd
-emerge chrony
+#emerge chrony #do not use broken
 emerge wireless-tools
-emerge nano
+emerge nano #editor
 
 #optional
 emerge screen
@@ -402,19 +417,6 @@ exit
 exit
 #unmount all mounted in /usr/mnt/gentoo
 
-#the tricky part (use the created native world image produced by you ground up replacing the unpacked official tarball image.)
-#you can bork your system if you get it wrong and need to start from scratch again
-
-#last step put old files into trash and move the cross compiled stuff in root
-#should snapshot or backup the system to be safe and restore/undo it if it fails
-mkdir trash
-mv * trash
-mv trash/usr/x86_64-pc-linux-muslx32/* ./
-#do not delete the trash because you may need it later to build the 3 cross-compiled files.
-
-sync
-
-reboot
 
 #alsa-sound needs permissions corrected because bugged evdev
 #to fix add the following /etc/init.d/fixalsa
@@ -480,7 +482,7 @@ start()
 	return 0
 }
 
-#rc-update add fixalsa
+#rc-update add fixtty
 
 #fix permissions for /dev/video
 #contents of /dev/init.d/fixvideo
@@ -510,8 +512,8 @@ ln -s /usr/lib/gcc/x86_64-pc-linux-muslx32/4.9.3/libgomp.so.1 /lib/libgomp.so.1
 #other softlinks may need to be created in /lib
 
 #xorg.conf needs to be told explicity which modules to load.  It doesn't work the way it should with `X =configure` like with glibc under musl.
-contents of /etc/X11/xorg.conf.d/20-nouveau.conf
 
+#contents of /etc/X11/xorg.conf.d/20-nouveau.conf
 Section "Module"
 	Load "exa"
 	Load "wfb"
@@ -608,6 +610,32 @@ Section "Screen"
 EndSection
 
 ----
+
+###################################
+# Last step.  Replace old tarball stage3 image with your native muslx32 image
+# We are going to use the created native world image produced by you ground up replacing the unpacked official tarball image.
+#This is the last confusing step.
+#Do this correctly or expect to do this all over.
+#You could create a snapshot of the system before proceeding.  Restore if you mess up.
+#Also, make sure you have a working usbstick in case you need to fix lilo or bootloader.
+
+#Now for the the tricky part.
+#You can bork your system if you get it wrong and need to start from scratch again
+#This step should only be done when thinks are final and you are sure that you want to reboot into this.
+#In general, we put old files into trash and move the cross compiled stuff in root.
+mkdir trash
+mv * trash
+mv trash/usr/x86_64-pc-linux-muslx32/* ./
+#Do not delete the trash because you may need it later to build the 3 cross-compiled files.
+
+#You may need to reverse theese steps if you feel the need to cross compile or too lazy to change the symlinks or your make.conf.
+
+sync
+
+reboot
+
+----
+#end of tutorial
 
 emerge --info
 Portage 2.2.28 (python 3.4.3-final-0, hardened/linux/musl/amd64/x32, gcc-4.9.3, musl-1.1.14, 4.4.6-gentoo x86_64)
