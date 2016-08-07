@@ -364,7 +364,7 @@ emerge -ve system
 #Important
 #Set the root password before reboot.  We are not rebooting yet.
 
-#emerge the 64 bit of lilo and use it
+#emerge lilo and use it
 emerge lilo
 cp /etc/lilo.conf.example /etc/lilo.conf
 edit /etc/lilo.conf
