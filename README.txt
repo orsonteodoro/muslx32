@@ -20,7 +20,7 @@ Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void 
 What you can do to help?:  
 -Clean the ebuilds with proper x32 abi and musl chost checks and submit them to Gentoo.
 -Write assembly code for the jit based packages and assembly based packages.
--Test and patch new ebuilds for these use cases: server, web, gaming, etc, entertainment, developer.
+-Test and patch new ebuilds for these use cases or stakeholders: server, web, gaming, etc, entertainment, developer, science, business, graphic artists.
 -Fix the build system to get rid of the bashrc script and odd quirks.
 -Fix packages that use elf_x86_64 when it should link using elf32_x86_64.
 
