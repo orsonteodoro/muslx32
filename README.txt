@@ -186,7 +186,7 @@ assuming sysrescuecd
 
 setup wifi with nmtui
 
-#################################
+##################
 # Partition device
 #
 
@@ -206,7 +206,7 @@ mount /dev/sda3 /mnt/gentoo
 cd /mnt/gentoo
 links gentoo.org
 
-#######################################
+###################################
 # Dump stage3 into system partition
 #
 
@@ -221,7 +221,7 @@ cp /etc/resolv.conf /mnt/gentoo/etc
 screen
 chroot /mnt/gentoo /bin/bash
 
-#########################################
+################
 # Crossdev phase
 #
 
@@ -262,7 +262,7 @@ sys-devel/gcc -sanitize -fortran -vtv
 
 crossdev -S -A x32 --g "=5.3.0" --target x86_64-pc-linux-muslx32
 
-######################
+#################################################
 # Post-crossdev phase / build cross toolchain
 #
 
@@ -349,7 +349,7 @@ cd /usr/x86_64-pc-linux-muslx32
 #copy the resolv.conf to ./etc
 chroot ./ /bin/bash
 
-###########################################################################
+###############################################################################
 # Post cross system toolchain phase (stage 3 image) / Build native toolchain
 #
 
