@@ -1,5 +1,5 @@
 # muslx32
-This is an unofficial muslx32 (musl libc and x32 abi) overlay for Gentoo Linux
+This is an unofficial muslx32 (musl libc and x32 ABI) overlay for Gentoo Linux
 
 This profile uses a 64-bit linux kernel with x32 abi compatibility.  All of the userland libraries and programs are built as native x32 ABI without duplicate 64-bit and 32-bit versions (a.k.a. multilib).
 
@@ -9,7 +9,7 @@ Why musl and x32 and Gentoo?  Musl because it is lightweight.  X32 because it re
 
 What is x32?  x32 ABI is 32-bit (4-bytes) per integer, long, pointer using all of the x86_64 general purpose registers identified as (rax,rbx,rcx,r11-r15,rsi,rdi) and using sse registers.  Long-long integers are 8 bytes.  C/C++ programs will use __ILP32__ preprocessor checks to distinguish between 32/64 bit systems.  The build system may also compare sizeof(void*) to see if it has 4 bytes for 32-bit for 8 bytes and 64-bit for LP64 (longs are 8 bytes as well as pointers) and __x86_64__ defined.
 
-Disadvantages of this platform:  No binary packages work (e.g. spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
+Disadvantages of this platform:  No binary packages work (e.g. spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
 
 Other recommendations?  Use -Os and use kernel zswap+zbud to significantly reduce swapping.  Use cache to ram for Firefox if using Gentoo from a usbstick.
 
@@ -18,8 +18,8 @@ You need use crossdev to build this.  Crossdev is used to build the cross-compil
 Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi)) .... (will update this list)
 
 What you can do to help?:  
--Clean the ebuilds with proper x32 abi and musl chost checks and submit them to Gentoo.
--Write assembly code for the jit based packages and assembly based packages.
+-Clean the ebuilds with proper x32 ABI and musl CHOST checks and submit them to Gentoo.
+-Write/Fix assembly code for the jit based packages and assembly based packages.
 -Test and patch new ebuilds for these use cases or stakeholders: server, web, gaming, etc, entertainment, developer, science, business, graphic artists.
 -Fix the build system to get rid of the bashrc script and odd quirks.
 -Fix packages that use elf_x86_64 when it should link using elf32_x86_64.
