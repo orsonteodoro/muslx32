@@ -82,7 +82,7 @@ Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on
 -wayland (dunno)
 -weston (segfaults)
 -pulseaudio (cannot connect pavucontrol or pulseaudio apps)
--webkit-gtk just blank screen, jit is broken it works for 2.0.4 but it doesn't work when applied to 2.12.3. 2.0.4. is unstable and crashes out a lot.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
+-webkit-gtk just blank screen, jit is broken.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
 -evdev (semi broken and quirky; dev permissions need to be manually set or devices reloaded)
 -grub2-install (doesn't work in x32 use lilo)
 -xterm (works in root but not as user)
