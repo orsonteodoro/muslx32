@@ -1,0 +1,65 @@
+diff -ur chromium-52.0.2743.116.orig/v8/gypfiles/standalone.gypi chromium-52.0.2743.116/v8/gypfiles/standalone.gypi
+--- chromium-52.0.2743.116.orig/v8/gypfiles/standalone.gypi	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/gypfiles/standalone.gypi	2016-08-07 12:03:48.834089510 -0700
+@@ -738,9 +738,6 @@
+           [ 'host_arch=="ppc64" and OS!="aix"', {
+             'cflags': [ '-mminimal-toc' ],
+           }],
+-          [ 'visibility=="hidden" and v8_enable_backtrace==0', {
+-            'cflags': [ '-fvisibility=hidden' ],
+-          }],
+           [ 'component=="shared_library"', {
+             'cflags': [ '-fPIC', ],
+           }],
+diff -ur chromium-52.0.2743.116.orig/build/common.gypi chromium-52.0.2743.116/build/common.gypi
+--- chromium-52.0.2743.116.orig/build/common.gypi	2016-08-07 10:36:57.786172929 -0700
++++ chromium-52.0.2743.116/build/common.gypi	2016-08-07 12:01:01.427092190 -0700
+@@ -3652,18 +3652,14 @@
+           '-Wno-missing-field-initializers',
+           # Don't export any symbols (for example, to plugins we dlopen()).
+           # Note: this is *required* to make some plugins work.
+-          '-fvisibility=hidden',
+           '-pipe',
+         ],
+         'cflags_cc': [
+-          '-fno-exceptions',
+-          '-fno-rtti',
+           # If this is removed then remove the corresponding /Zc:threadSafeInit-
+           # for Windows.
+           '-fno-threadsafe-statics',
+           # Make inline functions have hidden visiblity by default.
+           # Surprisingly, not covered by -fvisibility=hidden.
+-          '-fvisibility-inlines-hidden',
+         ],
+         'ldflags': [
+           '-pthread', '-Wl,-z,noexecstack',
+diff -ur chromium-52.0.2743.116.orig/build/config/compiler/BUILD.gn chromium-52.0.2743.116/build/config/compiler/BUILD.gn
+--- chromium-52.0.2743.116.orig/build/config/compiler/BUILD.gn	2016-08-07 10:36:57.787172929 -0700
++++ chromium-52.0.2743.116/build/config/compiler/BUILD.gn	2016-08-07 12:02:40.230090608 -0700
+@@ -186,7 +186,6 @@
+       # Not exporting C++ inline functions can generally be applied anywhere
+       # so we do so here. Normal function visibility is controlled by
+       # //build/config/gcc:symbol_visibility_hidden.
+-      "-fvisibility-inlines-hidden",
+     ]
+ 
+     # Stack protection.
+diff -ur chromium-52.0.2743.116.orig/build/config/gcc/BUILD.gn chromium-52.0.2743.116/build/config/gcc/BUILD.gn
+--- chromium-52.0.2743.116.orig/build/config/gcc/BUILD.gn	2016-08-03 12:02:10.000000000 -0700
++++ chromium-52.0.2743.116/build/config/gcc/BUILD.gn	2016-08-07 12:01:34.711091657 -0700
+@@ -20,15 +20,11 @@
+ config("symbol_visibility_hidden") {
+   # Note that -fvisibility-inlines-hidden is set globally in the compiler
+   # config since that can almost always be applied.
+-  cflags = [ "-fvisibility=hidden" ]
+ }
+ 
+ # This config is usually set when :symbol_visibility_hidden is removed.
+ # It's often a good idea to set visibility explicitly, as there're flags
+ # which would error out otherwise (e.g. -fsanitize=cfi-unrelated-cast)
+-config("symbol_visibility_default") {
+-  cflags = [ "-fvisibility=default" ]
+-}
+ 
+ # The rpath is the dynamic library search path. Setting this config on a link
+ # step will put the directory where the build generates shared libraries into

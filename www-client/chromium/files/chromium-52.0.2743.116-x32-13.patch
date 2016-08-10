@@ -1,0 +1,148 @@
+Only in chromium-52.0.2743.116/third_party/webrtc: .gitignore
+diff -ur chromium-52.0.2743.116.orig/third_party/webrtc/common_audio/BUILD.gn chromium-52.0.2743.116/third_party/webrtc/common_audio/BUILD.gn
+--- chromium-52.0.2743.116.orig/third_party/webrtc/common_audio/BUILD.gn	2016-08-03 12:04:03.000000000 -0700
++++ chromium-52.0.2743.116/third_party/webrtc/common_audio/BUILD.gn	2016-08-09 10:44:41.834399314 -0700
+@@ -184,12 +184,12 @@
+     configs -= [ "//build/config/clang:find_bad_constructs" ]
+   }
+ 
+-  if (current_cpu == "x86" || current_cpu == "x64") {
++  if (current_cpu == "x86" || current_cpu == "x64" || current_cpu == "x32") {
+     deps += [ ":common_audio_sse2" ]
+   }
+ }
+ 
+-if (current_cpu == "x86" || current_cpu == "x64") {
++if (current_cpu == "x86" || current_cpu == "x64" || current_cpu == "x32") {
+   source_set("common_audio_sse2") {
+     sources = [
+       "fir_filter_sse.cc",
+diff -ur chromium-52.0.2743.116.orig/third_party/webrtc/common_audio/common_audio.gyp chromium-52.0.2743.116/third_party/webrtc/common_audio/common_audio.gyp
+--- chromium-52.0.2743.116.orig/third_party/webrtc/common_audio/common_audio.gyp	2016-08-03 12:04:03.000000000 -0700
++++ chromium-52.0.2743.116/third_party/webrtc/common_audio/common_audio.gyp	2016-08-09 10:44:36.634399398 -0700
+@@ -133,7 +133,7 @@
+             }],
+           ],
+         }],
+-        ['target_arch=="ia32" or target_arch=="x64"', {
++        ['target_arch=="ia32" or target_arch=="x64" or target_arch=="x32"', {
+           'dependencies': ['common_audio_sse2',],
+         }],
+         ['build_with_neon==1', {
+@@ -191,7 +191,7 @@
+     },
+   ],  # targets
+   'conditions': [
+-    ['target_arch=="ia32" or target_arch=="x64"', {
++    ['target_arch=="ia32" or target_arch=="x64" or target_arch=="x32"', {
+       'targets': [
+         {
+           'target_name': 'common_audio_sse2',
+diff -ur chromium-52.0.2743.116.orig/third_party/webrtc/modules/audio_processing/BUILD.gn chromium-52.0.2743.116/third_party/webrtc/modules/audio_processing/BUILD.gn
+--- chromium-52.0.2743.116.orig/third_party/webrtc/modules/audio_processing/BUILD.gn	2016-08-03 12:04:03.000000000 -0700
++++ chromium-52.0.2743.116/third_party/webrtc/modules/audio_processing/BUILD.gn	2016-08-09 10:42:01.842401876 -0700
+@@ -187,7 +187,7 @@
+     ]
+   }
+ 
+-  if (current_cpu == "x86" || current_cpu == "x64") {
++  if (current_cpu == "x86" || current_cpu == "x64" || current_cpu == "x32") {
+     deps += [ ":audio_processing_sse2" ]
+   }
+ 
+@@ -237,7 +237,7 @@
+   }
+ }
+ 
+-if (current_cpu == "x86" || current_cpu == "x64") {
++if (current_cpu == "x86" || current_cpu == "x64" || current_cpu == "x32") {
+   source_set("audio_processing_sse2") {
+     sources = [
+       "aec/aec_core_sse2.cc",
+diff -ur chromium-52.0.2743.116.orig/third_party/webrtc/modules/audio_processing/audio_processing.gypi chromium-52.0.2743.116/third_party/webrtc/modules/audio_processing/audio_processing.gypi
+--- chromium-52.0.2743.116.orig/third_party/webrtc/modules/audio_processing/audio_processing.gypi	2016-08-03 12:04:03.000000000 -0700
++++ chromium-52.0.2743.116/third_party/webrtc/modules/audio_processing/audio_processing.gypi	2016-08-09 10:42:45.952401169 -0700
+@@ -194,7 +194,7 @@
+             'ns/windows_private.h',
+           ],
+         }],
+-        ['target_arch=="ia32" or target_arch=="x64"', {
++        ['target_arch=="ia32" or target_arch=="x64" or target_arch=="x32"', {
+           'dependencies': ['audio_processing_sse2',],
+         }],
+         ['build_with_neon==1', {
+@@ -240,7 +240,7 @@
+         },
+       ],
+     }],
+-    ['target_arch=="ia32" or target_arch=="x64"', {
++    ['target_arch=="ia32" or target_arch=="x64" or target_arch=="x32"', {
+       'targets': [
+         {
+           'target_name': 'audio_processing_sse2',
+diff -ur chromium-52.0.2743.116.orig/third_party/webrtc/modules/desktop_capture/BUILD.gn chromium-52.0.2743.116/third_party/webrtc/modules/desktop_capture/BUILD.gn
+--- chromium-52.0.2743.116.orig/third_party/webrtc/modules/desktop_capture/BUILD.gn	2016-08-03 12:04:03.000000000 -0700
++++ chromium-52.0.2743.116/third_party/webrtc/modules/desktop_capture/BUILD.gn	2016-08-09 10:41:06.117402768 -0700
+@@ -10,7 +10,7 @@
+ import("../../build/webrtc.gni")
+ 
+ use_desktop_capture_differ_sse2 =
+-    !is_ios && (current_cpu == "x86" || current_cpu == "x64")
++    !is_ios && (current_cpu == "x86" || current_cpu == "x64" || current_cpu == "x32")
+ 
+ source_set("primitives") {
+   sources = [
+diff -ur chromium-52.0.2743.116.orig/third_party/webrtc/modules/desktop_capture/desktop_capture.gypi chromium-52.0.2743.116/third_party/webrtc/modules/desktop_capture/desktop_capture.gypi
+--- chromium-52.0.2743.116.orig/third_party/webrtc/modules/desktop_capture/desktop_capture.gypi	2016-08-03 12:04:03.000000000 -0700
++++ chromium-52.0.2743.116/third_party/webrtc/modules/desktop_capture/desktop_capture.gypi	2016-08-09 10:41:08.662402727 -0700
+@@ -94,7 +94,7 @@
+         "x11/x_server_pixel_buffer.h",
+       ],
+       'conditions': [
+-        ['OS!="ios" and (target_arch=="ia32" or target_arch=="x64")', {
++        ['OS!="ios" and (target_arch=="ia32" or target_arch=="x64" or target_arch=="x32")', {
+           'dependencies': [
+             'desktop_capture_differ_sse2',
+           ],
+@@ -131,7 +131,7 @@
+     },
+   ],  # targets
+   'conditions': [
+-    ['OS!="ios" and (target_arch=="ia32" or target_arch=="x64")', {
++    ['OS!="ios" and (target_arch=="ia32" or target_arch=="x64" or target_arch=="x32")', {
+       'targets': [
+         {
+           # Have to be compiled as a separate target because it needs to be
+diff -ur chromium-52.0.2743.116.orig/third_party/webrtc/modules/video_processing/BUILD.gn chromium-52.0.2743.116/third_party/webrtc/modules/video_processing/BUILD.gn
+--- chromium-52.0.2743.116.orig/third_party/webrtc/modules/video_processing/BUILD.gn	2016-08-03 12:04:03.000000000 -0700
++++ chromium-52.0.2743.116/third_party/webrtc/modules/video_processing/BUILD.gn	2016-08-09 10:41:04.885402787 -0700
+@@ -9,7 +9,7 @@
+ import("//build/config/arm.gni")
+ import("../../build/webrtc.gni")
+ 
+-build_video_processing_sse2 = current_cpu == "x86" || current_cpu == "x64"
++build_video_processing_sse2 = current_cpu == "x86" || current_cpu == "x64" || current_cpu == "x32"
+ 
+ source_set("video_processing") {
+   sources = [
+diff -ur chromium-52.0.2743.116.orig/third_party/webrtc/modules/video_processing/video_processing.gypi chromium-52.0.2743.116/third_party/webrtc/modules/video_processing/video_processing.gypi
+--- chromium-52.0.2743.116.orig/third_party/webrtc/modules/video_processing/video_processing.gypi	2016-08-03 12:04:03.000000000 -0700
++++ chromium-52.0.2743.116/third_party/webrtc/modules/video_processing/video_processing.gypi	2016-08-09 10:41:03.606402808 -0700
+@@ -40,7 +40,7 @@
+         'util/skin_detection.h',
+       ],
+       'conditions': [
+-        ['target_arch=="ia32" or target_arch=="x64"', {
++        ['target_arch=="ia32" or target_arch=="x64" or target_arch=="x32"', {
+           'dependencies': [ 'video_processing_sse2', ],
+         }],
+         ['target_arch=="arm" or target_arch == "arm64"', {
+@@ -50,7 +50,7 @@
+     },
+   ],
+   'conditions': [
+-    ['target_arch=="ia32" or target_arch=="x64"', {
++    ['target_arch=="ia32" or target_arch=="x64" or target_arch=="x32"', {
+       'targets': [
+         {
+           'target_name': 'video_processing_sse2',

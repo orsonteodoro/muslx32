@@ -1,0 +1,149 @@
+diff -ur chromium-52.0.2743.116.orig/third_party/WebKit/Source/platform/blink_platform.gyp chromium-52.0.2743.116/third_party/WebKit/Source/platform/blink_platform.gyp
+--- chromium-52.0.2743.116.orig/third_party/WebKit/Source/platform/blink_platform.gyp	2016-08-03 12:02:36.000000000 -0700
++++ chromium-52.0.2743.116/third_party/WebKit/Source/platform/blink_platform.gyp	2016-08-07 16:24:05.310839521 -0700
+@@ -106,11 +106,16 @@
+             '-DX64WIN=1',
+           ],
+         }],
+-        ['OS != "win" and target_arch == "x64"', {
++        ['OS != "win" and (target_arch == "x64")', {
+           'more_yasm_flags': [
+             '-DX64POSIX=1',
+           ],
+         }],
++        ['OS != "win" and (target_arch == "x32")', {
++          'more_yasm_flags': [
++            '-DX32POSIX=1',
++          ],
++        }],
+         ['target_arch == "ia32"', {
+           'more_yasm_flags': [
+             '-DIA32=1',
+diff -ur chromium-52.0.2743.116.orig/third_party/WebKit/Source/platform/heap/asm/BUILD.gn chromium-52.0.2743.116/third_party/WebKit/Source/platform/heap/asm/BUILD.gn
+--- chromium-52.0.2743.116.orig/third_party/WebKit/Source/platform/heap/asm/BUILD.gn	2016-08-03 12:02:36.000000000 -0700
++++ chromium-52.0.2743.116/third_party/WebKit/Source/platform/heap/asm/BUILD.gn	2016-08-07 16:24:05.311839521 -0700
+@@ -2,11 +2,11 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
+-if (current_cpu == "x86" || current_cpu == "x64") {
++if (current_cpu == "x86" || current_cpu == "x64" || current_cpu == "x32") {
+   import("//third_party/yasm/yasm_assemble.gni")
+ 
+   yasm_assemble("asm") {
+-    assert(current_cpu == "x86" || current_cpu == "x64")
++    assert(current_cpu == "x86" || current_cpu == "x64" || current_cpu == "x32")
+ 
+     sources = [
+       "SaveRegisters_x86.asm",
+@@ -24,7 +24,9 @@
+       } else {
+         yasm_flags += [ "-DX64POSIX=1" ]
+       }
+-    } else {  # current_cpu == "x86"
++    } else if (current_cpu == "x32")
++      yasm_flags += [ "-DX32POSIX=1" ]
++    { else {  # current_cpu == "x86"
+       yasm_flags += [ "-DIA32=1" ]
+     }
+   }
+diff -ur chromium-52.0.2743.116.orig/third_party/WebKit/Source/platform/heap/asm/SaveRegisters_x86.asm chromium-52.0.2743.116/third_party/WebKit/Source/platform/heap/asm/SaveRegisters_x86.asm
+--- chromium-52.0.2743.116.orig/third_party/WebKit/Source/platform/heap/asm/SaveRegisters_x86.asm	2016-08-03 12:02:36.000000000 -0700
++++ chromium-52.0.2743.116/third_party/WebKit/Source/platform/heap/asm/SaveRegisters_x86.asm	2016-08-07 16:24:05.312839521 -0700
+@@ -31,6 +31,10 @@
+ %define X64POSIX 0
+ %endif
+ 
++%ifndef X32POSIX
++%define X32POSIX 0
++%endif
++
+ %ifndef X64WIN
+ %define X64WIN 0
+ %endif
+@@ -69,7 +73,7 @@
+ 
+         global mangle(pushAllRegisters) PRIVATE
+ 
+-%if X64POSIX
++%if X64POSIX || X32POSIX
+ 
+ mangle(pushAllRegisters):
+         ;; Push all callee-saves registers to get them
+diff -ur chromium-52.0.2743.116.orig/third_party/libjpeg_turbo/libjpeg.gyp chromium-52.0.2743.116/third_party/libjpeg_turbo/libjpeg.gyp
+--- chromium-52.0.2743.116.orig/third_party/libjpeg_turbo/libjpeg.gyp	2016-08-03 12:03:39.000000000 -0700
++++ chromium-52.0.2743.116/third_party/libjpeg_turbo/libjpeg.gyp	2016-08-07 16:24:05.312839521 -0700
+@@ -244,7 +244,7 @@
+             ],
+           },
+         }],
+-        [ 'OS=="linux" or OS=="freebsd" or (OS=="android" and (target_arch=="ia32" or target_arch=="x64"))', {
++        [ 'OS=="linux" or OS=="freebsd" or (OS=="android" and (target_arch=="ia32" or target_arch=="x64" or target_arch=="x32"))', {
+           'conditions': [
+             [ 'use_system_yasm==0', {
+               'dependencies': [
+@@ -266,11 +266,20 @@
+                   '-DELF',
+                   '-DPIC',
+                 ],
+-              }, {
++              }],
++              [ 'target_arch=="x64"', {
+                 'yasm_format': '-felf64',
+                 'yasm_flags': [
+                   '-D__x86_64__',
+                   '-DELF',
++                  '-DPIC',
++                ],
++              }],
++              [ 'target_arch=="x32"', {
++                'yasm_format': '-felfx32',
++                'yasm_flags': [
++                  '-D__x86_64__',
++                  '-DELF',
+                   '-DPIC',
+                 ],
+               }],
+diff -ur chromium-52.0.2743.116.orig/third_party/yasm/yasm_assemble.gni chromium-52.0.2743.116/third_party/yasm/yasm_assemble.gni
+--- chromium-52.0.2743.116.orig/third_party/yasm/yasm_assemble.gni	2016-08-03 12:02:40.000000000 -0700
++++ chromium-52.0.2743.116/third_party/yasm/yasm_assemble.gni	2016-08-07 16:26:24.410837295 -0700
+@@ -69,6 +69,13 @@
+       "-m",
+       "amd64",
+     ]
++  } else if (current_cpu == "x32") {
++    _yasm_flags = [
++      "-DPIC",
++      "-felfx32",
++      "-m",
++      "amd64",
++    ]
+   }
+ } else if (is_win) {
+   if (current_cpu == "x86") {
+diff -ur chromium-52.0.2743.116.orig/third_party/yasm/yasm_compile.gypi chromium-52.0.2743.116/third_party/yasm/yasm_compile.gypi
+--- chromium-52.0.2743.116.orig/third_party/yasm/yasm_compile.gypi	2016-08-03 12:02:40.000000000 -0700
++++ chromium-52.0.2743.116/third_party/yasm/yasm_compile.gypi	2016-08-07 16:24:05.313839521 -0700
+@@ -53,6 +53,13 @@
+           '-m', 'amd64',
+         ],
+       }],
++      [ 'os_posix==1 and OS!="mac" and OS!="ios" and target_arch=="x32"', {
++        'yasm_flags': [
++          '-DPIC',
++          '-felfx32',
++          '-m', 'amd64',
++        ],
++      }],
+       [ '(OS=="mac" or OS=="ios") and target_arch=="ia32"', {
+         'yasm_flags': [
+           '-fmacho32',
+@@ -91,7 +98,7 @@
+   'conditions': [
+     # Only depend on YASM on x86 systems, do this so that compiling
+     # .asm files for ARM will fail.
+-    ['use_system_yasm==0 and ( target_arch=="ia32" or target_arch=="x64" )', {
++    ['use_system_yasm==0 and ( target_arch=="ia32" or target_arch=="x64" or target_arch=="x32" )', {
+       'dependencies': [
+         '<(DEPTH)/third_party/yasm/yasm.gyp:yasm#host',
+       ],

@@ -18,7 +18,7 @@ SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}
 LICENSE="BSD hotwording? ( no-source-code )"
 SLOT="0"
 KEYWORDS="amd64 ~arm ~arm64 x86"
-IUSE="cups gn gnome gnome-keyring gtk3 +hangouts hidpi hotwording kerberos neon pic +proprietary-codecs pulseaudio selinux +system-ffmpeg +tcmalloc widevine"
+IUSE="debug cups gn gnome gnome-keyring gtk3 +hangouts hidpi hotwording kerberos neon pic +proprietary-codecs pulseaudio selinux +system-ffmpeg +tcmalloc widevine"
 RESTRICT="!system-ffmpeg? ( proprietary-codecs? ( bindist ) )"
 
 # TODO: bootstrapped gn binary hangs when using tcmalloc with portage's sandbox.
@@ -216,12 +216,28 @@ src_prepare() {
 	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-51.0.2704.103-musl1.patch
 	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-1.patch
 	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-2.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-3.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-3.patch #there is no 52.0.2743.116-x32-{2,1}.patch
 	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-4.patch
 	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-5.patch
 	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-6.patch
 	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-7.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-8.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-9.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-10.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-11.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-12.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-13.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-14.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-15.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-16.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-17.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-18.patch
+	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-19.patch
 	##[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8_gyp-x32.patch
+	if use debug; then
+		epatch "${FILESDIR}"/chromium-52.0.2743.116-better-debug-1.patch
+		epatch "${FILESDIR}"/chromium-52.0.2743.116-better-debug-2.patch
+	fi
 
 	EPATCH_SOURCE="${FILESDIR}/musl" EPATCH_SUFFIX="patch" \
 	EPATCH_MULTI_MSG="Applying musl patches ..." epatch
@@ -383,7 +399,11 @@ src_configure() {
 	local myconf_gn=""
 
 	# GN needs explicit config for Debug/Release as opposed to inferring it from build directory.
-	myconf_gn+=" is_debug=false"
+	if use debug; then
+		myconf_gn+=" is_debug=true"
+	else
+		myconf_gn+=" is_debug=false"
+	fi
 
 	# Never tell the build system to "enable" SSE2, it has a few unexpected
 	# additions, bug #336871.
@@ -528,14 +548,15 @@ src_configure() {
 	if [[ "${CHOST}" =~ "muslx32" ]] ; then
 		target_arch=x32
 		target_arch_abi=x32 #for x86_64 only
-		ffmpeg_target_arch=x32 #not used
+		ffmpeg_target_arch=x32
 		target_cpu_abi=x32 #for x86_64 only
 		myconf_gyp+=" -Ddisable_nacl=1 -Ddisable_pnacl=1"
 		myconf_gyp+=" -Duse_allocator=none -Duse_experimental_allocator_shim=false"
+                #myconf_gyp+=" -Dv8_use_snapshot='false'"
 	elif [[ $myarch = amd64 ]] ; then
 		target_arch=x64
 		target_arch_abi=x64 #for x86_64 only
-		ffmpeg_target_arch=x64 #not used
+		ffmpeg_target_arch=x64
 		target_cpu_abi=x64 #for x86_64 only
 	elif [[ $myarch = x86 ]] ; then
 		target_arch=ia32
@@ -615,7 +636,7 @@ src_configure() {
 
 	if ! use system-ffmpeg; then
 		local build_ffmpeg_args=""
-		if use pic && [[ "${ffmpeg_target_arch}" == "ia32" ]]; then
+		if use pic && [[ "${ffmpeg_target_arch}" == "ia32" || "${ffmpeg_target_arch}" == "x32" ]]; then
 			build_ffmpeg_args+=" --disable-asm"
 		fi
 
@@ -633,10 +654,17 @@ src_configure() {
 
 	touch chrome/test/data/webui/i18n_process_css_test.html || die
 
+	local mydebug
+	if use debug; then
+		mydebug="Debug"
+	else
+		mydebug="Release"
+	fi
+
 	einfo "Configuring Chromium..."
 	if use gn; then
 		tools/gn/bootstrap/bootstrap.py -v --gn-gen-args "${myconf_gn}" || die
-		out/Release/gn gen --args="${myconf_gn}" out/Release || die
+		out/${mydebug}/gn gen --args="${myconf_gn}" out/${mydebug} || die
 	else
 		build/linux/unbundle/replace_gyp_files.py ${myconf_gyp} || die
 		egyp_chromium ${myconf_gyp} || die
@@ -663,34 +691,47 @@ eninja() {
 src_compile() {
 	local ninja_targets="chrome chrome_sandbox chromedriver"
 
+	local mydebug
+	if use debug; then
+		mydebug="Debug"
+	else
+		mydebug="Release"
+	fi
+
 	if ! use gn; then
 		# Build mksnapshot and pax-mark it.
-		eninja -C out/Release mksnapshot || die
-		pax-mark m out/Release/mksnapshot
+		eninja -C out/${mydebug} mksnapshot || die
+		pax-mark m out/${mydebug}/mksnapshot
 	fi
 
 	# Even though ninja autodetects number of CPUs, we respect
 	# user's options, for debugging with -j 1 or any other reason.
-	eninja -C out/Release ${ninja_targets} || die
+	eninja -C out/${mydebug} ${ninja_targets} || die
 
-	pax-mark m out/Release/chrome
+	pax-mark m out/${mydebug}/chrome
 }
 
 src_install() {
 	exeinto "${CHROMIUM_HOME}"
-	doexe out/Release/chrome || die
+	local mydebug
+	if use debug; then
+		mydebug="Debug"
+	else
+		mydebug="Release"
+	fi
+	doexe out/${mydebug}/chrome || die
 
-	newexe out/Release/chrome_sandbox chrome-sandbox || die
+	newexe out/${mydebug}/chrome_sandbox chrome-sandbox || die
 	fperms 4755 "${CHROMIUM_HOME}/chrome-sandbox"
 
-	doexe out/Release/chromedriver || die
-	use widevine && doexe out/Release/libwidevinecdmadapter.so
+	doexe out/${mydebug}/chromedriver || die
+	use widevine && doexe out/${mydebug}/libwidevinecdmadapter.so
 
 	# if ! use arm; then
-	#	doexe out/Release/nacl_helper{,_bootstrap} || die
+	#	doexe out/${mydebug}/nacl_helper{,_bootstrap} || die
 	#	insinto "${CHROMIUM_HOME}"
-	#	doins out/Release/nacl_irt_*.nexe || die
-	#	doins out/Release/libppGoogleNaClPluginChrome.so || die
+	#	doins out/${mydebug}/nacl_irt_*.nexe || die
+	#	doins out/${mydebug}/libppGoogleNaClPluginChrome.so || die
 	# fi
 
 	local sedargs=( -e "s:/usr/lib/:/usr/$(get_libdir)/:g" )
@@ -717,21 +758,23 @@ src_install() {
 	insinto /etc/chromium
 	newins "${FILESDIR}/chromium.default" "default" || die
 
-	pushd out/Release/locales > /dev/null || die
+	pushd out/${mydebug}/locales > /dev/null || die
 	chromium_remove_language_paks
 	popd
 
 	insinto "${CHROMIUM_HOME}"
-	doins out/Release/*.bin || die
-	doins out/Release/*.pak || die
 
-	doins out/Release/icudtl.dat || die
+	#[[ ! "${CHOST}" =~ "muslx32" ]] && 
+	doins out/${mydebug}/*.bin || die
+	doins out/${mydebug}/*.pak || die
 
-	doins -r out/Release/locales || die
-	doins -r out/Release/resources || die
+	doins out/${mydebug}/icudtl.dat || die
 
-	newman out/Release/chrome.1 chromium${CHROMIUM_SUFFIX}.1 || die
-	newman out/Release/chrome.1 chromium-browser${CHROMIUM_SUFFIX}.1 || die
+	doins -r out/${mydebug}/locales || die
+	doins -r out/${mydebug}/resources || die
+
+	newman out/${mydebug}/chrome.1 chromium${CHROMIUM_SUFFIX}.1 || die
+	newman out/${mydebug}/chrome.1 chromium-browser${CHROMIUM_SUFFIX}.1 || die
 
 	# Install icons and desktop entry.
 	local branding size
