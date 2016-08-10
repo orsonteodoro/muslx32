@@ -24,6 +24,9 @@ What you can do to help?:
 -Fix the build system to get rid of the bashrc script and odd quirks.
 -Fix packages that use elf_x86_64 when it should link using elf32_x86_64.
 
+Where can we meet on IRC?
+#gentoo-muslx32 on freenode
+
 Expected Repositories and priorities (negative less important and positive is highest ebuilds used):
 
 gentoo
