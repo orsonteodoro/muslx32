@@ -157,7 +157,7 @@ For other desktop environments, try one of the following:
 src_unpack() {
 	unpack "${A}"
 
-if false; then
+if false; then #prior to code review... old
 	#need missing x32 v8 generator files
 	#https://codereview.chromium.org/18014003/#ps51001
         #https://github.com/fenghaitao/v8/tree/x32
@@ -212,28 +212,32 @@ src_prepare() {
 	epatch "${FILESDIR}/${PN}-linker-warnings-r0.patch"
 	epatch "${FILESDIR}/${PN}-ffmpeg-license-r0.patch"
 
-	[[ "${CHOST}" =~ "muslx32" ]] && append-cppflags -D__SIZEOF_POINTER__=4
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-51.0.2704.103-musl1.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-1.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-2.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-3.patch #there is no 52.0.2743.116-x32-{2,1}.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-4.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-5.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-6.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-7.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-8.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-9.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-10.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-11.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-12.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-13.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-14.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-15.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-16.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-17.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-18.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-19.patch
-	##[[ "${CHOST}" =~ "muslx32" ]] && epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8_gyp-x32.patch
+	if [[ "${CHOST}" =~ "muslx32" ]]; then
+		append-cppflags -D__SIZEOF_POINTER__=4
+		epatch "${FILESDIR}"/${PN}-51.0.2704.103-musl1.patch
+		epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-1.patch
+		epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-2.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-3.patch #there is no 52.0.2743.116-x32-{2,1}.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-4.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-5.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-6.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-7.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-8.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-9.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-10.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-11.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-12.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-13.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-14.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-15.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-16.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-17.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-18.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-19.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-20.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-21.patch
+		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8_gyp-x32.patch #corresponds to before code review
+	fi
 	if use debug; then
 		epatch "${FILESDIR}"/chromium-52.0.2743.116-better-debug-1.patch
 		epatch "${FILESDIR}"/chromium-52.0.2743.116-better-debug-2.patch
@@ -242,7 +246,7 @@ src_prepare() {
 	EPATCH_SOURCE="${FILESDIR}/musl" EPATCH_SUFFIX="patch" \
 	EPATCH_MULTI_MSG="Applying musl patches ..." epatch
 
-if false; then
+if false; then #prior to code review old
 	pushd ./v8-remote
 	epatch "${FILESDIR}"/v8-x32-fixes.patch
 	popd
