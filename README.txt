@@ -57,8 +57,8 @@ x-portage
 
 Works:
 -firefox 45.x only - except when using alsa audio and jit.  javascript works but through interpreter.  pulseaudio untested.  YouTube works but no sound through alsa.
--strace (for debugging) from this overlay
--gdb (for debugging) from this overlay
+-strace (for debugging) from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
+-gdb (for debugging) from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
 -X (for windowing system)
 -wpa_supplicant (for wifi)
 -xf86-video-nouveau
@@ -78,7 +78,44 @@ Works:
 Broken (do not use the ebuild and associated patches from this overlay if broken.  my personal patches may add more complications so do it from scratch again): 
 -Makefile.in or make system - use my bashrc scripts to fix it see below.
 -Chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
-Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.
+Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  Creating a snapshot is broken.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32.  
+
+I was using parts of the x87 code for 32-bit parts in x64 files.  The shift_size in lithium-codegen-x64.cc may need to be uncommented.  movp maybe changed to movesxlp since i don't know which to use.
+
+mksnapshot will segfault at v8/src/execution.cc line 99 when it steps into CALL_GENERATED_CODE:
+  typedef Object* (*JSEntryFunction)(Object* new_target, Object* target,
+                                     Object* receiver, int argc,
+                                     Object*** args);
+
+  Handle<Code> code = is_construct
+      ? isolate->factory()->js_construct_entry_code()
+      : isolate->factory()->js_entry_code();
+
+  {
+    // Save and restore context around invocation and block the
+    // allocation of handles without explicit handle scopes.
+    SaveContext save(isolate);
+    SealHandleScope shs(isolate);
+    JSEntryFunction stub_entry = FUNCTION_CAST<JSEntryFunction>(code->entry());
+
+    // Call the function through the right JS entry stub.
+    Object* orig_func = *new_target;
+    Object* func = *target;
+    Object* recv = *receiver;
+    Object*** argv = reinterpret_cast<Object***>(args);
+    if (FLAG_profile_deserialization && target->IsJSFunction()) {
+      PrintDeserializedCodeInfo(Handle<JSFunction>::cast(target));
+    }
+    RuntimeCallTimerScope timer(isolate, &RuntimeCallStats::JS_Execution);
+    value = CALL_GENERATED_CODE(isolate, stub_entry, orig_func, func, recv,
+                                argc, argv);
+  }
+
+#ifdef VERIFY_HEAP
+
+///code sample done
+you might want to set a gdb breakpoint for mksnapshot at bootstrapper.cc:1987 to investigate earlier as to why it segfaults when it gets into CALL_GENERATED_CODE.  You may need to create another breakpoint spot at isolate.cc at interpreter_->Initialize(); line.
+
 -wayland (dunno)
 -weston (segfaults)
 -pulseaudio (cannot connect pavucontrol or pulseaudio apps)
