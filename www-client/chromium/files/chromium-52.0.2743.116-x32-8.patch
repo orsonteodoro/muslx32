@@ -38,10 +38,10 @@ diff -urN chromium-52.0.2743.116.orig/v8/src/compiler/x64/code-generator-x64.cc 
 -      __ add(i.OutputRegister(1), i.TempRegister(0));
 -      __ mov(i.OutputRegister(0), i.InputOperand(0));
 +      __ imull(i.OutputRegister(1), i.InputOperand(0));
-+      __ movsxlq(i.TempRegister(0), i.InputOperand(1));
++      __ movp(i.TempRegister(0), i.InputOperand(1));
 +      __ imull(i.TempRegister(0), i.InputOperand(2));
 +      __ addl(i.OutputRegister(1), i.TempRegister(0));
-+      __ movsxlq(i.OutputRegister(0), i.InputOperand(0));
++      __ movp(i.OutputRegister(0), i.InputOperand(0));
        // Multiplies the low words and stores them in eax and edx.
 -      __ mul(i.InputRegister(2));
 -      __ add(i.OutputRegister(1), i.TempRegister(0));
@@ -423,7 +423,7 @@ diff -urN chromium-52.0.2743.116.orig/v8/src/x64/macro-assembler-x64.cc chromium
 +#if V8_TARGET_ARCH_32_BIT
 +void MacroAssembler::ShlPair(Register high, Register low, uint8_t shift) {
 +  if (shift >= 32) {
-+    movsxlq(high, low);
++    movp(high, low);
 +    shll(high, Immediate(shift - 32));
 +    xorl(low, low);
 +  } else {
@@ -440,14 +440,14 @@ diff -urN chromium-52.0.2743.116.orig/v8/src/x64/macro-assembler-x64.cc chromium
 +  Label done;
 +  testl(rcx, Immediate(0x20));
 +  j(equal, &done, Label::kNear);
-+  movsxlq(high, low);
++  movp(high, low);
 +  xorl(low, low);
 +  bind(&done);
 +}
 +
 +void MacroAssembler::ShrPair(Register high, Register low, uint8_t shift) {
 +  if (shift >= 32) {
-+    movsxlq(low, high);
++    movp(low, high);
 +    shrl(low, Immediate(shift - 32));
 +    xorl(high, high);
 +  } else {
@@ -464,14 +464,14 @@ diff -urN chromium-52.0.2743.116.orig/v8/src/x64/macro-assembler-x64.cc chromium
 +  Label done;
 +  testl(rcx, Immediate(0x20));
 +  j(equal, &done, Label::kNear);
-+  movsxlq(low, high);
++  movp(low, high);
 +  xorl(high, high);
 +  bind(&done);
 +}
 +
 +void MacroAssembler::SarPair(Register high, Register low, uint8_t shift) {
 +  if (shift >= 32) {
-+    movsxlq(low, high);
++    movp(low, high);
 +    sarl(low, Immediate(shift - 32));
 +    sarl(high, Immediate(31));
 +  } else {
@@ -486,7 +486,7 @@ diff -urN chromium-52.0.2743.116.orig/v8/src/x64/macro-assembler-x64.cc chromium
 +  Label done;
 +  testl(rcx, Immediate(0x20));
 +  j(equal, &done, Label::kNear);
-+  movsxlq(low, high);
++  movp(low, high);
 +  sarl(high, Immediate(31));
 +  bind(&done);
 +}

@@ -1,0 +1,34 @@
+diff -pur chromium-52.0.2743.116.orig/v8/src/crankshaft/x64/lithium-codegen-x64.cc chromium-52.0.2743.116/v8/src/crankshaft/x64/lithium-codegen-x64.cc
+--- chromium-52.0.2743.116.orig/v8/src/crankshaft/x64/lithium-codegen-x64.cc	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/crankshaft/x64/lithium-codegen-x64.cc	2016-08-14 03:32:10.228899284 -0700
+@@ -2956,8 +2956,16 @@ Operand LCodeGen::BuildFastArrayOperand(
+     return Operand(elements_pointer_reg,
+                    (constant_value << shift_size) + offset);
+   } else {
++#if V8_TARGET_ARCH_64_BIT
+     // Guaranteed by ArrayInstructionInterface::KeyedAccessIndexRequirement().
+     DCHECK(key_representation.IsInteger32());
++#else //V8_TARGET_ARCH_32_BIT
++    // Take the tag bit into account while computing the shift size.
++    //if (key_representation.IsSmi() && (shift_size >= 1)) {
++    //  DCHECK(SmiValuesAre31Bits());
++    //  shift_size -= kSmiTagSize;
++    //}
++#endif //V8_TARGET_ARCH_32_BIT
+ 
+     ScaleFactor scale_factor = static_cast<ScaleFactor>(shift_size);
+     return Operand(elements_pointer_reg,
+diff -pur chromium-52.0.2743.116.orig/v8/src/x64/builtins-x64.cc chromium-52.0.2743.116/v8/src/x64/builtins-x64.cc
+--- chromium-52.0.2743.116.orig/v8/src/x64/builtins-x64.cc	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/x64/builtins-x64.cc	2016-08-14 03:18:12.801912689 -0700
+@@ -557,8 +557,8 @@ void Builtins::Generate_ResumeGeneratorT
+     // the generator was suspended.
+     FrameScope scope(masm, StackFrame::MANUAL);
+     __ PushReturnAddressFrom(rax);  // Return address.
+-    __ Push(rbp);                   // Caller's frame pointer.
+-    __ Move(rbp, rsp);
++    __ pushq(rbp);                   // Caller's frame pointer.
++    __ movp(rbp, rsp);
+     __ Push(rsi);  // Callee's context.
+     __ Push(rdi);  // Callee's JS Function.
+ 
