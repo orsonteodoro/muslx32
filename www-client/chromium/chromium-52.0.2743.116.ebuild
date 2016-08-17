@@ -237,6 +237,7 @@ src_prepare() {
 		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-20.patch
 		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-21.patch
 		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-22.patch
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-23.patch
 		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8_gyp-x32.patch #corresponds to before code review
 	fi
 	if use debug; then
