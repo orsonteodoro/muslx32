@@ -80,9 +80,10 @@ Broken (do not use the ebuild and associated patches from this overlay if broken
 -Chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
 Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  Creating a snapshot is broken.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32.  
 
-I was using parts of the x87 code for 32-bit parts in x64 files.  The shift_size in lithium-codegen-x64.cc may need to be uncommented.  movp maybe changed to movesxlp since i don't know which to use.
+I was using parts of the x87 code for 32-bit parts in x64 files.  The shift_size in lithium-codegen-x64.cc (in chromium-52.0.2743.116-x32-22.patch) may need to be uncommented.  movp maybe changed to movesxlp since i don't know which to use.
 
-mksnapshot will segfault at v8/src/execution.cc line 99 when it steps into CALL_GENERATED_CODE:
+mksnapshot will segfault at CALL_GENERATED_CODE
+////Contents of v8/src/execution.cc line 99 :
   typedef Object* (*JSEntryFunction)(Object* new_target, Object* target,
                                      Object* receiver, int argc,
                                      Object*** args);
@@ -107,14 +108,64 @@ mksnapshot will segfault at v8/src/execution.cc line 99 when it steps into CALL_
       PrintDeserializedCodeInfo(Handle<JSFunction>::cast(target));
     }
     RuntimeCallTimerScope timer(isolate, &RuntimeCallStats::JS_Execution);
-    value = CALL_GENERATED_CODE(isolate, stub_entry, orig_func, func, recv,
-                                argc, argv);
+    value = CALL_GENERATED_CODE(isolate, stub_entry, orig_func, func, recv,   // <--- segfaults here
+                                argc, argv);                                  //
   }
 
 #ifdef VERIFY_HEAP
 
 ///code sample done
-you might want to set a gdb breakpoint for mksnapshot at bootstrapper.cc:1987 to investigate earlier as to why it segfaults when it gets into CALL_GENERATED_CODE.  You may need to create another breakpoint spot at isolate.cc at interpreter_->Initialize(); line.
+
+///Contents of v8/src/api.cc
+StartupData V8::CreateSnapshotDataBlob(const char* embedded_source) {
+  // Create a new isolate and a new context from scratch, optionally run
+  // a script to embed, and serialize to create a snapshot blob.
+  StartupData result = {NULL, 0};
+
+  base::ElapsedTimer timer;
+  timer.Start();
+
+  ArrayBufferAllocator allocator;
+  i::Isolate* internal_isolate = new i::Isolate(true);
+  internal_isolate->set_array_buffer_allocator(&allocator);
+  Isolate* isolate = reinterpret_cast<Isolate*>(internal_isolate);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    internal_isolate->Init(NULL);
+    Persistent<Context> context;
+    {
+      HandleScope handle_scope(isolate);
+      Local<Context> new_context = Context::New(isolate); // <----- debugger enters hear
+      context.Reset(isolate, new_context);                // <---- never goes here
+      if (embedded_source != NULL &&
+          !RunExtraCode(isolate, new_context, embedded_source, "<embedded>")) {
+        context.Reset();
+      }
+    }
+
+//
+backtrace before crash
+(gdb) bt
+#0  v8::internal::(anonymous namespace)::Invoke (isolate=isolate@entry=0x14f2010, is_construct=is_construct@entry=false, target=target@entry=..., receiver=..., receiver@entry=..., argc=argc@entry=0,
+    args=0x0, new_target=...) at ../../v8/src/execution.cc:99
+#1  0x0069710a in v8::internal::Execution::Call (isolate=isolate@entry=0x14f2010, callable=..., receiver=..., receiver@entry=..., argc=argc@entry=0, argv=argv@entry=0x0)
+    at ../../v8/src/execution.cc:155
+#2  0x0046d9c4 in v8::internal::Bootstrapper::CompileNative (isolate=isolate@entry=0x14f2010, name=..., name@entry=..., source=..., source@entry=..., argc=argc@entry=3, argv=argv@entry=0xffffcf00,
+    natives_flag=natives_flag@entry=v8::internal::NATIVES_CODE) at ../../v8/src/bootstrapper.cc:2079
+#3  0x0046db33 in v8::internal::Bootstrapper::CompileBuiltin (isolate=<optimized out>, index=index@entry=3) at ../../v8/src/bootstrapper.cc:2000
+#4  0x00475ff1 in v8::internal::Genesis::InstallNatives (this=this@entry=0xffffd0a0, context_type=context_type@entry=v8::internal::FULL_CONTEXT) at ../../v8/src/bootstrapper.cc:2762
+#5  0x0047be0d in v8::internal::Genesis::Genesis (this=<optimized out>, isolate=<optimized out>, maybe_global_proxy=..., global_proxy_template=..., extensions=<optimized out>,
+    context_type=v8::internal::FULL_CONTEXT) at ../../v8/src/bootstrapper.cc:3714
+#6  0x0047c36b in v8::internal::Bootstrapper::CreateEnvironment (this=<optimized out>, maybe_global_proxy=..., global_proxy_template=..., global_proxy_template@entry=...,
+    extensions=extensions@entry=0xffffd120, context_type=context_type@entry=v8::internal::FULL_CONTEXT) at ../../v8/src/bootstrapper.cc:331
+#7  0x0043fe98 in v8::CreateEnvironment (maybe_global_proxy=..., global_template=..., extensions=0xffffd120, isolate=0x14f2010) at ../../v8/src/api.cc:5586
+#8  v8::Context::New (external_isolate=external_isolate@entry=0x14f2010, extensions=0xffffd120, extensions@entry=0x0, global_template=..., global_template@entry=..., global_object=...,
+    global_object@entry=...) at ../../v8/src/api.cc:5613
+#9  0x004599c6 in v8::V8::CreateSnapshotDataBlob (embedded_source=embedded_source@entry=0x0) at ../../v8/src/api.cc:454
+#10 0x00420afb in main (argc=2, argv=<optimized out>) at ../../v8/src/snapshot/mksnapshot.cc:164
+(gdb) 
+
 
 -wayland (dunno)
 -weston (segfaults)
