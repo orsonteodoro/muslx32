@@ -29,6 +29,7 @@ What you can do to help?:
 -Check and fix packages that use elf_x86_64 when it should link using elf32_x86_64.
 -Check and fix packages that use constant numbers for syscalls.  The syscall needs to added/or'ed by __X32_SYSCALL_BIT or 0x40000000.
 -Check all sizeof(void*) and similar to be sure they are in the 4G address range if porting from 64 bit code.
+-Replace all important longs that assume 64-bit as long long.  In x32, long is actual 4 bytes.
 
 Where can we meet on IRC?
 #gentoo-muslx32 on freenode
