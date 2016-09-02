@@ -440,7 +440,7 @@ exit
 #do a     find /sys/devices -name "pcm*"         to find them all
 
 #contents of /etc/init.d/fixalsa
-#!/sbin/runscript
+#!/sbin/openrc-run
 # Copyright (c) 2016 Orson Teodoro <orsonteodoro@yahoo.com>
 # Released under MIT.
 
@@ -469,7 +469,7 @@ rc-update add fixalsa
 
 #fix permissions for /dev/tty
 #contents of /dev/init.d/fixtty
-#!/sbin/runscript
+#!/sbin/openrc-run
 # Copyright (c) 2016 Orson Teodoro <orsonteodoro@yahoo.com>
 # Released under MIT.
 
@@ -503,7 +503,7 @@ start()
 
 #fix permissions for /dev/video
 #contents of /dev/init.d/fixvideo
-#!/sbin/runscript
+#!/sbin/openrc-run
 # Copyright (c) 2016 Orson Teodoro <orsonteodoro@yahoo.com>
 # Released under MIT.
 
