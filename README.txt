@@ -26,7 +26,8 @@ What you can do to help?:
 -Write/Fix assembly code for the jit based packages and assembly based packages.
 -Test and patch new ebuilds for these use cases or stakeholders: server, web, gaming, etc, entertainment, developer, science, business, graphic artists.
 -Fix the build system to get rid of the bashrc script and odd quirks.
--Fix packages that use elf_x86_64 when it should link using elf32_x86_64.
+-Check and fix packages that use elf_x86_64 when it should link using elf32_x86_64.
+-Check and fix packages that use constant numbers for syscalls.  The syscall needs to added/or'ed by __X32_SYSCALL_BIT or 0x40000000.
 
 Where can we meet on IRC?
 #gentoo-muslx32 on freenode
