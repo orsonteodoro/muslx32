@@ -96,7 +96,7 @@ Details about the problem can be found at https://github.com/orsonteodoro/muslx3
 -chrony and ntp or musl's timezone stuff is broken.  use the hw clock instead.  do not automatically update time though ntp protocol
 -import (from imagematick) - cannot take a screenshot use imlib2 
 -clang - cannot compile it yet
--wine - broken x86 may never be supported but x86_64 based may be supported.  Problems with musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produce with the microsoft toolchain.
+-wine - it's broken and never supported x32.  x86 (win32/win16) may never be supported but x86_64 based windows apps may be supported.  Problems and immaturity of musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 assembly instructions and same registers which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produce with the microsoft toolchain.
 
 Unconfirmed broken:
 revdep-rebuild - it always says linking is fine.
