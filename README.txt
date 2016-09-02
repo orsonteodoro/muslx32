@@ -28,6 +28,7 @@ What you can do to help?:
 -Fix the build system to get rid of the bashrc script and odd quirks.
 -Check and fix packages that use elf_x86_64 when it should link using elf32_x86_64.
 -Check and fix packages that use constant numbers for syscalls.  The syscall needs to added/or'ed by __X32_SYSCALL_BIT or 0x40000000.
+-Check all sizeof(void*) and similar to be sure they are in the 4G address range if porting from 64 bit code.
 
 Where can we meet on IRC?
 #gentoo-muslx32 on freenode
