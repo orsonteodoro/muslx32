@@ -83,11 +83,8 @@ Broken (do not use the ebuild and associated patches from this overlay if broken
 -Makefile.in or make system - use my bashrc scripts to fix it see below.
 -Chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
 Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  Creating a snapshot is broken.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32.  
-
 I was using parts of the x87 code for 32-bit parts in x64 files.  The shift_size in lithium-codegen-x64.cc (in chromium-52.0.2743.116-x32-22.patch) may need to be uncommented.  movp maybe changed to movesxlp since i don't know which to use.
-
 Details about the problem can be found at https://github.com/orsonteodoro/muslx32/issues/2 .  
-
 -wayland (dunno)
 -weston (segfaults)
 -pulseaudio (cannot connect pavucontrol or pulseaudio apps)
@@ -99,6 +96,7 @@ Details about the problem can be found at https://github.com/orsonteodoro/muslx3
 -chrony and ntp or musl's timezone stuff is broken.  use the hw clock instead.  do not automatically update time though ntp protocol
 -import (from imagematick) - cannot take a screenshot use imlib2 
 -clang - cannot compile it yet
+-wine - broken x86 may never be supported but x86_64 based may be supported.  Problems with musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produce with the microsoft toolchain.
 
 Unconfirmed broken:
 revdep-rebuild - it always says linking is fine.
