@@ -99,6 +99,7 @@ Details about the problem can be found at https://github.com/orsonteodoro/muslx3
 -import (from imagematick) - cannot take a screenshot use imlib2 
 -clang - cannot compile it yet
 -wine - it's broken and never supported x32.  x86 (win32/win16) may never be supported but x86_64 based windows apps may be supported.  Problems and immaturity of musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 assembly instructions and same registers which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produce with the microsoft toolchain.
+-libreoffice - the one from musl overlay is broken and can't be compiled on this toolchain or configuration.
 
 Unconfirmed broken:
 revdep-rebuild - it always says linking is fine.
