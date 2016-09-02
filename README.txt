@@ -62,7 +62,7 @@ x-portage
     priority: 3
 
 Works:
--firefox 45.x only - except when using alsa audio and jit.  javascript works but through interpreter.  pulseaudio untested.  YouTube works with alsa audio.
+-firefox 45.x only - except when using pulseaudio and jit.  javascript works but through interpreter. YouTube works with alsa audio.
 -strace (for debugging) from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
 -gdb (for debugging) from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
 -X (for windowing system)
