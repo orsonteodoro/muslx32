@@ -1,29 +1,20 @@
-diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/Assembler-x64.h firefox-45.2.0esr/js/src/jit/x64/Assembler-x64.h
---- firefox-45.2.0esr.orig/js/src/jit/x64/Assembler-x64.h	2016-05-12 10:09:59.000000000 -0700
-+++ firefox-45.2.0esr/js/src/jit/x64/Assembler-x64.h	2016-08-01 13:49:32.219974241 -0700
-@@ -191,7 +191,11 @@
- 
- static MOZ_CONSTEXPR_VAR Register PreBarrierReg = rdx;
- 
-+#if defined(__ILP32__)
-+static MOZ_CONSTEXPR_VAR uint32_t ABIStackAlignment = 8;
-+#else
- static MOZ_CONSTEXPR_VAR uint32_t ABIStackAlignment = 16;
+diff -ur firefox-45.2.0esr.orig/js/src/jit/shared/Assembler-shared.h firefox-45.2.0esr/js/src/jit/shared/Assembler-shared.h
+--- firefox-45.2.0esr.orig/js/src/jit/shared/Assembler-shared.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/shared/Assembler-shared.h	2016-09-04 18:00:30.322347592 -0700
+@@ -676,8 +676,16 @@
+     // The return address pushed by the call (in the case of ARM/MIPS the return
+     // address is pushed by the first instruction of the prologue).
+     void* returnAddress;
++
++#if defined(__x86_64__) && defined(__ILP32__)
++    void* padding[2];
 +#endif
- static MOZ_CONSTEXPR_VAR uint32_t CodeAlignment = 16;
- static MOZ_CONSTEXPR_VAR uint32_t JitStackAlignment = 16;
- 
-@@ -256,8 +260,13 @@
-     //    +2 bytes for ud2 instruction
-     //    +8 bytes for 64-bit address
-     //
-+#if defined(__ILP32__)
-+    static const uint32_t SizeOfExtendedJump = 1 + 1 + 4 + 2 + 4;
-+    static const uint32_t SizeOfJumpTableEntry = 12;
+ };
++#if defined(__x86_64__) && defined(__ILP32__)
++static_assert(sizeof(AsmJSFrame) == 4 * sizeof(void*), "?!");
 +#else
-     static const uint32_t SizeOfExtendedJump = 1 + 1 + 4 + 2 + 8;
-     static const uint32_t SizeOfJumpTableEntry = 16;
+ static_assert(sizeof(AsmJSFrame) == 2 * sizeof(void*), "?!");
 +#endif
+ static const uint32_t AsmJSFrameBytesAfterReturnAddress = sizeof(void*);
  
-     uint32_t extendedJumpTable_;
- 
+ struct AsmJSGlobalAccess

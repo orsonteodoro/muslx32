@@ -1,0 +1,33 @@
+diff -ur musl-9999.orig/include/sys/timex.h musl-9999/include/sys/timex.h
+--- musl-9999.orig/include/sys/timex.h	2016-10-04 15:45:06.442662346 -0700
++++ musl-9999/include/sys/timex.h	2016-10-04 15:56:49.815651086 -0700
+@@ -18,13 +18,29 @@
+ 
+ struct timex {
+ 	unsigned modes;
++#if defined(__x86_64__) && defined(__ILP32__)
++	long long offset, freq, maxerror, esterror;
++#else
+ 	long offset, freq, maxerror, esterror;
++#endif
+ 	int status;
++#if defined(__x86_64__) && defined(__ILP32__)
++	long long constant, precision, tolerance;
++#else
+ 	long constant, precision, tolerance;
++#endif
+ 	struct timeval time;
++#if defined(__x86_64__) && defined(__ILP32__)
++	long long tick, ppsfreq, jitter;
++#else
+ 	long tick, ppsfreq, jitter;
++#endif
+ 	int shift;
++#if defined(__x86_64__) && defined(__ILP32__)
++	long long stabil, jitcnt, calcnt, errcnt, stbcnt;
++#else
+ 	long stabil, jitcnt, calcnt, errcnt, stbcnt;
++#endif
+ 	int tai;
+ 	int __padding[11];
+ };

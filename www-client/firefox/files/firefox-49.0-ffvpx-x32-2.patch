@@ -1,0 +1,12 @@
+diff -urp firefox-49.0.orig/media/ffvpx/libavutil/x86/cpu.c firefox-49.0/media/ffvpx/libavutil/x86/cpu.c
+--- firefox-49.0.orig/media/ffvpx/libavutil/x86/cpu.c	2016-10-02 19:37:25.832473877 -0700
++++ firefox-49.0/media/ffvpx/libavutil/x86/cpu.c	2016-10-02 20:05:58.646559747 -0700
+@@ -74,7 +74,7 @@
+ 
+ static int cpuid_test(void)
+ {
+-    x86_reg a, c;
++    x86_native_reg a, c;
+ 
+     /* Check if CPUID is supported by attempting to toggle the ID bit in
+      * the EFLAGS register. */

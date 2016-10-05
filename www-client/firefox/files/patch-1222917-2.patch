@@ -1,0 +1,15 @@
+# HG changeset patch
+# User Jan de Mooij <jdemooij@mozilla.com>
+# Parent  ca184004016279a6b91c9b8c592995a465ed932a
+
+diff --git a/js/src/jit-test/tests/ion/bug1222917.js b/js/src/jit-test/tests/ion/bug1222917.js
+new file mode 100644
+--- /dev/null
++++ b/js/src/jit-test/tests/ion/bug1222917.js
+@@ -0,0 +1,6 @@
++function f() {
++    var x = [];
++    for (var i=0; i<10; i++)
++	x.length = x;
++}
++f();

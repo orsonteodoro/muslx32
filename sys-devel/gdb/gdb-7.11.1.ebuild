@@ -95,6 +95,7 @@ src_prepare() {
 	epatch_user
 	epatch "${FILESDIR}"/0001-Fix-siginfo_t.patch
 	#epatch "${FILESDIR}"/gdb-7.11.1-muslx32.patch
+        epatch "${FILESDIR}"/gdb-9999-asm-stepi-nexti-keybinds.patch
 	strip-linguas -u bfd/po opcodes/po
 }
 

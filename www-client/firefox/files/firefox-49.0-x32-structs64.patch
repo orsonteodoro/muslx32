@@ -1,0 +1,83 @@
+diff -urp firefox-49.0.orig/toolkit/crashreporter/google-breakpad/src/common/linux/memory_mapped_file.cc firefox-49.0/toolkit/crashreporter/google-breakpad/src/common/linux/memory_mapped_file.cc
+--- firefox-49.0.orig/toolkit/crashreporter/google-breakpad/src/common/linux/memory_mapped_file.cc	2016-09-28 10:36:52.844853107 -0700
++++ firefox-49.0/toolkit/crashreporter/google-breakpad/src/common/linux/memory_mapped_file.cc	2016-09-28 10:43:23.259846858 -0700
+@@ -44,9 +44,14 @@
+ 
+ #define sys_open open
+ #define sys_close close
+-#define sys_mmap mmap
+ #define sys_munmap munmap
++#if defined(__x86_64__) && defined(__ILP32__)
++#define sys_mmap2 mmap
++#define sys_fstat64 fstat
++#else
++#define sys_mmap mmap
+ #define sys_fstat fstat
++#endif
+ 
+ namespace google_breakpad {
+ 
+@@ -70,7 +75,7 @@ bool MemoryMappedFile::Map(const char* p
+     return false;
+   }
+ 
+-#if defined(__x86_64__) || defined(__aarch64__) || \
++#if defined(__x86_64__) && defined(__LP64__) || defined(__aarch64__) || \
+    (defined(__mips__) && _MIPS_SIM == _ABI64)
+ 
+   struct kernel_stat st;
+@@ -93,7 +98,7 @@ bool MemoryMappedFile::Map(const char* p
+     return true;
+   }
+ 
+-#if defined(__x86_64__) || defined(__aarch64__) || \
++#if defined(__x86_64__) && && defined(__LP64__) || defined(__aarch64__) || \
+    (defined(__mips__) && _MIPS_SIM == _ABI64)
+   void* data = sys_mmap(NULL, file_len, PROT_READ, MAP_PRIVATE, fd, offset);
+ #else
+diff -urp firefox-49.0.orig/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h firefox-49.0/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h
+--- firefox-49.0.orig/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h	2016-09-28 10:36:52.779853108 -0700
++++ firefox-49.0/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h	2016-09-28 10:46:20.164844026 -0700
+@@ -86,25 +86,26 @@
+  * Porting to other related platforms should not be difficult.
+  */
+ #if (defined(__x86_64__) && defined(__ILP32__))
+-struct kernel_stat {
+-  unsigned long      st_dev;
+-  unsigned long      st_ino;
+-  unsigned long      st_nlink;
++struct kernel_stat64 {
++  unsigned long long st_dev;
++  unsigned char      __pad0[4];
++  unsigned           __st_ino;
+   unsigned           st_mode;
++  unsigned           st_nlink;
+   unsigned           st_uid;
+   unsigned           st_gid;
+-  unsigned           __pad0;
+-  unsigned long      st_rdev;
+-  long               st_size;
+-  long               st_blksize;
+-  long               st_blocks;
+-  unsigned long      st_atime_;
+-  unsigned long      st_atime_nsec_;
+-  unsigned long      st_mtime_;
+-  unsigned long      st_mtime_nsec_;
+-  unsigned long      st_ctime_;
+-  unsigned long      st_ctime_nsec_;
+-  long               __unused[3];
++  unsigned long long st_rdev;
++  unsigned char      __pad3[4];
++  long long          st_size;
++  unsigned           st_blksize;
++  unsigned long long st_blocks;
++  unsigned           st_atime_;
++  unsigned           st_atime_nsec_;
++  unsigned           st_mtime_;
++  unsigned           st_mtime_nsec_;
++  unsigned           st_ctime_;
++  unsigned           st_ctime_nsec_;
++  unsigned long long st_ino;
+ };
+ #elif (defined(__i386__) || defined(__x86_64__) && defined(__LP64__) || defined(__ARM_ARCH_3__) ||   \
+      defined(__mips__) || defined(__PPC__) || defined(__ARM_EABI__) || \

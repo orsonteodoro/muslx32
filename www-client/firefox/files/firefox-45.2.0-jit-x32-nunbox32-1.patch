@@ -1,0 +1,1859 @@
+-- patches for nunbox
+Only in firefox-45.2.0esr.orig/js: js
+Only in firefox-45.2.0esr/js/src/builtin: embedjs.pyc
+diff -ur firefox-45.2.0esr.orig/js/src/jit/CodeGenerator.cpp firefox-45.2.0esr/js/src/jit/CodeGenerator.cpp
+--- firefox-45.2.0esr.orig/js/src/jit/CodeGenerator.cpp	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/CodeGenerator.cpp	2016-09-05 20:43:37.656517198 -0700
+@@ -10384,7 +10384,7 @@
+     FloatRegister output = ToFloatRegister(ins->output());
+     Register tempReg = ToRegister(ins->temp0());
+ 
+-#ifdef JS_PUNBOX64
++#if defined(JS_PUNBOX64)
+     Register64 s0Reg(ToRegister(ins->temp1()));
+     Register64 s1Reg(ToRegister(ins->temp2()));
+ #else
+diff -ur firefox-45.2.0esr.orig/js/src/jit/Registers.h firefox-45.2.0esr/js/src/jit/Registers.h
+--- firefox-45.2.0esr.orig/js/src/jit/Registers.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/Registers.h	2016-09-05 20:47:20.565524544 -0700
+@@ -97,14 +97,14 @@
+ 
+ struct Register64
+ {
+-#ifdef JS_PUNBOX64
++#if defined(JS_PUNBOX64)
+     Register reg;
+ #else
+     Register high;
+     Register low;
+ #endif
+ 
+-#ifdef JS_PUNBOX64
++#if defined(JS_PUNBOX64)
+     explicit MOZ_CONSTEXPR Register64(Register r)
+       : reg(r)
+     {}
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/Assembler-x64.h firefox-45.2.0esr/js/src/jit/x64/Assembler-x64.h
+--- firefox-45.2.0esr.orig/js/src/jit/x64/Assembler-x64.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/Assembler-x64.h	2016-09-05 18:17:12.349227701 -0700
+@@ -217,6 +217,24 @@
+ 
+ static const uint32_t AsmJSStackAlignment = SimdMemoryAlignment;
+ 
++#if defined(JS_PUNBOX64)
++#else
++struct ImmTag : public Imm32
++{
++    ImmTag(JSValueTag mask)
++      : Imm32(int32_t(mask))
++    { }
++};
++
++struct ImmType : public ImmTag
++{
++    ImmType(JSValueType type)
++      : ImmTag(JSVAL_TYPE_TO_TAG(type))
++    { }
++};
++
++#endif
++
+ static const Scale ScalePointer = TimesEight;
+ 
+ } // namespace jit
+@@ -228,7 +246,11 @@
+ namespace jit {
+ 
+ // Return operand from a JS -> JS call.
++#if defined(JS_PUNBOX64)
+ static MOZ_CONSTEXPR_VAR ValueOperand JSReturnOperand = ValueOperand(JSReturnReg);
++#else
++static const ValueOperand JSReturnOperand = ValueOperand(JSReturnReg_Type, JSReturnReg_Data);
++#endif
+ 
+ class Assembler : public AssemblerX86Shared
+ {
+@@ -271,6 +293,11 @@
+     size_t addPatchableJump(JmpSrc src, Relocation::Kind reloc);
+ 
+   public:
++#if defined(JS_PUNBOX64)
++#else
++    using AssemblerX86Shared::movl;
++#endif
++
+     using AssemblerX86Shared::j;
+     using AssemblerX86Shared::jmp;
+     using AssemblerX86Shared::push;
+@@ -337,6 +364,32 @@
+         return movWithPatch(ImmWord(uintptr_t(imm.value)), dest);
+     }
+ 
++#if defined(JS_PUNBOX64)
++#else
++    void movl(ImmGCPtr ptr, Register dest) {
++        masm.movl_i32r(uintptr_t(ptr.value), dest.encoding());
++        writeDataRelocation(ptr);
++    }
++    void movl(ImmGCPtr ptr, const Operand& dest) {
++        switch (dest.kind()) {
++          case Operand::REG:
++            masm.movl_i32r(uintptr_t(ptr.value), dest.reg());
++            writeDataRelocation(ptr);
++            break;
++          case Operand::MEM_REG_DISP:
++            masm.movl_i32m(uintptr_t(ptr.value), dest.disp(), dest.base());
++            writeDataRelocation(ptr);
++            break;
++          case Operand::MEM_SCALE:
++            masm.movl_i32m(uintptr_t(ptr.value), dest.disp(), dest.base(), dest.index(), dest.scale());
++            writeDataRelocation(ptr);
++            break;
++          default:
++            MOZ_CRASH("unexpected operand kind");
++        }
++    }
++#endif
++
+     // Load an ImmWord value into a register. Note that this instruction will
+     // attempt to optimize its immediate field size. When a full 64-bit
+     // immediate is needed for a relocation, use movWithPatch.
+@@ -730,6 +783,28 @@
+         }
+     }
+ 
++#if defined(JS_PUNBOX64)
++#else
++    void adcl(Imm32 imm, Register dest) {
++        masm.adcl_ir(imm.value, dest.encoding());
++    }
++    void adcl(Register src, Register dest) {
++        masm.adcl_rr(src.encoding(), dest.encoding());
++    }
++
++    void mull(Register multiplier) {
++        masm.mull_r(multiplier.encoding());
++    }
++
++    void shldl(const Imm32 imm, Register src, Register dest) {
++        masm.shldl_irr(imm.value, src.encoding(), dest.encoding());
++    }
++    void shrdl(const Imm32 imm, Register src, Register dest) {
++        masm.shrdl_irr(imm.value, src.encoding(), dest.encoding());
++    }
++
++#endif
++
+     void testq(Imm32 rhs, Register lhs) {
+         masm.testq_ir(rhs.value, lhs.encoding());
+     }
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/BaseAssembler-x64.h firefox-45.2.0esr/js/src/jit/x64/BaseAssembler-x64.h
+--- firefox-45.2.0esr.orig/js/src/jit/x64/BaseAssembler-x64.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/BaseAssembler-x64.h	2016-09-05 18:19:52.532232979 -0700
+@@ -20,6 +20,35 @@
+ 
+     // Arithmetic operations:
+ 
++#if defined(JS_PUNBOX64)
++#else
++    void adcl_ir(int32_t imm, RegisterID dst)
++    {
++        spew("adcl       $%d, %s", imm, GPReg32Name(dst));
++        MOZ_ASSERT(CAN_SIGN_EXTEND_8_32(imm));
++        m_formatter.oneByteOp(OP_GROUP1_EvIb, dst, GROUP1_OP_ADC);
++        m_formatter.immediate8s(imm);
++    }
++
++    void adcl_im(int32_t imm, const void* addr)
++    {
++        spew("adcl       %d, %p", imm, addr);
++        if (CAN_SIGN_EXTEND_8_32(imm)) {
++            m_formatter.oneByteOp(OP_GROUP1_EvIb, addr, GROUP1_OP_ADC);
++            m_formatter.immediate8s(imm);
++        } else {
++            m_formatter.oneByteOp(OP_GROUP1_EvIz, addr, GROUP1_OP_ADC);
++            m_formatter.immediate32(imm);
++        }
++    }
++
++    void adcl_rr(RegisterID src, RegisterID dst)
++    {
++        spew("adcl       %s, %s", GPReg32Name(src), GPReg32Name(dst));
++        m_formatter.oneByteOp(OP_ADC_GvEv, src, dst);
++    }
++#endif
++
+     void addq_rr(RegisterID src, RegisterID dst)
+     {
+         spew("addq       %s, %s", GPReg64Name(src), GPReg64Name(dst));
+@@ -200,6 +229,25 @@
+         }
+     }
+ 
++#if defined(JS_PUNBOX64)
++#else
++    void shldl_irr(int32_t imm, RegisterID src, RegisterID dst)
++    {
++        MOZ_ASSERT(imm < 32);
++        spew("shldl      $%d, %s, %s", imm, GPReg32Name(src), GPReg32Name(dst));
++        m_formatter.twoByteOp8(OP2_SHLD, dst, src);
++        m_formatter.immediate8u(imm);
++    }
++
++    void shrdl_irr(int32_t imm, RegisterID src, RegisterID dst)
++    {
++        MOZ_ASSERT(imm < 32);
++        spew("shrdl      $%d, %s, %s", imm, GPReg32Name(src), GPReg32Name(dst));
++        m_formatter.twoByteOp8(OP2_SHRD, dst, src);
++        m_formatter.immediate8u(imm);
++    }
++#endif
++
+     void xorq_rr(RegisterID src, RegisterID dst)
+     {
+         spew("xorq       %s, %s", GPReg64Name(src), GPReg64Name(dst));
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/BaselineIC-x64.cpp firefox-45.2.0esr/js/src/jit/x64/BaselineIC-x64.cpp
+--- firefox-45.2.0esr.orig/js/src/jit/x64/BaselineIC-x64.cpp	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/BaselineIC-x64.cpp	2016-09-05 18:29:04.118251155 -0700
+@@ -24,6 +24,7 @@
+     masm.branchTestInt32(Assembler::NotEqual, R0, &failure);
+     masm.branchTestInt32(Assembler::NotEqual, R1, &failure);
+ 
++#if defined(JS_PUNBOX64)
+     // Directly compare the int32 payload of R0 and R1.
+     ScratchRegisterScope scratch(masm);
+     Assembler::Condition cond = JSOpToCondition(op, /* signed = */true);
+@@ -33,6 +34,16 @@
+ 
+     // Box the result and return
+     masm.boxValue(JSVAL_TYPE_BOOLEAN, scratch, R0.valueReg());
++#else
++    // Compare payload regs of R0 and R1.
++    Assembler::Condition cond = JSOpToCondition(op, /* signed = */true);
++    masm.cmp32(R0.payloadReg(), R1.payloadReg());
++    masm.setCC(cond, R0.payloadReg());
++    masm.movzbl(R0.payloadReg(), R0.payloadReg());
++
++    // Box the result and return
++    masm.tagValue(JSVAL_TYPE_BOOLEAN, R0.payloadReg(), R0);
++#endif
+     EmitReturnFromIC(masm);
+ 
+     // Failure case - jump to next stub
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/CodeGenerator-x64.cpp firefox-45.2.0esr/js/src/jit/x64/CodeGenerator-x64.cpp
+--- firefox-45.2.0esr.orig/js/src/jit/x64/CodeGenerator-x64.cpp	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/CodeGenerator-x64.cpp	2016-09-05 21:59:12.957666647 -0700
+@@ -6,6 +6,11 @@
+ 
+ #include "jit/x64/CodeGenerator-x64.h"
+ 
++#if defined(JS_PUNBOX64)
++#else
++#include "mozilla/DebugOnly.h"
++#endif
++
+ #include "jit/IonCaches.h"
+ #include "jit/MIR.h"
+ 
+@@ -17,6 +22,11 @@
+ using namespace js;
+ using namespace js::jit;
+ 
++#if defined(JS_PUNBOX64)
++#else
++using mozilla::DebugOnly;
++#endif
++
+ CodeGeneratorX64::CodeGeneratorX64(MIRGenerator* gen, LIRGraph* graph, MacroAssembler* masm)
+   : CodeGeneratorX86Shared(gen, graph, masm)
+ {
+@@ -25,19 +35,37 @@
+ ValueOperand
+ CodeGeneratorX64::ToValue(LInstruction* ins, size_t pos)
+ {
++#if defined(JS_PUNBOX64)
+     return ValueOperand(ToRegister(ins->getOperand(pos)));
++#else
++    Register typeReg = ToRegister(ins->getOperand(pos + TYPE_INDEX));
++    Register payloadReg = ToRegister(ins->getOperand(pos + PAYLOAD_INDEX));
++    return ValueOperand(typeReg, payloadReg);
++#endif
+ }
+ 
+ ValueOperand
+ CodeGeneratorX64::ToOutValue(LInstruction* ins)
+ {
++#if defined(JS_PUNBOX64)
+     return ValueOperand(ToRegister(ins->getDef(0)));
++#else
++    Register typeReg = ToRegister(ins->getDef(TYPE_INDEX));
++    Register payloadReg = ToRegister(ins->getDef(PAYLOAD_INDEX));
++    return ValueOperand(typeReg, payloadReg);
++#endif
+ }
+ 
+ ValueOperand
+ CodeGeneratorX64::ToTempValue(LInstruction* ins, size_t pos)
+ {
++#if defined(JS_PUNBOX64)
+     return ValueOperand(ToRegister(ins->getTemp(pos)));
++#else
++    Register typeReg = ToRegister(ins->getTemp(pos + TYPE_INDEX));
++    Register payloadReg = ToRegister(ins->getTemp(pos + PAYLOAD_INDEX));
++    return ValueOperand(typeReg, payloadReg);
++#endif
+ }
+ 
+ FrameSizeClass
+@@ -68,6 +96,7 @@
+ void
+ CodeGeneratorX64::visitBox(LBox* box)
+ {
++#if defined(JS_PUNBOX64)
+     const LAllocation* in = box->getOperand(0);
+     const LDefinition* result = box->getDef(0);
+ 
+@@ -82,11 +111,23 @@
+     } else {
+         masm.boxValue(ValueTypeFromMIRType(box->type()), ToRegister(in), ToRegister(result));
+     }
++#else
++    const LDefinition* type = box->getDef(TYPE_INDEX);
++
++    DebugOnly<const LAllocation*> a = box->getOperand(0);
++    MOZ_ASSERT(!a->isConstant());
++
++    // On x86, the input operand and the output payload have the same
++    // virtual register. All that needs to be written is the type tag for
++    // the type definition.
++    masm.mov(ImmWord(MIRTypeToTag(box->type())), ToRegister(type));
++#endif
+ }
+ 
+ void
+ CodeGeneratorX64::visitUnbox(LUnbox* unbox)
+ {
++#if defined(JS_PUNBOX64)
+     MUnbox* mir = unbox->mir();
+ 
+     if (mir->fallible()) {
+@@ -135,6 +176,16 @@
+       default:
+         MOZ_CRASH("Given MIRType cannot be unboxed.");
+     }
++#else
++    // Note that for unbox, the type and payload indexes are switched on the
++    // inputs.
++    MUnbox* mir = unbox->mir();
++
++    if (mir->fallible()) {
++        masm.cmp32(ToOperand(unbox->type()), Imm32(MIRTypeToTag(mir->type())));
++        bailoutIf(Assembler::NotEqual, unbox->snapshot());
++    }
++#endif
+ }
+ 
+ void
+@@ -147,7 +198,7 @@
+     const Register output = ToRegister(lir->output());
+ 
+     MOZ_ASSERT(mir->jsop() == JSOP_STRICTEQ || mir->jsop() == JSOP_STRICTNE);
+-
++#if defined(JS_PUNBOX64)
+     // Load boxed boolean in ScratchReg.
+     ScratchRegisterScope scratch(masm);
+     if (rhs->isConstant())
+@@ -158,6 +209,24 @@
+     // Perform the comparison.
+     masm.cmpPtr(lhs.valueReg(), scratch);
+     masm.emitSet(JSOpToCondition(mir->compareType(), mir->jsop()), output);
++#else
++    Label notBoolean, done;
++    masm.branchTestBoolean(Assembler::NotEqual, lhs, &notBoolean);
++    {
++        if (rhs->isConstant())
++            masm.cmp32(lhs.payloadReg(), Imm32(rhs->toConstant()->toBoolean()));
++        else
++            masm.cmp32(lhs.payloadReg(), ToRegister(rhs));
++        masm.emitSet(JSOpToCondition(mir->compareType(), mir->jsop()), output);
++        masm.jump(&done);
++    }
++    masm.bind(&notBoolean);
++    {
++        masm.move32(Imm32(mir->jsop() == JSOP_STRICTNE), output);
++    }
++
++    masm.bind(&done);
++#endif
+ }
+ 
+ void
+@@ -169,7 +238,7 @@
+     const LAllocation* rhs = lir->rhs();
+ 
+     MOZ_ASSERT(mir->jsop() == JSOP_STRICTEQ || mir->jsop() == JSOP_STRICTNE);
+-
++#if defined(JS_PUNBOX64)
+     // Load boxed boolean in ScratchReg.
+     ScratchRegisterScope scratch(masm);
+     if (rhs->isConstant())
+@@ -179,28 +248,54 @@
+ 
+     // Perform the comparison.
+     masm.cmpPtr(lhs.valueReg(), scratch);
++#else
++    Assembler::Condition cond = masm.testBoolean(Assembler::NotEqual, lhs);
++    jumpToBlock((mir->jsop() == JSOP_STRICTEQ) ? lir->ifFalse() : lir->ifTrue(), cond);
++
++    if (rhs->isConstant())
++        masm.cmp32(lhs.payloadReg(), Imm32(rhs->toConstant()->toBoolean()));
++    else
++        masm.cmp32(lhs.payloadReg(), ToRegister(rhs));
++#endif
+     emitBranch(JSOpToCondition(mir->compareType(), mir->jsop()), lir->ifTrue(), lir->ifFalse());
+ }
+ 
+ void
+ CodeGeneratorX64::visitCompareBitwise(LCompareBitwise* lir)
+ {
+-    MCompare* mir = lir->mir();
+     const ValueOperand lhs = ToValue(lir, LCompareBitwise::LhsInput);
+     const ValueOperand rhs = ToValue(lir, LCompareBitwise::RhsInput);
+     const Register output = ToRegister(lir->output());
+-
++    MCompare* mir = lir->mir();
+     MOZ_ASSERT(IsEqualityOp(mir->jsop()));
+-
++#if defined(JS_PUNBOX64)
+     masm.cmpPtr(lhs.valueReg(), rhs.valueReg());
+     masm.emitSet(JSOpToCondition(mir->compareType(), mir->jsop()), output);
++#else
++    Assembler::Condition cond = JSOpToCondition(mir->compareType(), mir->jsop());
++
++    Label notEqual, done;
++    masm.cmp32(lhs.typeReg(), rhs.typeReg());
++    masm.j(Assembler::NotEqual, &notEqual);
++    {
++        masm.cmp32(lhs.payloadReg(), rhs.payloadReg());
++        masm.emitSet(cond, output);
++        masm.jump(&done);
++    }
++    masm.bind(&notEqual);
++    {
++        masm.move32(Imm32(cond == Assembler::NotEqual), output);
++    }
++
++    masm.bind(&done);
++#endif
+ }
+ 
+ void
+ CodeGeneratorX64::visitCompareBitwiseAndBranch(LCompareBitwiseAndBranch* lir)
+ {
+     MCompare* mir = lir->cmpMir();
+-
++#if defined(JS_PUNBOX64)
+     const ValueOperand lhs = ToValue(lir, LCompareBitwiseAndBranch::LhsInput);
+     const ValueOperand rhs = ToValue(lir, LCompareBitwiseAndBranch::RhsInput);
+ 
+@@ -209,6 +304,21 @@
+ 
+     masm.cmpPtr(lhs.valueReg(), rhs.valueReg());
+     emitBranch(JSOpToCondition(mir->compareType(), mir->jsop()), lir->ifTrue(), lir->ifFalse());
++#else
++    Assembler::Condition cond = JSOpToCondition(mir->compareType(), mir->jsop());
++    const ValueOperand lhs = ToValue(lir, LCompareBitwiseAndBranch::LhsInput);
++    const ValueOperand rhs = ToValue(lir, LCompareBitwiseAndBranch::RhsInput);
++
++    MOZ_ASSERT(mir->jsop() == JSOP_EQ || mir->jsop() == JSOP_STRICTEQ ||
++               mir->jsop() == JSOP_NE || mir->jsop() == JSOP_STRICTNE);
++
++    MBasicBlock* notEqual = (cond == Assembler::Equal) ? lir->ifFalse() : lir->ifTrue();
++
++    masm.cmp32(lhs.typeReg(), rhs.typeReg());
++    jumpToBlock(notEqual, Assembler::NotEqual);
++    masm.cmp32(lhs.payloadReg(), rhs.payloadReg());
++    emitBranch(cond, lir->ifTrue(), lir->ifFalse());
++#endif
+ }
+ 
+ void
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/LIR-x64.h firefox-45.2.0esr/js/src/jit/x64/LIR-x64.h
+--- firefox-45.2.0esr.orig/js/src/jit/x64/LIR-x64.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/LIR-x64.h	2016-09-05 21:59:10.508666567 -0700
+@@ -26,6 +26,8 @@
+     }
+ };
+ 
++#if defined(JS_PUNBOX64)
++
+ class LUnbox : public LUnboxBase {
+   public:
+     LIR_HEADER(Unbox)
+@@ -38,6 +40,26 @@
+         return StringFromMIRType(mir()->type());
+     }
+ };
++#else
++class LUnbox : public LInstructionHelper<1, 2, 0>
++{
++  public:
++    LIR_HEADER(Unbox);
++
++    MUnbox* mir() const {
++        return mir_->toUnbox();
++    }
++    const LAllocation* payload() {
++        return getOperand(0);
++    }
++    const LAllocation* type() {
++        return getOperand(1);
++    }
++    const char* extraName() const {
++        return StringFromMIRType(mir()->type());
++    }
++};
++#endif
+ 
+ class LUnboxFloatingPoint : public LUnboxBase {
+     MIRType type_;
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/Lowering-x64.cpp firefox-45.2.0esr/js/src/jit/x64/Lowering-x64.cpp
+--- firefox-45.2.0esr.orig/js/src/jit/x64/Lowering-x64.cpp	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/Lowering-x64.cpp	2016-09-05 21:47:51.713644199 -0700
+@@ -50,6 +50,7 @@
+ void
+ LIRGeneratorX64::visitBox(MBox* box)
+ {
++#if defined(JS_PUNBOX64)
+     MDefinition* opd = box->getOperand(0);
+ 
+     // If the operand is a constant, emit near its uses.
+@@ -64,6 +65,43 @@
+         LBox* ins = new(alloc()) LBox(useRegister(opd), opd->type());
+         define(ins, box, LDefinition(LDefinition::BOX));
+     }
++#else
++    MDefinition* inner = box->getOperand(0);
++
++    // If the box wrapped a double, it needs a new register.
++    if (IsFloatingPointType(inner->type())) {
++        defineBox(new(alloc()) LBoxFloatingPoint(useRegisterAtStart(inner), tempCopy(inner, 0),
++                                                 inner->type()), box);
++        return;
++    }
++
++    if (box->canEmitAtUses()) {
++        emitAtUses(box);
++        return;
++    }
++
++    if (inner->isConstant()) {
++        defineBox(new(alloc()) LValue(inner->toConstant()->value()), box);
++        return;
++    }
++
++    LBox* lir = new(alloc()) LBox(use(inner), inner->type());
++
++    // Otherwise, we should not define a new register for the payload portion
++    // of the output, so bypass defineBox().
++    uint32_t vreg = getVirtualRegister();
++
++    // Note that because we're using BogusTemp(), we do not change the type of
++    // the definition. We also do not define the first output as "TYPE",
++    // because it has no corresponding payload at (vreg + 1). Also note that
++    // although we copy the input's original type for the payload half of the
++    // definition, this is only for clarity. BogusTemp() definitions are
++    // ignored.
++    lir->setDef(0, LDefinition(vreg, LDefinition::GENERAL));
++    lir->setDef(1, LDefinition::BogusTemp());
++    box->setVirtualRegister(vreg);
++    add(lir);
++#endif
+ }
+ 
+ void
+@@ -336,8 +374,16 @@
+ void
+ LIRGeneratorX64::visitRandom(MRandom* ins)
+ {
++#if defined(JS_PUNBOX64)
++    LRandom *lir = new(alloc()) LRandom(temp(),
++                                        temp(),
++                                        temp());
++#else
+     LRandom *lir = new(alloc()) LRandom(temp(),
+                                         temp(),
++                                        temp(),
++                                        temp(),
+                                         temp());
++#endif
+     defineFixed(lir, ins, LFloatReg(ReturnDoubleReg));
+ }
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/MacroAssembler-x64-inl.h firefox-45.2.0esr/js/src/jit/x64/MacroAssembler-x64-inl.h
+--- firefox-45.2.0esr.orig/js/src/jit/x64/MacroAssembler-x64-inl.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/MacroAssembler-x64-inl.h	2016-09-05 20:57:39.444544937 -0700
+@@ -32,8 +32,13 @@
+ void
+ MacroAssembler::and64(Imm64 imm, Register64 dest)
+ {
++#if defined(JS_PUNBOX64)
+     movq(ImmWord(uintptr_t(imm.value)), ScratchReg);
+     andq(ScratchReg, dest.reg);
++#else
++    andl(Imm32(imm.value & 0xFFFFFFFFL), dest.low);
++    andl(Imm32((imm.value >> 32) & 0xFFFFFFFFL), dest.high);
++#endif
+ }
+ 
+ void
+@@ -51,13 +56,23 @@
+ void
+ MacroAssembler::or64(Register64 src, Register64 dest)
+ {
++#if defined(JS_PUNBOX64)
+     orq(src.reg, dest.reg);
++#else
++    orl(src.low, dest.low);
++    orl(src.high, dest.high);
++#endif
+ }
+ 
+ void
+ MacroAssembler::xor64(Register64 src, Register64 dest)
+ {
++#if defined(JS_PUNBOX64)
+     xorq(src.reg, dest.reg);
++#else
++    xorl(src.low, dest.low);
++    xorl(src.high, dest.high);
++#endif
+ }
+ 
+ void
+@@ -78,7 +93,12 @@
+ void
+ MacroAssembler::add64(Register64 src, Register64 dest)
+ {
++#if defined(JS_PUNBOX64)
+     addq(src.reg, dest.reg);
++#else
++    addl(src.low, dest.low);
++    adcl(src.high, dest.high);
++#endif
+ }
+ 
+ // ===============================================================
+@@ -93,7 +113,12 @@
+ void
+ MacroAssembler::lshift64(Imm32 imm, Register64 dest)
+ {
++#if defined(JS_PUNBOX64)
+     shlq(imm, dest.reg);
++#else
++    shldl(imm, dest.low, dest.high);
++    shll(imm, dest.low);
++#endif
+ }
+ 
+ void
+@@ -111,7 +136,12 @@
+ void
+ MacroAssembler::rshift64(Imm32 imm, Register64 dest)
+ {
++#if defined(JS_PUNBOX64)
+     shrq(imm, dest.reg);
++#else
++    shrdl(imm, dest.high, dest.low);
++    shrl(imm, dest.high);
++#endif
+ }
+ 
+ //}}} check_macroassembler_style
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/MacroAssembler-x64.cpp firefox-45.2.0esr/js/src/jit/x64/MacroAssembler-x64.cpp
+--- firefox-45.2.0esr.orig/js/src/jit/x64/MacroAssembler-x64.cpp	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/MacroAssembler-x64.cpp	2016-09-05 19:58:06.949427215 -0700
+@@ -176,7 +176,11 @@
+     // two values expected by JSOP_RETSUB: BooleanValue(true) and the
+     // exception.
+     bind(&finally);
++#if defined(JS_PUNBOX64)
+     ValueOperand exception = ValueOperand(rcx);
++#else
++    ValueOperand exception = ValueOperand(ecx, edx);
++#endif
+     loadValue(Address(esp, offsetof(ResumeFromException, exception)), exception);
+ 
+     loadPtr(Address(rsp, offsetof(ResumeFromException, target)), rax);
+@@ -275,7 +279,7 @@
+                                               Label* label)
+ {
+     MOZ_ASSERT(cond == Assembler::Equal || cond == Assembler::NotEqual);
+-
++#if defined(JS_PUNBOX64)
+     const Nursery& nursery = GetJitContext()->runtime->gcNursery();
+ 
+     // Avoid creating a bogus ObjectValue below.
+@@ -290,6 +294,15 @@
+     addPtr(value.valueReg(), scratch);
+     branchPtr(cond == Assembler::Equal ? Assembler::Below : Assembler::AboveOrEqual,
+               scratch, Imm32(nursery.nurserySize()), label);
++
++#else
++    Label done;
++
++    branchTestObject(Assembler::NotEqual, value, cond == Assembler::Equal ? &done : label);
++    branchPtrInNurseryRange(cond, value.payloadReg(), temp, label);
++
++    bind(&done);
++#endif
+ }
+ 
+ void
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/MacroAssembler-x64.h firefox-45.2.0esr/js/src/jit/x64/MacroAssembler-x64.h
+--- firefox-45.2.0esr.orig/js/src/jit/x64/MacroAssembler-x64.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/MacroAssembler-x64.h	2016-09-05 20:43:15.172516457 -0700
+@@ -14,6 +14,7 @@
+ namespace js {
+ namespace jit {
+ 
++#if defined(JS_PUNBOX64)
+ struct ImmShiftedTag : public ImmWord
+ {
+     explicit ImmShiftedTag(JSValueShiftedTag shtag)
+@@ -31,6 +32,7 @@
+       : Imm32(tag)
+     { }
+ };
++#endif
+ 
+ class MacroAssemblerX64 : public MacroAssemblerX86Shared
+ {
+@@ -41,6 +43,22 @@
+ 
+     void bindOffsets(const MacroAssemblerX86Shared::UsesVector&);
+ 
++#if defined(JS_PUNBOX64)
++#else
++    Operand payloadOf(const Address& address) {
++        return Operand(address.base, address.offset);
++    }
++    Operand payloadOf(const BaseIndex& address) {
++        return Operand(address.base, address.index, address.scale, address.offset);
++    }
++    Operand tagOf(const Address& address) {
++        return Operand(address.base, address.offset + 4);
++    }
++    Operand tagOf(const BaseIndex& address) {
++        return Operand(address.base, address.index, address.scale, address.offset + 4);
++    }
++#endif
++
+   public:
+     using MacroAssemblerX86Shared::branch32;
+     using MacroAssemblerX86Shared::branchTest32;
+@@ -55,6 +73,40 @@
+     // bookkeeping has been flushed to the instruction stream.
+     void finish();
+ 
++#if defined(JS_PUNBOX64)
++#else
++    Operand ToPayload(Operand base) {
++        return base;
++    }
++    Address ToPayload(Address base) {
++        return base;
++    }
++    Operand ToType(Operand base) {
++        switch (base.kind()) {
++          case Operand::MEM_REG_DISP:
++            return Operand(Register::FromCode(base.base()), base.disp() + sizeof(void*));
++
++          case Operand::MEM_SCALE:
++            return Operand(Register::FromCode(base.base()), Register::FromCode(base.index()),
++                           base.scale(), base.disp() + sizeof(void*));
++
++          default:
++            MOZ_CRASH("unexpected operand kind");
++        }
++    }
++    Address ToType(Address base) {
++        return ToType(Operand(base)).toAddress();
++    }
++    void moveValue(const Value& val, Register type, Register data) {
++        jsval_layout jv = JSVAL_TO_IMPL(val);
++        movl(Imm32(jv.s.tag), type);
++        if (val.isMarkable())
++            movl(ImmGCPtr(reinterpret_cast<gc::Cell*>(val.toGCThing())), data);
++        else
++            movl(Imm32(jv.s.payload.i32), data);
++    }
++#endif
++
+     /////////////////////////////////////////////////////////////////
+     // X64 helpers.
+     /////////////////////////////////////////////////////////////////
+@@ -89,6 +141,7 @@
+         return Operand(address.base, address.index, address.scale, address.offset + 4);
+     }
+ 
++#if defined(JS_PUNBOX64)
+     uint32_t Upper32Of(JSValueShiftedTag tag) {
+         union { // Implemented in this way to appease MSVC++.
+             uint64_t tag;
+@@ -104,22 +157,32 @@
+     JSValueShiftedTag GetShiftedTag(JSValueType type) {
+         return (JSValueShiftedTag)JSVAL_TYPE_TO_SHIFTED_TAG(type);
+     }
++#else
++#endif
+ 
+     /////////////////////////////////////////////////////////////////
+     // X86/X64-common interface.
+     /////////////////////////////////////////////////////////////////
++#if defined(JS_PUNBOX64)
+     Address ToPayload(Address value) {
+         return value;
+     }
++#endif
+ 
+     void storeValue(ValueOperand val, Operand dest) {
++#if defined(JS_PUNBOX64)
+         movq(val.valueReg(), dest);
++#else
++        movl(val.payloadReg(), ToPayload(dest));
++        movl(val.typeReg(), ToType(dest));
++#endif
+     }
+     void storeValue(ValueOperand val, const Address& dest) {
+         storeValue(val, Operand(dest));
+     }
+     template <typename T>
+     void storeValue(JSValueType type, Register reg, const T& dest) {
++#if defined(JS_PUNBOX64)
+         // Value types with 32-bit payloads can be emitted as two 32-bit moves.
+         if (type == JSVAL_TYPE_INT32 || type == JSVAL_TYPE_BOOLEAN) {
+             movl(reg, Operand(dest));
+@@ -129,6 +192,10 @@
+             boxValue(type, reg, scratch);
+             movq(scratch, Operand(dest));
+         }
++#else
++        storeTypeTag(ImmTag(JSVAL_TYPE_TO_TAG(type)), Operand(dest));
++        storePayload(reg, Operand(dest));
++#endif
+     }
+     template <typename T>
+     void storeValue(const Value& val, const T& dest) {
+@@ -146,7 +213,31 @@
+         storeValue(val, Operand(dest));
+     }
+     void loadValue(Operand src, ValueOperand val) {
++#if defined(JS_PUNBOX64)
+         movq(src, val.valueReg());
++#else
++        Operand payload = ToPayload(src);
++        Operand type = ToType(src);
++
++        // Ensure that loading the payload does not erase the pointer to the
++        // Value in memory or the index.
++        Register baseReg = Register::FromCode(src.base());
++        Register indexReg = (src.kind() == Operand::MEM_SCALE) ? Register::FromCode(src.index()) : InvalidReg;
++
++        if (baseReg == val.payloadReg() || indexReg == val.payloadReg()) {
++            MOZ_ASSERT(baseReg != val.typeReg());
++            MOZ_ASSERT(indexReg != val.typeReg());
++
++            movl(type, val.typeReg());
++            movl(payload, val.payloadReg());
++        } else {
++            MOZ_ASSERT(baseReg != val.payloadReg());
++            MOZ_ASSERT(indexReg != val.payloadReg());
++
++            movl(payload, val.payloadReg());
++            movl(type, val.typeReg());
++        }
++#endif
+     }
+     void loadValue(Address src, ValueOperand val) {
+         loadValue(Operand(src), val);
+@@ -155,18 +246,35 @@
+         loadValue(Operand(src), val);
+     }
+     void tagValue(JSValueType type, Register payload, ValueOperand dest) {
++#if defined(JS_PUNBOX64)
+         ScratchRegisterScope scratch(asMasm());
+         MOZ_ASSERT(dest.valueReg() != scratch);
+         if (payload != dest.valueReg())
+             movq(payload, dest.valueReg());
+         mov(ImmShiftedTag(type), scratch);
+         orq(scratch, dest.valueReg());
++#else
++        MOZ_ASSERT(dest.typeReg() != dest.payloadReg());
++        if (payload != dest.payloadReg())
++            movl(payload, dest.payloadReg());
++        movl(ImmType(type), dest.typeReg());
++#endif
+     }
+     void pushValue(ValueOperand val) {
++#if defined(JS_PUNBOX64)
+         push(val.valueReg());
++#else
++        push(val.typeReg());
++        push(val.payloadReg());
++#endif
+     }
+     void popValue(ValueOperand val) {
++#if defined(JS_PUNBOX64)
+         pop(val.valueReg());
++#else
++        pop(val.payloadReg());
++        pop(val.typeReg());
++#endif
+     }
+     void pushValue(const Value& val) {
+         jsval_layout jv = JSVAL_TO_IMPL(val);
+@@ -180,9 +288,14 @@
+         }
+     }
+     void pushValue(JSValueType type, Register reg) {
++#if defined(JS_PUNBOX64)
+         ScratchRegisterScope scratch(asMasm());
+         boxValue(type, reg, scratch);
+         push(scratch);
++#else
++        push(ImmTag(JSVAL_TYPE_TO_TAG(type)));
++        push(reg);
++#endif
+     }
+     void pushValue(const Address& addr) {
+         push(Operand(addr));
+@@ -194,12 +307,40 @@
+         writeDataRelocation(val);
+     }
+     void moveValue(const Value& src, const ValueOperand& dest) {
++#if defined(JS_PUNBOX64)
+         moveValue(src, dest.valueReg());
++#else
++        moveValue(src, dest.typeReg(), dest.payloadReg());
++#endif
+     }
+     void moveValue(const ValueOperand& src, const ValueOperand& dest) {
++#if defined(JS_PUNBOX64)
+         if (src.valueReg() != dest.valueReg())
+             movq(src.valueReg(), dest.valueReg());
++#else
++        Register s0 = src.typeReg(), d0 = dest.typeReg(),
++                 s1 = src.payloadReg(), d1 = dest.payloadReg();
++
++        // Either one or both of the source registers could be the same as a
++        // destination register.
++        if (s1 == d0) {
++            if (s0 == d1) {
++                // If both are, this is just a swap of two registers.
++                xchgl(d0, d1);
++                return;
++            }
++            // If only one is, copy that source first.
++            mozilla::Swap(s0, s1);
++            mozilla::Swap(d0, d1);
++        }
++
++        if (s0 != d0)
++            movl(s0, d0);
++        if (s1 != d1)
++            movl(s1, d1);
++#endif
+     }
++#if defined(JS_PUNBOX64)
+     void boxValue(JSValueType type, Register src, Register dest) {
+         MOZ_ASSERT(src != dest);
+ 
+@@ -216,6 +357,17 @@
+         mov(ImmShiftedTag(tag), dest);
+         orq(src, dest);
+     }
++#else
++#endif
++
++
++#if defined(JS_PUNBOX64)
++#else
++    // Returns the register containing the type tag.
++    Register splitTagForTest(const ValueOperand& value) {
++        return value.typeReg();
++    }
++#endif
+ 
+     Condition testUndefined(Condition cond, Register tag) {
+         MOZ_ASSERT(cond == Equal || cond == NotEqual);
+@@ -254,8 +406,14 @@
+     }
+     Condition testDouble(Condition cond, Register tag) {
+         MOZ_ASSERT(cond == Equal || cond == NotEqual);
++#if defined(JS_PUNBOX64)
+         cmp32(tag, Imm32(JSVAL_TAG_MAX_DOUBLE));
+         return cond == Equal ? BelowOrEqual : Above;
++#else
++        Condition actual = (cond == Equal) ? Below : AboveOrEqual;
++        cmp32(tag, ImmTag(JSVAL_TAG_CLEAR));
++        return actual;
++#endif
+     }
+     Condition testNumber(Condition cond, Register tag) {
+         MOZ_ASSERT(cond == Equal || cond == NotEqual);
+@@ -282,6 +440,7 @@
+         return cond == Equal ? Below : AboveOrEqual;
+     }
+ 
++#if defined(JS_PUNBOX64)
+     Condition testUndefined(Condition cond, const ValueOperand& src) {
+         ScratchRegisterScope scratch(asMasm());
+         splitTag(src, scratch);
+@@ -337,8 +496,50 @@
+         splitTag(src, scratch);
+         return testPrimitive(cond, scratch);
+     }
++#else
++    Condition testUndefined(Condition cond, const ValueOperand& value) {
++        return testUndefined(cond, value.typeReg());
++    }
++    Condition testBoolean(Condition cond, const ValueOperand& value) {
++        return testBoolean(cond, value.typeReg());
++    }
++    Condition testInt32(Condition cond, const ValueOperand& value) {
++        return testInt32(cond, value.typeReg());
++    }
++    Condition testDouble(Condition cond, const ValueOperand& value) {
++        return testDouble(cond, value.typeReg());
++    }
++    Condition testNull(Condition cond, const ValueOperand& value) {
++        return testNull(cond, value.typeReg());
++    }
++    Condition testString(Condition cond, const ValueOperand& value) {
++        return testString(cond, value.typeReg());
++    }
++    Condition testSymbol(Condition cond, const ValueOperand& value) {
++        return testSymbol(cond, value.typeReg());
++    }
++    Condition testObject(Condition cond, const ValueOperand& value) {
++        return testObject(cond, value.typeReg());
++    }
++    Condition testMagic(Condition cond, const ValueOperand& value) {
++        return testMagic(cond, value.typeReg());
++    }
++    Condition testError(Condition cond, const ValueOperand& value) {
++        return testMagic(cond, value);
++    }
++    Condition testNumber(Condition cond, const ValueOperand& value) {
++        return testNumber(cond, value.typeReg());
++    }
++    Condition testGCThing(Condition cond, const ValueOperand& value) {
++        return testGCThing(cond, value.typeReg());
++    }
++    Condition testPrimitive(Condition cond, const ValueOperand& value) {
++        return testPrimitive(cond, value.typeReg());
++    }
++#endif
+ 
+ 
++#if defined(JS_PUNBOX64)
+     Condition testUndefined(Condition cond, const Address& src) {
+         ScratchRegisterScope scratch(asMasm());
+         splitTag(src, scratch);
+@@ -399,8 +600,38 @@
+         splitTag(src, scratch);
+         return testMagic(cond, scratch);
+     }
++#else
++    Condition testGCThing(Condition cond, const Address& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_LOWER_INCL_TAG_OF_GCTHING_SET));
++        return cond == Equal ? AboveOrEqual : Below;
++    }
++    Condition testMagic(Condition cond, const Address& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_MAGIC));
++        return cond;
++    }
++    Condition testBoolean(Condition cond, const Address& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(Operand(ToType(address)), ImmTag(JSVAL_TAG_BOOLEAN));
++        return cond;
++    }
++    Condition testInt32(Condition cond, const Address& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        return testInt32(cond, Operand(address));
++    }
++    Condition testObject(Condition cond, const Address& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        return testObject(cond, Operand(address));
++    }
++    Condition testDouble(Condition cond, const Address& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        return testDouble(cond, Operand(address));
++    }
++#endif
+ 
+ 
++#if defined(JS_PUNBOX64)
+     Condition testUndefined(Condition cond, const BaseIndex& src) {
+         ScratchRegisterScope scratch(asMasm());
+         splitTag(src, scratch);
+@@ -451,12 +682,103 @@
+         splitTag(src, scratch);
+         return testGCThing(cond, scratch);
+     }
++#else
++    Condition testUndefined(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_UNDEFINED));
++        return cond;
++    }
++    Condition testNull(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_NULL));
++        return cond;
++    }
++    Condition testBoolean(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_BOOLEAN));
++        return cond;
++    }
++    Condition testString(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_STRING));
++        return cond;
++    }
++    Condition testSymbol(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_SYMBOL));
++        return cond;
++    }
++    Condition testInt32(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_INT32));
++        return cond;
++    }
++    Condition testObject(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_OBJECT));
++        return cond;
++    }
++    Condition testDouble(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        Condition actual = (cond == Equal) ? Below : AboveOrEqual;
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_CLEAR));
++        return actual;
++    }
++    Condition testMagic(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_TAG_MAGIC));
++        return cond;
++    }
++    Condition testGCThing(Condition cond, const BaseIndex& address) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(tagOf(address), ImmTag(JSVAL_LOWER_INCL_TAG_OF_GCTHING_SET));
++        return cond == Equal ? AboveOrEqual : Below;
++    }
++#endif
++
++#if defined(JS_PUNBOX64)
++#else
++    Condition testMagic(Condition cond, const Operand& operand) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(ToType(operand), ImmTag(JSVAL_TAG_MAGIC));
++        return cond;
++    }
++    Condition testInt32(Condition cond, const Operand& operand) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(ToType(operand), ImmTag(JSVAL_TAG_INT32));
++        return cond;
++    }
++    Condition testObject(Condition cond, const Operand& operand) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(ToType(operand), ImmTag(JSVAL_TAG_OBJECT));
++        return cond;
++    }
++    Condition testDouble(Condition cond, const Operand& operand) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        Condition actual = (cond == Equal) ? Below : AboveOrEqual;
++        cmp32(ToType(operand), ImmTag(JSVAL_TAG_CLEAR));
++        return actual;
++    }
++    Condition testUndefined(Condition cond, const Operand& operand) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(ToType(operand), ImmTag(JSVAL_TAG_UNDEFINED));
++        return cond;
++    }
++    Condition testNull(Condition cond, const Operand& operand) {
++        MOZ_ASSERT(cond == Equal || cond == NotEqual);
++        cmp32(ToType(operand), ImmTag(JSVAL_TAG_NULL));
++        return cond;
++    }
++#endif
+ 
++
++#if defined(JS_PUNBOX64)
+     Condition isMagic(Condition cond, const ValueOperand& src, JSWhyMagic why) {
+         uint64_t magic = MagicValue(why).asRawBits();
+         cmpPtr(src.valueReg(), ImmWord(magic));
+         return cond;
+     }
++#endif
+ 
+     void cmpPtr(Register lhs, const ImmWord rhs) {
+         ScratchRegisterScope scratch(asMasm());
+@@ -572,7 +894,12 @@
+         addq(Operand(src), dest);
+     }
+     void add64(Imm32 imm, Register64 dest) {
++#if defined(JS_PUNBOX64)
+         addq(imm, dest.reg);
++#else
++        addl(imm, dest.low);
++        adcl(Imm32(0), dest.high);
++#endif
+     }
+     void subPtr(Imm32 imm, Register dest) {
+         subq(imm, dest);
+@@ -590,8 +917,41 @@
+         lea(Operand(src, src, TimesTwo), dest);
+     }
+     void mul64(Imm64 imm, const Register64& dest) {
++#if defined(JS_PUNBOX64)
+         movq(ImmWord(uintptr_t(imm.value)), ScratchReg);
+         imulq(ScratchReg, dest.reg);
++#else
++        // Note: this function clobbers eax and edx.
++        // LOW32  = LOW(LOW(dest) * LOW(imm));
++        // HIGH32 = LOW(HIGH(dest) * LOW(imm)) [multiply imm into upper bits]
++        //        + LOW(LOW(dest) * HIGH(imm)) [multiply dest into upper bits]
++        //        + HIGH(LOW(dest) * LOW(imm)) [carry]
++
++        MOZ_ASSERT(dest.low != eax && dest.low != edx);
++        MOZ_ASSERT(dest.high != eax && dest.high != edx);
++
++        // HIGH(dest) = LOW(HIGH(dest) * LOW(imm));
++        movl(Imm32(imm.value & 0xFFFFFFFFL), edx);
++        imull(edx, dest.high);
++
++        // edx:eax = LOW(dest) * LOW(imm);
++        movl(Imm32(imm.value & 0xFFFFFFFFL), edx);
++        movl(dest.low, eax);
++        mull(edx);
++
++        // HIGH(dest) += edx;
++        addl(edx, dest.high);
++
++        // HIGH(dest) += LOW(LOW(dest) * HIGH(imm));
++        if (((imm.value >> 32) & 0xFFFFFFFFL) == 5)
++            leal(Operand(dest.low, dest.low, TimesFour), edx);
++        else
++            MOZ_CRASH("Unsupported imm");
++        addl(edx, dest.high);
++
++        // LOW(dest) = eax;
++        movl(eax, dest.low);
++#endif
+     }
+ 
+     void branch32(Condition cond, AbsoluteAddress lhs, Imm32 rhs, Label* label) {
+@@ -709,8 +1069,38 @@
+     }
+ 
+     void branchTest64(Condition cond, Register64 lhs, Register64 rhs, Register temp, Label* label) {
++#if defined(JS_PUNBOX64)
+         branchTestPtr(cond, lhs.reg, rhs.reg, label);
++#else
++        if (cond == Assembler::Zero) {
++            MOZ_ASSERT(lhs.low == rhs.low);
++            MOZ_ASSERT(lhs.high == rhs.high);
++            movl(lhs.low, temp);
++            orl(lhs.high, temp);
++            branchTestPtr(cond, temp, temp, label);
++        } else {
++            MOZ_CRASH("Unsupported condition");
++        }
++#endif
++    }
++
++
++#if defined(JS_PUNBOX64)
++#else
++    void storePayload(const Value& val, Operand dest) {
++        jsval_layout jv = JSVAL_TO_IMPL(val);
++        if (val.isMarkable())
++            movl(ImmGCPtr((gc::Cell*)jv.s.payload.ptr), ToPayload(dest));
++        else
++            movl(Imm32(jv.s.payload.i32), ToPayload(dest));
++    }
++    void storePayload(Register src, Operand dest) {
++        movl(src, ToPayload(dest));
++    }
++    void storeTypeTag(ImmTag tag, Operand dest) {
++        movl(tag, ToType(dest));
+     }
++#endif
+ 
+     void movePtr(Register src, Register dest) {
+         movq(src, dest);
+@@ -731,7 +1121,12 @@
+         movq(imm, dest);
+     }
+     void move64(Register64 src, Register64 dest) {
++#if defined(JS_PUNBOX64)
+         movq(src.reg, dest.reg);
++#else
++        movl(src.low, dest.low);
++        movl(src.high, dest.high);
++#endif
+     }
+     void loadPtr(AbsoluteAddress address, Register dest) {
+         if (X86Encoding::IsAddressImmediate(address.addr)) {
+@@ -765,7 +1160,12 @@
+         }
+     }
+     void load64(const Address& address, Register64 dest) {
++#if defined(JS_PUNBOX64)
+         movq(Operand(address), dest.reg);
++#else
++        movl(Operand(address), dest.low);
++        movl(Operand(Address(address.base, address.offset + 4)), dest.high);
++#endif
+     }
+ 
+     void branch64(Condition cond, const Address& lhs, Imm64 val, Label* label) {
+@@ -835,9 +1235,15 @@
+         }
+     }
+     void store64(Register64 src, Address address) {
++#if defined(JS_PUNBOX64)
+         movq(src.reg, Operand(address));
++#else
++        movl(src.low, Operand(address));
++        movl(src.high, Operand(Address(address.base, address.offset + 4)));
++#endif
+     }
+ 
++#if defined(JS_PUNBOX64)
+     void splitTag(Register src, Register dest) {
+         if (src != dest)
+             movq(src, dest);
+@@ -866,7 +1272,77 @@
+         Register reg = splitTagForTest(operand);
+         cmp32(reg, tag);
+     }
++#endif
++
++
++#if defined(JS_PUNBOX64)
++#else
++    // Type testing instructions can take a tag in a register or a
++    // ValueOperand.
++    template <typename T>
++    void branchTestUndefined(Condition cond, const T& t, Label* label) {
++        cond = testUndefined(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestInt32(Condition cond, const T& t, Label* label) {
++        cond = testInt32(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestBoolean(Condition cond, const T& t, Label* label) {
++        cond = testBoolean(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestDouble(Condition cond, const T& t, Label* label) {
++        cond = testDouble(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestNull(Condition cond, const T& t, Label* label) {
++        cond = testNull(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestString(Condition cond, const T& t, Label* label) {
++        cond = testString(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestSymbol(Condition cond, const T& t, Label* label) {
++        cond = testSymbol(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestObject(Condition cond, const T& t, Label* label) {
++        cond = testObject(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestNumber(Condition cond, const T& t, Label* label) {
++        cond = testNumber(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestGCThing(Condition cond, const T& t, Label* label) {
++        cond = testGCThing(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestPrimitive(Condition cond, const T& t, Label* label) {
++        cond = testPrimitive(cond, t);
++        j(cond, label);
++    }
++    template <typename T>
++    void branchTestMagic(Condition cond, const T& t, Label* label) {
++        cond = testMagic(cond, t);
++        j(cond, label);
++    }
++#endif
+ 
++
++#if defined(JS_PUNBOX64)
+     void branchTestUndefined(Condition cond, Register tag, Label* label) {
+         cond = testUndefined(cond, tag);
+         j(cond, label);
+@@ -903,7 +1379,12 @@
+         cond = testNumber(cond, tag);
+         j(cond, label);
+     }
++#else
++#endif
++
++
+ 
++#if defined(JS_PUNBOX64)
+     // x64 can test for certain types directly from memory when the payload
+     // of the type is limited to 32 bits. This avoids loading into a register,
+     // accesses half as much memory, and removes a right-shift.
+@@ -959,7 +1440,10 @@
+         cond = testObject(cond, src);
+         j(cond, label);
+     }
++#else
++#endif
+ 
++#if defined(JS_PUNBOX64)
+     // Perform a type-test on a full Value loaded into a register.
+     // Clobbers the ScratchReg.
+     void branchTestUndefined(Condition cond, const ValueOperand& src, Label* label) {
+@@ -1000,7 +1484,10 @@
+         cond = testNumber(cond, src);
+         j(cond, label);
+     }
++#else
++#endif
+ 
++#if defined(JS_PUNBOX64)
+     // Perform a type-test on a Value addressed by BaseIndex.
+     // Clobbers the ScratchReg.
+     void branchTestUndefined(Condition cond, const BaseIndex& address, Label* label) {
+@@ -1037,7 +1524,10 @@
+         cond = testObject(cond, address);
+         j(cond, label);
+     }
++#else
++#endif
+ 
++#if defined(JS_PUNBOX64)
+     template <typename T>
+     void branchTestGCThing(Condition cond, const T& src, Label* label) {
+         cond = testGCThing(cond, src);
+@@ -1053,12 +1543,16 @@
+         cond = testMagic(cond, t);
+         j(cond, label);
+     }
++#else
++#endif
++
+     void branchTestMagicValue(Condition cond, const ValueOperand& val, JSWhyMagic why,
+                               Label* label)
+     {
+         MOZ_ASSERT(cond == Equal || cond == NotEqual);
+         branchTestValue(cond, val, MagicValue(why), label);
+     }
++#if defined(JS_PUNBOX64)
+     Condition testMagic(Condition cond, const ValueOperand& src) {
+         ScratchRegisterScope scratch(asMasm());
+         splitTag(src, scratch);
+@@ -1067,6 +1561,8 @@
+     Condition testError(Condition cond, const ValueOperand& src) {
+         return testMagic(cond, src);
+     }
++#endif
++#if defined(JS_PUNBOX64)
+     void branchTestValue(Condition cond, const ValueOperand& value, const Value& v, Label* label) {
+         ScratchRegisterScope scratch(asMasm());
+         MOZ_ASSERT(value.valueReg() != scratch);
+@@ -1074,11 +1570,28 @@
+         cmpPtr(value.valueReg(), scratch);
+         j(cond, label);
+     }
++#else
++    void branchTestValue(Condition cond, const ValueOperand& value, const Value& v, Label* label);
++#endif
+     void branchTestValue(Condition cond, const Address& valaddr, const ValueOperand& value,
+                          Label* label)
+     {
+         MOZ_ASSERT(cond == Equal || cond == NotEqual);
++#if defined(JS_PUNBOX64)
+         branchPtr(cond, valaddr, value.valueReg(), label);
++#else
++        // Check payload before tag, since payload is more likely to differ.
++        if (cond == NotEqual) {
++            branchPtr(NotEqual, payloadOf(valaddr), value.payloadReg(), label);
++            branchPtr(NotEqual, tagOf(valaddr), value.typeReg(), label);
++
++        } else {
++            Label fallthrough;
++            branchPtr(NotEqual, payloadOf(valaddr), value.payloadReg(), &fallthrough);
++            branchPtr(Equal, tagOf(valaddr), value.typeReg(), label);
++            bind(&fallthrough);
++        }
++#endif
+     }
+ 
+     void testNullSet(Condition cond, const ValueOperand& value, Register dest) {
+@@ -1097,13 +1610,31 @@
+     }
+ 
+     void boxDouble(FloatRegister src, const ValueOperand& dest) {
++#if defined(JS_PUNBOX64)
+         vmovq(src, dest.valueReg());
++#else
++        if (Assembler::HasSSE41()) {
++            vmovd(src, dest.payloadReg());
++            vpextrd(1, src, dest.typeReg());
++        } else {
++            vmovd(src, dest.payloadReg());
++            vpsrldq(Imm32(4), src, src);
++            vmovd(src, dest.typeReg());
++        }
++#endif
+     }
+     void boxNonDouble(JSValueType type, Register src, const ValueOperand& dest) {
++#if defined(JS_PUNBOX64)
+         MOZ_ASSERT(src != dest.valueReg());
+         boxValue(type, src, dest.valueReg());
++#else
++        if (src != dest.payloadReg())
++            movl(src, dest.payloadReg());
++        movl(ImmType(type), dest.typeReg());
++#endif
+     }
+ 
++#if defined(JS_PUNBOX64)
+     // Note that the |dest| register here may be ScratchReg, so we shouldn't
+     // use it.
+     void unboxInt32(const ValueOperand& src, Register dest) {
+@@ -1150,14 +1681,39 @@
+         movq(src.valueReg(), dest);
+         shlq(Imm32(1), dest);
+     }
++#else
++    void unboxInt32(const ValueOperand& src, Register dest) { unboxNonDouble(src, dest); }
++    void unboxInt32(const Address& src, Register dest) { unboxNonDouble(src, dest); }
++    void unboxBoolean(const ValueOperand& src, Register dest) { unboxNonDouble(src, dest); }
++    void unboxBoolean(const Address& src, Register dest) { unboxNonDouble(src, dest); }
++    void unboxDouble(const Address& src, FloatRegister dest) {
++        loadDouble(Operand(src), dest);
++    }
++    void unboxDouble(const ValueOperand& src, FloatRegister dest) {
++        MOZ_ASSERT(dest != ScratchDoubleReg);
++        if (Assembler::HasSSE41()) {
++            vmovd(src.payloadReg(), dest);
++            vpinsrd(1, src.typeReg(), dest, dest);
++        } else {
++            vmovd(src.payloadReg(), dest);
++            vmovd(src.typeReg(), ScratchDoubleReg);
++            vunpcklps(ScratchDoubleReg, dest, dest);
++        }
++    }
++#endif
+ 
+     void notBoolean(const ValueOperand& val) {
++#if defined(JS_PUNBOX64)
+         xorq(Imm32(1), val.valueReg());
++#else
++        xorl(Imm32(1), val.payloadReg());
++#endif
+     }
+ 
+     // Unbox any non-double value into dest. Prefer unboxInt32 or unboxBoolean
+     // instead if the source type is known.
+     void unboxNonDouble(const ValueOperand& src, Register dest) {
++#if defined(JS_PUNBOX64)
+         if (src.valueReg() == dest) {
+             ScratchRegisterScope scratch(asMasm());
+             mov(ImmWord(JSVAL_PAYLOAD_MASK), scratch);
+@@ -1166,7 +1722,12 @@
+             mov(ImmWord(JSVAL_PAYLOAD_MASK), dest);
+             andq(src.valueReg(), dest);
+         }
++#else
++        if (src.payloadReg() != dest)
++            movl(src.payloadReg(), dest);
++#endif
+     }
++#if defined(JS_PUNBOX64)
+     void unboxNonDouble(const Operand& src, Register dest) {
+         // Explicitly permits |dest| to be used in |src|.
+         ScratchRegisterScope scratch(asMasm());
+@@ -1183,17 +1744,30 @@
+             andq(src, dest);
+         }
+     }
++#else
++    void unboxNonDouble(const Address& src, Register dest) {
++        movl(payloadOf(src), dest);
++    }
++    void unboxNonDouble(const BaseIndex& src, Register dest) {
++        movl(payloadOf(src), dest);
++    }
++#endif
+ 
+     void unboxString(const ValueOperand& src, Register dest) { unboxNonDouble(src, dest); }
+-    void unboxString(const Operand& src, Register dest) { unboxNonDouble(src, dest); }
+-
+     void unboxSymbol(const ValueOperand& src, Register dest) { unboxNonDouble(src, dest); }
+-    void unboxSymbol(const Operand& src, Register dest) { unboxNonDouble(src, dest); }
+-
+     void unboxObject(const ValueOperand& src, Register dest) { unboxNonDouble(src, dest); }
++#if defined(JS_PUNBOX64)
++    void unboxString(const Operand& src, Register dest) { unboxNonDouble(src, dest); }
++    void unboxSymbol(const Operand& src, Register dest) { unboxNonDouble(src, dest); }
+     void unboxObject(const Operand& src, Register dest) { unboxNonDouble(src, dest); }
+     void unboxObject(const Address& src, Register dest) { unboxNonDouble(Operand(src), dest); }
+     void unboxObject(const BaseIndex& src, Register dest) { unboxNonDouble(Operand(src), dest); }
++#else
++    void unboxString(const Address& src, Register dest) { unboxNonDouble(src, dest); }
++    void unboxSymbol(const Address& src, Register dest) { unboxNonDouble(src, dest); }
++    void unboxObject(const Address& src, Register dest) { unboxNonDouble(src, dest); }
++    void unboxObject(const BaseIndex& src, Register dest) { unboxNonDouble(src, dest); }
++#endif
+ 
+     // Extended unboxing API. If the payload is already in a register, returns
+     // that register. Otherwise, provides a move to the given scratch register,
+@@ -1219,44 +1793,77 @@
+         return scratch;
+     }
+     Register extractTag(const Address& address, Register scratch) {
++#if defined(JS_PUNBOX64)
+         MOZ_ASSERT(scratch != ScratchReg);
+         loadPtr(address, scratch);
+         splitTag(scratch, scratch);
++#else
++        movl(tagOf(address), scratch);
++#endif
+         return scratch;
+     }
+     Register extractTag(const ValueOperand& value, Register scratch) {
++#if defined(JS_PUNBOX64)
+         MOZ_ASSERT(scratch != ScratchReg);
+         splitTag(value, scratch);
+         return scratch;
++#else
++        return value.typeReg();
++#endif
+     }
+ 
+     void unboxValue(const ValueOperand& src, AnyRegister dest) {
+         if (dest.isFloat()) {
+             Label notInt32, end;
+             branchTestInt32(Assembler::NotEqual, src, &notInt32);
++#if defined(JS_PUNBOX64)
+             convertInt32ToDouble(src.valueReg(), dest.fpu());
++#else
++            convertInt32ToDouble(src.payloadReg(), dest.fpu());
++#endif
+             jump(&end);
+             bind(&notInt32);
+             unboxDouble(src, dest.fpu());
+             bind(&end);
+         } else {
++#if defined(JS_PUNBOX64)
+             unboxNonDouble(src, dest.gpr());
++#else
++            if (src.payloadReg() != dest.gpr())
++                movl(src.payloadReg(), dest.gpr());
++#endif
+         }
+     }
+ 
+     // These two functions use the low 32-bits of the full value register.
+     void boolValueToDouble(const ValueOperand& operand, FloatRegister dest) {
++#if defined(JS_PUNBOX64)
+         convertInt32ToDouble(operand.valueReg(), dest);
++#else
++        convertInt32ToDouble(operand.payloadReg(), dest);
++#endif
+     }
+     void int32ValueToDouble(const ValueOperand& operand, FloatRegister dest) {
++#if defined(JS_PUNBOX64)
+         convertInt32ToDouble(operand.valueReg(), dest);
++#else
++        convertInt32ToDouble(operand.payloadReg(), dest);
++#endif
+     }
+ 
+     void boolValueToFloat32(const ValueOperand& operand, FloatRegister dest) {
++#if defined(JS_PUNBOX64)
+         convertInt32ToFloat32(operand.valueReg(), dest);
++#else
++        convertInt32ToFloat32(operand.payloadReg(), dest);
++#endif
+     }
+     void int32ValueToFloat32(const ValueOperand& operand, FloatRegister dest) {
++#if defined(JS_PUNBOX64)
+         convertInt32ToFloat32(operand.valueReg(), dest);
++#else
++        convertInt32ToFloat32(operand.payloadReg(), dest);
++#endif
+     }
+ 
+     void loadConstantDouble(double d, FloatRegister dest);
+@@ -1286,7 +1893,11 @@
+     }
+ 
+     Condition testInt32Truthy(bool truthy, const ValueOperand& operand) {
++#if defined(JS_PUNBOX64)
+         test32(operand.valueReg(), operand.valueReg());
++#else
++        test32(operand.payloadReg(), operand.payloadReg());
++#endif
+         return truthy ? NonZero : Zero;
+     }
+     void branchTestInt32Truthy(bool truthy, const ValueOperand& operand, Label* label) {
+@@ -1294,7 +1905,11 @@
+         j(cond, label);
+     }
+     void branchTestBooleanTruthy(bool truthy, const ValueOperand& operand, Label* label) {
++#if defined(JS_PUNBOX64)
+         test32(operand.valueReg(), operand.valueReg());
++#else
++        test32(operand.payloadReg(), operand.payloadReg());
++#endif
+         j(truthy ? NonZero : Zero, label);
+     }
+     Condition testStringTruthy(bool truthy, const ValueOperand& value) {
+@@ -1322,10 +1937,15 @@
+     void loadUnboxedValue(const T& src, MIRType type, AnyRegister dest) {
+         if (dest.isFloat())
+             loadInt32OrDouble(Operand(src), dest.fpu());
++#if defined(JS_PUNBOX64)
+         else if (type == MIRType_Int32 || type == MIRType_Boolean)
+             movl(Operand(src), dest.gpr());
+         else
+             unboxNonDouble(Operand(src), dest.gpr());
++#else
++        else
++            movl(Operand(src), dest.gpr());
++#endif
+     }
+ 
+     template <typename T>
+@@ -1333,6 +1953,7 @@
+ 
+     template <typename T>
+     void storeUnboxedPayload(ValueOperand value, T address, size_t nbytes) {
++#if defined(JS_PUNBOX64)
+         switch (nbytes) {
+           case 8: {
+             ScratchRegisterScope scratch(asMasm());
+@@ -1348,6 +1969,17 @@
+             return;
+           default: MOZ_CRASH("Bad payload width");
+         }
++#else
++        switch (nbytes) {
++          case 4:
++            storePtr(value.payloadReg(), address);
++            return;
++          case 1:
++            store8(value.payloadReg(), address);
++            return;
++          default: MOZ_CRASH("Bad payload width");
++        }
++#endif
+     }
+ 
+     void loadInstructionPointerAfterCall(Register dest) {
+@@ -1362,9 +1994,13 @@
+         vcvtsq2ss(src, dest, dest);
+     }
+ 
++#if defined(JS_PUNBOX64)
+     void convertUInt64ToDouble(Register64 src, Register temp, FloatRegister dest) {
+         vcvtsi2sdq(src.reg, dest);
+     }
++#else
++    void convertUInt64ToDouble(Register64 src, Register temp, FloatRegister dest);
++#endif
+ 
+     void mulDoublePtr(ImmPtr imm, Register temp, FloatRegister dest) {
+         movq(imm, ScratchReg);
+@@ -1389,6 +2025,7 @@
+     // convert it to double. Else, branch to failure.
+     void ensureDouble(const ValueOperand& source, FloatRegister dest, Label* failure) {
+         Label isDouble, done;
++#if defined(JS_PUNBOX64)
+         Register tag = splitTagForTest(source);
+         branchTestDouble(Assembler::Equal, tag, &isDouble);
+         branchTestInt32(Assembler::NotEqual, tag, failure);
+@@ -1396,6 +2033,12 @@
+         ScratchRegisterScope scratch(asMasm());
+         unboxInt32(source, scratch);
+         convertInt32ToDouble(scratch, dest);
++#else
++        branchTestDouble(Assembler::Equal, source.typeReg(), &isDouble);
++        branchTestInt32(Assembler::NotEqual, source.typeReg(), failure);
++
++        convertInt32ToDouble(source.payloadReg(), dest);
++#endif
+         jump(&done);
+ 
+         bind(&isDouble);
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x64/SharedICRegisters-x64.h firefox-45.2.0esr/js/src/jit/x64/SharedICRegisters-x64.h
+--- firefox-45.2.0esr.orig/js/src/jit/x64/SharedICRegisters-x64.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x64/SharedICRegisters-x64.h	2016-09-05 16:52:47.519060803 -0700
+@@ -15,9 +15,16 @@
+ static MOZ_CONSTEXPR_VAR Register BaselineFrameReg    = rbp;
+ static MOZ_CONSTEXPR_VAR Register BaselineStackReg    = rsp;
+ 
++#if defined(JS_PUNBOX64)
+ static MOZ_CONSTEXPR_VAR ValueOperand R0(rcx);
+ static MOZ_CONSTEXPR_VAR ValueOperand R1(rbx);
+ static MOZ_CONSTEXPR_VAR ValueOperand R2(rax);
++#else
++// ValueOperands R0, R1, and R2
++static MOZ_CONSTEXPR_VAR ValueOperand R0(ecx, edx);
++static MOZ_CONSTEXPR_VAR ValueOperand R1(eax, ebx);
++static MOZ_CONSTEXPR_VAR ValueOperand R2(esi, edi);
++#endif
+ 
+ static MOZ_CONSTEXPR_VAR Register ICTailCallReg       = rsi;
+ static MOZ_CONSTEXPR_VAR Register ICStubReg           = rdi;
+diff -ur firefox-45.2.0esr.orig/js/src/jit/x86-shared/Architecture-x86-shared.h firefox-45.2.0esr/js/src/jit/x86-shared/Architecture-x86-shared.h
+--- firefox-45.2.0esr.orig/js/src/jit/x86-shared/Architecture-x86-shared.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.2.0esr/js/src/jit/x86-shared/Architecture-x86-shared.h	2016-09-05 16:55:44.854066646 -0700
+@@ -35,12 +35,15 @@
+ static const uint32_t ION_FRAME_SLACK_SIZE     = 24;
+ #endif
+ 
+-#if defined(JS_CODEGEN_X86)
++#if defined(JS_PUNBOX64)
++#else
+ // These offsets are specific to nunboxing, and capture offsets into the
+ // components of a js::Value.
+ static const int32_t NUNBOX32_TYPE_OFFSET         = 4;
+ static const int32_t NUNBOX32_PAYLOAD_OFFSET      = 0;
++#endif
+ 
++#if defined(JS_CODEGEN_X86)
+ // Size of each bailout table entry. On x86 this is a 5-byte relative call.
+ static const uint32_t BAILOUT_TABLE_ENTRY_SIZE    = 5;
+ #endif

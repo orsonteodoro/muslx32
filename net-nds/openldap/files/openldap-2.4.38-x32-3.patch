@@ -1,0 +1,24 @@
+diff -ur openldap-2.4.38.orig/configure openldap-2.4.38/configure
+--- openldap-2.4.38.orig/configure	2016-08-19 11:53:37.788502177 -0700
++++ openldap-2.4.38/configure	2016-08-19 12:10:06.488486350 -0700
+@@ -26049,7 +26049,7 @@
+ fi
+ 
+ 
+-$as_echo "#define LBER_LEN_T long" >>confdefs.h
++$as_echo "#define LBER_LEN_T int" >>confdefs.h
+ 
+ 
+ $as_echo "#define LBER_SOCKET_T int" >>confdefs.h
+diff -ur openldap-2.4.38.orig/configure.in openldap-2.4.38/configure.in
+--- openldap-2.4.38.orig/configure.in	2016-08-19 11:53:24.902502383 -0700
++++ openldap-2.4.38/configure.in	2016-08-19 12:06:34.471489744 -0700
+@@ -2333,7 +2333,7 @@
+ 	AC_DEFINE(LBER_INT_T,int,[define to 32-bit or greater integer type])
+ fi
+ 
+-AC_DEFINE(LBER_LEN_T,long,[define to large integer type])
++AC_DEFINE(LBER_LEN_T,int,[define to large integer type])
+ AC_DEFINE(LBER_SOCKET_T,int,[define to socket descriptor type])
+ AC_DEFINE(LBER_TAG_T,long,[define to large integer type])
+ 

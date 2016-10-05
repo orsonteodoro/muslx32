@@ -1,0 +1,48 @@
+diff -ur openldap-2.4.38.orig/configure openldap-2.4.38/configure
+--- openldap-2.4.38.orig/configure	2013-11-14 19:31:27.000000000 -0800
++++ openldap-2.4.38/configure	2016-08-19 11:52:01.461503719 -0700
+@@ -6956,6 +6956,9 @@
+     case `/usr/bin/file conftest.o` in
+     *32-bit*)
+       case $host in
++        x86_64-*linux*-muslx32|x86_64-*linux*-gnux32)
++          LD="${LD-ld} -m elf32_x86_64"
++          ;;
+         x86_64-*linux*)
+           LD="${LD-ld} -m elf_i386"
+           ;;
+@@ -6972,6 +6975,9 @@
+       ;;
+     *64-bit*)
+       case $host in
++        x86_64-*linux*-muslx32|x86_64-*linux*-gnux32)
++          LD="${LD-ld} -m elf32_x86_64"
++          ;;
+         x86_64-*linux*)
+           LD="${LD-ld} -m elf_x86_64"
+           ;;
+Only in openldap-2.4.38: configure.orig
+Only in openldap-2.4.38: configure.rej
+diff -ur openldap-2.4.38.orig/contrib/ldapc++/configure openldap-2.4.38/contrib/ldapc++/configure
+--- openldap-2.4.38.orig/contrib/ldapc++/configure	2013-11-14 19:31:27.000000000 -0800
++++ openldap-2.4.38/contrib/ldapc++/configure	2016-08-19 11:50:23.888505281 -0700
+@@ -5162,6 +5162,9 @@
+         x86_64-*kfreebsd*-gnu)
+           LD="${LD-ld} -m elf_i386_fbsd"
+           ;;
++        x86_64-*linux*-muslx32|x86_64-*linux*-gnux32)
++          LD="${LD-ld} -m elf32_x86_64"
++          ;;
+         x86_64-*linux*)
+           LD="${LD-ld} -m elf_i386"
+           ;;
+@@ -5181,6 +5184,9 @@
+         x86_64-*kfreebsd*-gnu)
+           LD="${LD-ld} -m elf_x86_64_fbsd"
+           ;;
++        x86_64-*linux*-muslx32|x86_64-*linux*-gnux32)
++          LD="${LD-ld} -m elf32_x86_64"
++          ;;
+         x86_64-*linux*)
+           LD="${LD-ld} -m elf_x86_64"
+           ;;

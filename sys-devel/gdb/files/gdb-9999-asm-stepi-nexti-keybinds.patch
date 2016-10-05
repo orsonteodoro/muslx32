@@ -1,0 +1,12 @@
+diff -ur gdb-9999.orig/gdb/tui/tui.c gdb-9999/gdb/tui/tui.c
+--- gdb-9999.orig/gdb/tui/tui.c	2016-08-30 15:18:53.534091004 -0700
++++ gdb-9999/gdb/tui/tui.c	2016-08-30 15:24:15.984085842 -0700
+@@ -80,6 +80,8 @@
+   { 'u', "up" },
+   { 'v', "info locals" },
+   { 'w', "where" },
++  { 'i', "stepi" },
++  { 'x', "nexti" },
+   { 0, 0 },
+ };
+ 

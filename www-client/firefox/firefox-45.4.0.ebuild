@@ -25,19 +25,20 @@ if [[ ${MOZ_ESR} == 1 ]]; then
 fi
 
 # Patch version
-PATCH="${PN}-45.0-patches-05"
+PATCH="${PN}-45.0-patches-06"
 MOZ_HTTP_URI="https://archive.mozilla.org/pub/${PN}/releases"
 
-MOZCONFIG_OPTIONAL_GTK3=1
+# Kill gtk3 support since gtk+-3.20 breaks it hard prior to 48.0
+#MOZCONFIG_OPTIONAL_GTK3=1
 MOZCONFIG_OPTIONAL_WIFI=1
 MOZCONFIG_OPTIONAL_JIT="enabled"
 
-inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.45 pax-utils fdo-mime autotools virtualx mozlinguas
+inherit check-reqs flag-o-matic toolchain-funcs eutils gnome2-utils mozconfig-v6.45 pax-utils fdo-mime autotools virtualx mozlinguas-v2
 
 DESCRIPTION="Firefox Web Browser"
 HOMEPAGE="http://www.mozilla.com/firefox"
 
-KEYWORDS="~alpha amd64 ~arm ~arm64 ~ia64 ~ppc ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm ~arm64 ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -144,7 +145,7 @@ src_prepare() {
 		epatch "${FILESDIR}"/${PN}-38.8.0-dont-use-amd64-ycbcr-on-x32.patch #2
 		epatch "${FILESDIR}"/${PN}-38.8.0-fix-non-__lp64__-for-x32.patch
 		epatch "${FILESDIR}"/${PN}-34.0-disable-breakpad-on-x32.patch
-		epatch "${FILESDIR}"/${PN}-34.0-no-jit-on-x32.patch
+			epatch "${FILESDIR}"/${PN}-34.0-no-jit-on-x32.patch #renable
 		epatch "${FILESDIR}"/${PN}-45.2.0-disable-jpegturbo-optimizations-on-x32.patch #works temporary disable
 		#epatch "${FILESDIR}"/${PN}-45.2-memory_mapped_file.patch
 		#epatch "${FILESDIR}"/${PN}-45.2.0-linux_syscall_support_h.patch
@@ -158,8 +159,13 @@ src_prepare() {
 		epatch "${FILESDIR}"/${PN}-45.2.0-x32-structs64.patch
 		epatch "${FILESDIR}"/${PN}-47.0.1-xpcom-x32.patch
 		epatch "${FILESDIR}"/${PN}-47.0.1-disable-hw-intel-aes.patch
-		#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-1.patch
-		#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-2.patch
+			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-1.patch #enable for punbox64 have punbox64
+			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-2.patch #asmjs padding #required for jit
+
+			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-punbox64-1.patch
+
+			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-nunbox32-1.patch
+			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-nunbox32-2.patch
 	fi
 
 	# Enable gnomebreakpad

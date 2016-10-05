@@ -1,0 +1,13 @@
+--- src/x86_64/Gos-linux.c~	2012-10-06 05:54:38.000000000 +0100
++++ src/x86_64/Gos-linux.c	2013-03-19 15:59:20.066439541 +0000
+@@ -143,8 +143,8 @@
+ 
+   Debug (8, "resuming at ip=%llx via sigreturn(%p)\n",
+ 	     (unsigned long long) c->dwarf.ip, sc);
+-  __asm__ __volatile__ ("mov %0, %%rsp;"
+-			"mov %1, %%rax;"
++  __asm__ __volatile__ ("mov %q0, %%rsp;"
++			"mov %q1, %%rax;"
+ 			"syscall"
+ 			:: "r"(sc), "i"(SYS_rt_sigreturn)
+ 			: "memory");

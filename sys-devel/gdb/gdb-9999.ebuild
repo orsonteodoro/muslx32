@@ -92,7 +92,8 @@ src_prepare() {
 	[[ -n ${RPM} ]] && rpm_spec_epatch "${WORKDIR}"/gdb.spec
 	! use vanilla && [[ -n ${PATCH_VER} ]] && EPATCH_SUFFIX="patch" epatch "${WORKDIR}"/patch
 	epatch_user
-	epatch "${FILESDIR}"/gdb-9999-x32.patch
+	#epatch "${FILESDIR}"/gdb-9999-x32.patch
+        epatch "${FILESDIR}"/gdb-9999-asm-stepi-nexti-keybinds.patch
 	strip-linguas -u bfd/po opcodes/po
 }
 

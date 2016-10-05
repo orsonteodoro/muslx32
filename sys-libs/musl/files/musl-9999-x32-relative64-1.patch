@@ -1,0 +1,26 @@
+diff -ur musl-9999.orig/arch/x32/reloc.h musl-9999/arch/x32/reloc.h
+--- musl-9999.orig/arch/x32/reloc.h	2016-08-31 19:24:56.166471591 -0700
++++ musl-9999/arch/x32/reloc.h	2016-08-31 19:58:39.113439207 -0700
+@@ -17,6 +17,7 @@
+ #define REL_GOT         R_X86_64_GLOB_DAT
+ #define REL_PLT         R_X86_64_JUMP_SLOT
+ #define REL_RELATIVE    R_X86_64_RELATIVE
++#define REL_RELATIVE64  R_X86_64_RELATIVE64
+ #define REL_COPY        R_X86_64_COPY
+ #define REL_DTPMOD      R_X86_64_DTPMOD64
+ #define REL_DTPOFF      R_X86_64_DTPOFF64
+diff -ur musl-9999.orig/ldso/dynlink.c musl-9999/ldso/dynlink.c
+--- musl-9999.orig/ldso/dynlink.c	2016-08-31 19:24:56.281471589 -0700
++++ musl-9999/ldso/dynlink.c	2016-08-31 20:06:43.215431458 -0700
+@@ -376,6 +376,11 @@
+ 		case REL_PLT:
+ 			*reloc_addr = sym_val + addend;
+ 			break;
++#if defined(__x86_64__) && defined(__ILP32__)
++		case REL_RELATIVE64:
++			*reloc_addr = (uint64_t)base + (int32_t)addend;
++			break;
++#endif
+ 		case REL_RELATIVE:
+ 			*reloc_addr = (size_t)base + addend;
+ 			break;

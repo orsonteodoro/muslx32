@@ -1,0 +1,68 @@
+diff -ur musl-9999.orig/arch/x32/bits/user.h musl-9999/arch/x32/bits/user.h
+--- musl-9999.orig/arch/x32/bits/user.h	2016-08-31 18:22:34.776531483 -0700
++++ musl-9999/arch/x32/bits/user.h	2016-08-31 18:29:08.525525180 -0700
+@@ -9,9 +9,15 @@
+ } elf_fpregset_t;
+ 
+ struct user_regs_struct {
+-	unsigned long r15, r14, r13, r12, rbp, rbx, r11, r10, r9, r8;
+-	unsigned long rax, rcx, rdx, rsi, rdi, orig_rax, rip;
+-	unsigned long cs, eflags, rsp, ss, fs_base, gs_base, ds, es, fs, gs;
++#if defined(__x86_64__) && defined(__ILP32__)
++	unsigned long long r15, r14, r13, r12, rbp, rbx, r11, r10, r9, r8;
++	unsigned long long rax, rcx, rdx, rsi, rdi, orig_rax, rip;
++	unsigned long long cs, eflags, rsp, ss, fs_base, gs_base, ds, es, fs, gs;
++#else
++	unsigned long r15, r14, r13, r12, rbp, rbx, r11, r10, r9, r8;
++	unsigned long rax, rcx, rdx, rsi, rdi, orig_rax, rip;
++	unsigned long cs, eflags, rsp, ss, fs_base, gs_base, ds, es, fs, gs;
++#endif
+ };
+ #define ELF_NGREG 27
+ typedef unsigned long long elf_greg_t, elf_gregset_t[ELF_NGREG];
+@@ -20,18 +20,35 @@
+ 	struct user_regs_struct		regs;
+ 	int				u_fpvalid;
+ 	struct user_fpregs_struct	i387;
+-	unsigned long			u_tsize;
+-	unsigned long			u_dsize;
+-	unsigned long			u_ssize;
+-	unsigned long			start_code;
+-	unsigned long			start_stack;
+-	long				signal;
++#if defined(__x86_64__) && defined(__ILP32__)
++	unsigned long long		u_tsize;
++	unsigned long long		u_dsize;
++	unsigned long long		u_ssize;
++	unsigned long long		start_code;
++	unsigned long long		start_stack;
++	long long			signal;
++#else
++	unsigned long			u_tsize;
++	unsigned long			u_dsize;
++	unsigned long			u_ssize;
++	unsigned long			start_code;
++	unsigned long			start_stack;
++	long				signal;
++#endif
+ 	int				reserved;
+ 	struct user_regs_struct		*u_ar0;
+ 	struct user_fpregs_struct	*u_fpstate;
+-	unsigned long			magic;
++#if defined(__x86_64__) && defined(__ILP32__)
++	unsigned long long		magic;
++#else
++	unsigned long			magic;
++#endif
+ 	char				u_comm[32];
+-	unsigned long			u_debugreg[8];
++#if defined(__x86_64__) && defined(__ILP32__)
++	unsigned long long		u_debugreg[8];
++#else
++	unsigned long			u_debugreg[8];
++#endif
+ };
+ 
+ #define PAGE_MASK		(~(PAGE_SIZE-1))
+Only in musl-9999/arch/x32/bits: user.h.orig
+Only in musl-9999/arch/x32/bits: user.h.rej

@@ -1,0 +1,12 @@
+diff -urp firefox-49.0.orig/js/src/old-configure.in firefox-49.0/js/src/old-configure.in
+--- firefox-49.0.orig/js/src/old-configure.in	2016-09-28 10:07:14.618881573 -0700
++++ firefox-49.0/js/src/old-configure.in	2016-09-28 10:10:47.302878169 -0700
+@@ -1180,6 +1180,8 @@ fi
+ dnl Configure JIT support
+ 
+ case "$target" in
++x86_64*-gnux32 | x86_64*-muslx32)
++    ;;
+ i?86-*)
+     ENABLE_ION=1
+     AC_DEFINE(JS_CPU_X86)

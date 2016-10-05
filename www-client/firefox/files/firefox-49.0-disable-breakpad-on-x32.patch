@@ -1,0 +1,52 @@
+diff -urp firefox-49.0.orig/old-configure firefox-49.0/old-configure
+--- firefox-49.0.orig/old-configure	2016-09-16 13:35:14.000000000 -0700
++++ firefox-49.0/old-configure	2016-09-28 08:03:11.276000726 -0700
+@@ -19415,6 +19415,10 @@ i?86-apple-darwin*|x86_64-apple-darwin*)
+     MOZ_CRASHREPORTER=1
+   fi
+   ;;
++x86_64-*-linux-gnux32*| x86_64-*-linux-muslx32*)
++  # x32 is not supported.
++  MOZ_CRASHREPORTER=
++  ;;
+ i?86-*-linux*|x86_64-*-linux*|arm-*-linux*)
+   if test "$MOZ_ENABLE_GTK"; then
+     MOZ_CRASHREPORTER=1
+diff -urp firefox-49.0.orig/old-configure.in firefox-49.0/old-configure.in
+--- firefox-49.0.orig/old-configure.in	2016-09-28 06:34:50.742085578 -0700
++++ firefox-49.0/old-configure.in	2016-09-28 08:03:12.876000701 -0700
+@@ -4337,6 +4337,10 @@ i?86-apple-darwin*|x86_64-apple-darwin*)
+     MOZ_CRASHREPORTER=1
+   fi
+   ;;
++x86_64-*-linux-gnux32*| x86_64-*-linux-muslx32*)
++  # x32 is not supported.
++  MOZ_CRASHREPORTER=
++  ;;
+ i?86-*-linux*|x86_64-*-linux*|arm-*-linux*)
+   if test "$MOZ_ENABLE_GTK"; then
+     MOZ_CRASHREPORTER=1
+diff -urp firefox-49.0.orig/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h firefox-49.0/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h
+--- firefox-49.0.orig/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h	2016-09-28 06:34:50.815085576 -0700
++++ firefox-49.0/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h	2016-09-28 07:59:21.975004397 -0700
+@@ -85,7 +85,7 @@
+ /* We currently only support x86-32, x86-64, ARM, MIPS, and PPC on Linux.
+  * Porting to other related platforms should not be difficult.
+  */
+-#if (defined(__i386__) || defined(__x86_64__) || defined(__ARM_ARCH_3__) ||   \
++#if (defined(__i386__) || defined(__x86_64__) && defined(__LP64__) || defined(__ARM_ARCH_3__) ||   \
+      defined(__mips__) || defined(__PPC__) || defined(__ARM_EABI__) || \
+      defined(__aarch64__)) \
+   && (defined(__linux) || defined(__ANDROID__))
+diff -urp firefox-49.0.orig/toolkit/moz.configure firefox-49.0/toolkit/moz.configure
+--- firefox-49.0.orig/toolkit/moz.configure	2016-09-05 13:12:56.000000000 -0700
++++ firefox-49.0/toolkit/moz.configure	2016-09-28 09:24:46.892922357 -0700
+@@ -39,6 +39,8 @@ imply_option('--enable-profiling', jprof
+ def sps_profiler(target):
+     if target.os == 'Android':
+         return target.cpu in ('arm', 'x86')
++    elif target.kernel == 'Linux' and (target.raw_os.endswith("muslx32") or target.raw_os.endswith("gnux32")):
++        return False
+     elif target.kernel == 'Linux':
+         return target.cpu in ('x86', 'x86_64')
+     return target.os in ('OSX', 'WINNT')

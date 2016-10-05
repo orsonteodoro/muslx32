@@ -1,0 +1,14 @@
+diff -urp firefox-49.0.orig/build/moz.configure/toolchain.configure firefox-49.0/build/moz.configure/toolchain.configure
+--- firefox-49.0.orig/build/moz.configure/toolchain.configure	2016-09-05 13:12:51.000000000 -0700
++++ firefox-49.0/build/moz.configure/toolchain.configure	2016-09-28 17:07:45.907477670 -0700
+@@ -36,7 +36,9 @@ def yasm_asflags(yasm, target):
+         if asflags is None:
+             # We're assuming every x86 platform we support that's
+             # not Windows or Mac is ELF.
+-            if target.cpu == 'x86':
++            if target.raw_os.endswith("muslx32") or target.raw_os.endswith("gnux32"):
++                asflags = '-f elfx32'
++            elif target.cpu == 'x86':
+                 asflags = '-f elf32'
+             elif target.cpu == 'x86_64':
+                 asflags = '-f elf64'

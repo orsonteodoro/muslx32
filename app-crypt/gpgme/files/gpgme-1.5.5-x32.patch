@@ -1,0 +1,28 @@
+diff -urp gpgme-1.5.5.orig/configure gpgme-1.5.5/configure
+--- gpgme-1.5.5.orig/configure	2016-09-29 23:51:13.399707063 -0700
++++ gpgme-1.5.5/configure	2016-09-30 00:00:45.980697898 -0700
+@@ -8448,6 +8448,10 @@ ia64-*-hpux*)
+   rm -rf conftest*
+   ;;
+ 
++x86_64-*muslx32|x86_64-*gnux32)
++  LD="${LD-ld} -m elf32_x86_64"
++  ;;
++
+ x86_64-*kfreebsd*-gnu|x86_64-*linux*|ppc*-*linux*|powerpc*-*linux*| \
+ s390*-*linux*|s390*-*tpf*|sparc*-*linux*)
+   # Find out which ABI we are using.
+diff -urp gpgme-1.5.5.orig/m4/libtool.m4 gpgme-1.5.5/m4/libtool.m4
+--- gpgme-1.5.5.orig/m4/libtool.m4	2013-05-31 04:37:05.000000000 -0700
++++ gpgme-1.5.5/m4/libtool.m4	2016-09-30 00:00:52.824697788 -0700
+@@ -1312,6 +1312,10 @@ ia64-*-hpux*)
+   rm -rf conftest*
+   ;;
+ 
++x86_64-*muslx32|x86_64-*gnux32)
++  LD="${LD-ld} -m elf32_x86_64"
++  ;;
++
+ x86_64-*kfreebsd*-gnu|x86_64-*linux*|ppc*-*linux*|powerpc*-*linux*| \
+ s390*-*linux*|s390*-*tpf*|sparc*-*linux*)
+   # Find out which ABI we are using.

@@ -1,0 +1,48 @@
+diff -urp openldap-2.4.38.orig/aclocal.m4 openldap-2.4.38/aclocal.m4
+--- openldap-2.4.38.orig/aclocal.m4	2013-11-14 19:31:27.000000000 -0800
++++ openldap-2.4.38/aclocal.m4	2016-08-19 11:31:07.662523790 -0700
+@@ -1010,6 +1010,9 @@ x86_64-*linux*|ppc*-*linux*|powerpc*-*li
+     case `/usr/bin/file conftest.o` in
+     *32-bit*)
+       case $host in
++        x86_64-*linux*-muslx32|x86_64-*linux*-gnux32)
++          LD="${LD-ld} -m elf32_x86_64"
++          ;;
+         x86_64-*linux*)
+           LD="${LD-ld} -m elf_i386"
+           ;;
+@@ -1026,6 +1029,9 @@ x86_64-*linux*|ppc*-*linux*|powerpc*-*li
+       ;;
+     *64-bit*)
+       case $host in
++        x86_64-*linux*-muslx32|x86_64-*linux*-gnux32)
++          LD="${LD-ld} -m elf32_x86_64"
++          ;;
+         x86_64-*linux*)
+           LD="${LD-ld} -m elf_x86_64"
+           ;;
+Only in openldap-2.4.38: aclocal.m4.orig
+Only in openldap-2.4.38: aclocal.m4.rej
+diff -urp openldap-2.4.38.orig/contrib/ldapc++/aclocal.m4 openldap-2.4.38/contrib/ldapc++/aclocal.m4
+--- openldap-2.4.38.orig/contrib/ldapc++/aclocal.m4	2013-11-14 19:31:27.000000000 -0800
++++ openldap-2.4.38/contrib/ldapc++/aclocal.m4	2016-08-19 11:29:31.990525321 -0700
+@@ -630,6 +630,9 @@ s390*-*linux*|sparc*-*linux*)
+         x86_64-*kfreebsd*-gnu)
+           LD="${LD-ld} -m elf_i386_fbsd"
+           ;;
++        x86_64-*linux*-muslx32|x86_64-*linux*-gnux32)
++          LD="${LD-ld} -m elf32_x86_64"
++          ;;
+         x86_64-*linux*)
+           LD="${LD-ld} -m elf_i386"
+           ;;
+@@ -649,6 +652,9 @@ s390*-*linux*|sparc*-*linux*)
+         x86_64-*kfreebsd*-gnu)
+           LD="${LD-ld} -m elf_x86_64_fbsd"
+           ;;
++        x86_64-*linux*-muslx32|x86_64-*linux*-gnux32)
++          LD="${LD-ld} -m elf32_x86_64"
++          ;;
+         x86_64-*linux*)
+           LD="${LD-ld} -m elf_x86_64"
+           ;;

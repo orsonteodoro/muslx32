@@ -1,0 +1,53 @@
+diff --git a/gcc/config/i386/pmm_malloc.h b/gcc/config/i386/pmm_malloc.h
+index 901001b..0696c20 100644
+--- a/gcc/config/i386/pmm_malloc.h
++++ b/gcc/config/i386/pmm_malloc.h
+@@ -27,12 +27,13 @@
+ #include <stdlib.h>
+ 
+ /* We can't depend on <stdlib.h> since the prototype of posix_memalign
+-   may not be visible.  */
++   may not be visible and we can't pollute the namespace either.  */
+ #ifndef __cplusplus
+-extern int posix_memalign (void **, size_t, size_t);
++extern int _mm_posix_memalign (void **, size_t, size_t)
+ #else
+-extern "C" int posix_memalign (void **, size_t, size_t) throw ();
++extern "C" int _mm_posix_memalign (void **, size_t, size_t) throw ()
+ #endif
++__asm__("posix_memalign");
+ 
+ static __inline void *
+ _mm_malloc (size_t size, size_t alignment)
+@@ -42,7 +43,7 @@ _mm_malloc (size_t size, size_t alignment)
+     return malloc (size);
+   if (alignment == 2 || (sizeof (void *) == 8 && alignment == 4))
+     alignment = sizeof (void *);
+-  if (posix_memalign (&ptr, alignment, size) == 0)
++  if (_mm_posix_memalign (&ptr, alignment, size) == 0)
+     return ptr;
+   else
+     return NULL;
+diff --git a/gcc/testsuite/g++.dg/other/mm_malloc.C b/gcc/testsuite/g++.dg/other/mm_malloc.C
+new file mode 100644
+index 0000000..00582cc
+--- /dev/null
++++ b/gcc/testsuite/g++.dg/other/mm_malloc.C
+@@ -0,0 +1,17 @@
++/* { dg-do compile { target i?86-*-* x86_64-*-* } } */
++/* { dg-options "-std=c++11" } */
++
++/* Suppress POSIX declarations in libc headers in standard C++ mode.  */
++#undef _GNU_SOURCE
++
++#define posix_memalign user_can_do_this
++
++#include <mm_malloc.h>
++
++void *
++foo ()
++{
++	return _mm_malloc (16, 16);
++}
++
++/* { dg-final { scan-assembler "call\\tposix_memalign" } } */

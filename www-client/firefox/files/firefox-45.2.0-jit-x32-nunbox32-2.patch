@@ -1,0 +1,996 @@
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/Assembler-x64.h firefox-45.3.0esr/js/src/jit/x64/Assembler-x64.h
+--- firefox-45.3.0esr.orig/js/src/jit/x64/Assembler-x64.h	2016-09-07 23:52:03.378583928 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/Assembler-x64.h	2016-09-08 18:48:53.641831622 -0700
+@@ -235,7 +235,11 @@
+ 
+ #endif
+ 
++#if defined(JS_PUNBOX64)
+ static const Scale ScalePointer = TimesEight;
++#else
++static const Scale ScalePointer = TimesFour;
++#endif
+ 
+ } // namespace jit
+ } // namespace js
+@@ -388,6 +392,56 @@
+             MOZ_CRASH("unexpected operand kind");
+         }
+     }
++
++    // Move a 32-bit immediate into a register where the immediate can be
++    // patched.
++    CodeOffset movlWithPatch(Imm32 imm, Register dest) {
++        masm.movl_i32r(imm.value, dest.encoding());
++        return CodeOffset(masm.currentOffset());
++    }
++    CodeOffset movlWithPatch(const Operand& src, Register dest) {
++        switch (src.kind()) {
++          case Operand::MEM_REG_DISP:
++            masm.movl_mr_disp32(src.disp(), src.base(), dest.encoding());
++            break;
++          case Operand::MEM_ADDRESS32:
++            masm.movl_mr(src.address(), dest.encoding());
++            break;
++          default:
++            MOZ_CRASH("unexpected operand kind");
++        }
++        return CodeOffset(masm.currentOffset());
++    }
++    CodeOffset movlWithPatch(Register src, const Operand& dest) {
++        switch (dest.kind()) {
++          case Operand::MEM_REG_DISP:
++            masm.movl_rm_disp32(src.encoding(), dest.disp(), dest.base());
++            break;
++          case Operand::MEM_ADDRESS32:
++            masm.movl_rm(src.encoding(), dest.address());
++            break;
++          default:
++            MOZ_CRASH("unexpected operand kind");
++        }
++        return CodeOffset(masm.currentOffset());
++    }
++    // Load from *(addr + index*scale) where addr can be patched.
++    CodeOffset movlWithPatch(PatchedAbsoluteAddress addr, Register index, Scale scale,
++                                  Register dest)
++    {
++        masm.movl_mr(addr.addr, index.encoding(), scale, dest.encoding());
++        return CodeOffset(masm.currentOffset());
++    }
++    CodeOffset movlWithPatch(PatchedAbsoluteAddress src, Register dest) {
++        masm.movl_mr(src.addr, dest.encoding());
++        return CodeOffset(masm.currentOffset());
++    }
++    CodeOffset movlWithPatch(Register src, PatchedAbsoluteAddress dest) {
++        masm.movl_rm(src.encoding(), dest.addr);
++        return CodeOffset(masm.currentOffset());
++    }
++
++
+ #endif
+ 
+     // Load an ImmWord value into a register. Note that this instruction will
+@@ -803,8 +857,56 @@
+         masm.shrdl_irr(imm.value, src.encoding(), dest.encoding());
+     }
+ 
++    void vhaddpd(FloatRegister src, FloatRegister dest) {
++        MOZ_ASSERT(HasSSE3());
++        MOZ_ASSERT(src.size() == 16);
++        MOZ_ASSERT(dest.size() == 16);
++        masm.vhaddpd_rr(src.encoding(), dest.encoding());
++    }
++
++    void vpunpckldq(FloatRegister src1, FloatRegister src0, FloatRegister dest) {
++        MOZ_ASSERT(HasSSE2());
++        MOZ_ASSERT(src0.size() == 16);
++        MOZ_ASSERT(src1.size() == 16);
++        MOZ_ASSERT(dest.size() == 16);
++        masm.vpunpckldq_rr(src1.encoding(), src0.encoding(), dest.encoding());
++    }
++    void vpunpckldq(const Operand& src1, FloatRegister src0, FloatRegister dest) {
++        MOZ_ASSERT(HasSSE2());
++        MOZ_ASSERT(src0.size() == 16);
++        MOZ_ASSERT(dest.size() == 16);
++        switch (src1.kind()) {
++          case Operand::MEM_REG_DISP:
++            masm.vpunpckldq_mr(src1.disp(), src1.base(), src0.encoding(), dest.encoding());
++            break;
++          case Operand::MEM_ADDRESS32:
++            masm.vpunpckldq_mr(src1.address(), src0.encoding(), dest.encoding());
++            break;
++          default:
++            MOZ_CRASH("unexpected operand kind");
++        }
++    }
++
++    void vsubpd(const Operand& src1, FloatRegister src0, FloatRegister dest) {
++        MOZ_ASSERT(HasSSE2());
++        MOZ_ASSERT(src0.size() == 16);
++        MOZ_ASSERT(dest.size() == 16);
++        switch (src1.kind()) {
++          case Operand::MEM_REG_DISP:
++            masm.vsubpd_mr(src1.disp(), src1.base(), src0.encoding(), dest.encoding());
++            break;
++          case Operand::MEM_ADDRESS32:
++            masm.vsubpd_mr(src1.address(), src0.encoding(), dest.encoding());
++            break;
++          default:
++            MOZ_CRASH("unexpected operand kind");
++        }
++    }
++
+ #endif
+ 
++
++
+     void testq(Imm32 rhs, Register lhs) {
+         masm.testq_ir(rhs.value, lhs.encoding());
+     }
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/BaseAssembler-x64.h firefox-45.3.0esr/js/src/jit/x64/BaseAssembler-x64.h
+--- firefox-45.3.0esr.orig/js/src/jit/x64/BaseAssembler-x64.h	2016-09-07 23:52:03.378583928 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/BaseAssembler-x64.h	2016-09-08 12:40:58.372104188 -0700
+@@ -741,6 +741,41 @@
+         return twoByteRipOpSimd("vmovdqa", VEX_PD, OP2_MOVDQ_VdqWdq, invalid_xmm, dst);
+     }
+ 
++
++#if defined(JS_PUNBOX64)
++#else
++    void vhaddpd_rr(XMMRegisterID src, XMMRegisterID dst)
++    {
++        twoByteOpSimdFlags("vhaddpd", VEX_PD, OP2_HADDPD, src, dst);
++    }
++
++    void vsubpd_rr(XMMRegisterID src1, XMMRegisterID src0, XMMRegisterID dst)
++    {
++        twoByteOpSimd("vsubpd", VEX_PD, OP2_SUBPS_VpsWps, src1, src0, dst);
++    }
++    void vsubpd_mr(int32_t offset, RegisterID base, XMMRegisterID src0, XMMRegisterID dst)
++    {
++        twoByteOpSimd("vsubpd", VEX_PD, OP2_SUBPS_VpsWps, offset, base, src0, dst);
++    }
++    void vsubpd_mr(const void* address, XMMRegisterID src0, XMMRegisterID dst)
++    {
++        twoByteOpSimd("vsubpd", VEX_PD, OP2_SUBPS_VpsWps, address, src0, dst);
++    }
++
++    void vpunpckldq_rr(XMMRegisterID src1, XMMRegisterID src0, XMMRegisterID dst) {
++        twoByteOpSimd("vpunpckldq", VEX_PD, OP2_PUNPCKLDQ, src1, src0, dst);
++    }
++    void vpunpckldq_mr(int32_t offset, RegisterID base, XMMRegisterID src0, XMMRegisterID dst)
++    {
++        twoByteOpSimd("vpunpckldq", VEX_PD, OP2_PUNPCKLDQ, offset, base, src0, dst);
++    }
++    void vpunpckldq_mr(const void* addr, XMMRegisterID src0, XMMRegisterID dst)
++    {
++        twoByteOpSimd("vpunpckldq", VEX_PD, OP2_PUNPCKLDQ, addr, src0, dst);
++    }
++#endif
++
++
+   private:
+ 
+     MOZ_WARN_UNUSED_RESULT JmpSrc
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/CodeGenerator-x64.cpp firefox-45.3.0esr/js/src/jit/x64/CodeGenerator-x64.cpp
+--- firefox-45.3.0esr.orig/js/src/jit/x64/CodeGenerator-x64.cpp	2016-09-07 23:52:03.380583929 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/CodeGenerator-x64.cpp	2016-09-08 02:37:31.848911096 -0700
+@@ -910,6 +910,7 @@
+ void
+ CodeGeneratorX64::visitAsmJSLoadFuncPtr(LAsmJSLoadFuncPtr* ins)
+ {
++#if defined(JS_PUNBOX64)
+     MAsmJSLoadFuncPtr* mir = ins->mir();
+ 
+     Register index = ToRegister(ins->index());
+@@ -919,6 +920,14 @@
+     CodeOffset label = masm.leaRipRelative(tmp);
+     masm.loadPtr(Operand(tmp, index, TimesEight, 0), out);
+     masm.append(AsmJSGlobalAccess(label, mir->globalDataOffset()));
++#else
++    MAsmJSLoadFuncPtr* mir = ins->mir();
++
++    Register index = ToRegister(ins->index());
++    Register out = ToRegister(ins->output());
++    CodeOffset label = masm.movlWithPatch(PatchedAbsoluteAddress(), index, TimesFour, out);
++    masm.append(AsmJSGlobalAccess(label, mir->globalDataOffset()));
++#endif
+ }
+ 
+ void
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/LIR-x64.h firefox-45.3.0esr/js/src/jit/x64/LIR-x64.h
+--- firefox-45.3.0esr.orig/js/src/jit/x64/LIR-x64.h	2016-09-07 23:52:03.380583929 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/LIR-x64.h	2016-09-08 02:21:30.748879425 -0700
+@@ -10,6 +10,8 @@
+ namespace js {
+ namespace jit {
+ 
++#if defined(JS_PUNBOX64)
++
+ // Given an untyped input, guards on whether it's a specific type and returns
+ // the unboxed payload.
+ class LUnboxBase : public LInstructionHelper<1, 1, 0>
+@@ -26,8 +28,6 @@
+     }
+ };
+ 
+-#if defined(JS_PUNBOX64)
+-
+ class LUnbox : public LUnboxBase {
+   public:
+     LIR_HEADER(Unbox)
+@@ -40,7 +40,91 @@
+         return StringFromMIRType(mir()->type());
+     }
+ };
++
++class LUnboxFloatingPoint : public LUnboxBase {
++    MIRType type_;
++
++  public:
++    LIR_HEADER(UnboxFloatingPoint)
++
++    LUnboxFloatingPoint(const LAllocation& input, MIRType type)
++      : LUnboxBase(input),
++        type_(type)
++    { }
++
++    MIRType type() const {
++        return type_;
++    }
++    const char* extraName() const {
++        return StringFromMIRType(type_);
++    }
++};
++
++// Convert a 32-bit unsigned integer to a double.
++class LAsmJSUInt32ToDouble : public LInstructionHelper<1, 1, 0>
++{
++  public:
++    LIR_HEADER(AsmJSUInt32ToDouble)
++
++    explicit LAsmJSUInt32ToDouble(const LAllocation& input) {
++        setOperand(0, input);
++    }
++};
++
++// Convert a 32-bit unsigned integer to a float32.
++class LAsmJSUInt32ToFloat32 : public LInstructionHelper<1, 1, 0>
++{
++  public:
++    LIR_HEADER(AsmJSUInt32ToFloat32)
++
++    explicit LAsmJSUInt32ToFloat32(const LAllocation& input) {
++        setOperand(0, input);
++    }
++};
++
++class LAsmJSLoadFuncPtr : public LInstructionHelper<1, 1, 1>
++{
++  public:
++    LIR_HEADER(AsmJSLoadFuncPtr);
++    LAsmJSLoadFuncPtr(const LAllocation& index, const LDefinition& temp) {
++        setOperand(0, index);
++        setTemp(0, temp);
++    }
++    MAsmJSLoadFuncPtr* mir() const {
++        return mir_->toAsmJSLoadFuncPtr();
++    }
++    const LAllocation* index() {
++        return getOperand(0);
++    }
++    const LDefinition* temp() {
++        return getTemp(0);
++    }
++};
++
+ #else
++class LBoxFloatingPoint : public LInstructionHelper<2, 1, 1>
++{
++    MIRType type_;
++
++  public:
++    LIR_HEADER(BoxFloatingPoint);
++
++    LBoxFloatingPoint(const LAllocation& in, const LDefinition& temp, MIRType type)
++      : type_(type)
++    {
++        MOZ_ASSERT(IsFloatingPointType(type));
++        setOperand(0, in);
++        setTemp(0, temp);
++    }
++
++    MIRType type() const {
++        return type_;
++    }
++    const char* extraName() const {
++        return StringFromMIRType(type_);
++    }
++};
++
+ class LUnbox : public LInstructionHelper<1, 2, 0>
+ {
+   public:
+@@ -59,19 +143,24 @@
+         return StringFromMIRType(mir()->type());
+     }
+ };
+-#endif
+ 
+-class LUnboxFloatingPoint : public LUnboxBase {
++class LUnboxFloatingPoint : public LInstructionHelper<1, 2, 0>
++{
+     MIRType type_;
+ 
+   public:
+-    LIR_HEADER(UnboxFloatingPoint)
++    LIR_HEADER(UnboxFloatingPoint);
+ 
+-    LUnboxFloatingPoint(const LAllocation& input, MIRType type)
+-      : LUnboxBase(input),
+-        type_(type)
++    static const size_t Input = 0;
++
++    LUnboxFloatingPoint(MIRType type)
++      : type_(type)
+     { }
+ 
++    MUnbox* mir() const {
++        return mir_->toUnbox();
++    }
++
+     MIRType type() const {
+         return type_;
+     }
+@@ -81,34 +170,41 @@
+ };
+ 
+ // Convert a 32-bit unsigned integer to a double.
+-class LAsmJSUInt32ToDouble : public LInstructionHelper<1, 1, 0>
++class LAsmJSUInt32ToDouble : public LInstructionHelper<1, 1, 1>
+ {
+   public:
+     LIR_HEADER(AsmJSUInt32ToDouble)
+ 
+-    explicit LAsmJSUInt32ToDouble(const LAllocation& input) {
++    LAsmJSUInt32ToDouble(const LAllocation& input, const LDefinition& temp) {
+         setOperand(0, input);
++        setTemp(0, temp);
++    }
++    const LDefinition* temp() {
++        return getTemp(0);
+     }
+ };
+ 
+ // Convert a 32-bit unsigned integer to a float32.
+-class LAsmJSUInt32ToFloat32 : public LInstructionHelper<1, 1, 0>
++class LAsmJSUInt32ToFloat32: public LInstructionHelper<1, 1, 1>
+ {
+   public:
+     LIR_HEADER(AsmJSUInt32ToFloat32)
+ 
+-    explicit LAsmJSUInt32ToFloat32(const LAllocation& input) {
++    LAsmJSUInt32ToFloat32(const LAllocation& input, const LDefinition& temp) {
+         setOperand(0, input);
++        setTemp(0, temp);
++    }
++    const LDefinition* temp() {
++        return getTemp(0);
+     }
+ };
+ 
+-class LAsmJSLoadFuncPtr : public LInstructionHelper<1, 1, 1>
++class LAsmJSLoadFuncPtr : public LInstructionHelper<1, 1, 0>
+ {
+   public:
+     LIR_HEADER(AsmJSLoadFuncPtr);
+-    LAsmJSLoadFuncPtr(const LAllocation& index, const LDefinition& temp) {
++    LAsmJSLoadFuncPtr(const LAllocation& index) {
+         setOperand(0, index);
+-        setTemp(0, temp);
+     }
+     MAsmJSLoadFuncPtr* mir() const {
+         return mir_->toAsmJSLoadFuncPtr();
+@@ -116,11 +212,11 @@
+     const LAllocation* index() {
+         return getOperand(0);
+     }
+-    const LDefinition* temp() {
+-        return getTemp(0);
+-    }
+ };
+ 
++#endif
++
++
+ } // namespace jit
+ } // namespace js
+ 
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/LOpcodes-x64.h firefox-45.3.0esr/js/src/jit/x64/LOpcodes-x64.h
+--- firefox-45.3.0esr.orig/js/src/jit/x64/LOpcodes-x64.h	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/LOpcodes-x64.h	2016-09-08 02:23:42.724883774 -0700
+@@ -9,11 +9,25 @@
+ 
+ #include "jit/shared/LOpcodes-shared.h"
+ 
++#if defined(JS_PUNBOX64)
++
++#define LIR_CPU_OPCODE_LIST(_)      \
++    _(DivOrModConstantI)            \
++    _(SimdValueInt32x4)             \
++    _(SimdValueFloat32x4)           \
++    _(UDivOrMod)                    \
++    _(UDivOrModConstant)
++
++#else
++
+ #define LIR_CPU_OPCODE_LIST(_)      \
++    _(BoxFloatingPoint)             \
+     _(DivOrModConstantI)            \
+     _(SimdValueInt32x4)             \
+     _(SimdValueFloat32x4)           \
+     _(UDivOrMod)                    \
+     _(UDivOrModConstant)
+ 
++#endif
++
+ #endif /* jit_x64_LOpcodes_x64_h */
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/Lowering-x64.cpp firefox-45.3.0esr/js/src/jit/x64/Lowering-x64.cpp
+--- firefox-45.3.0esr.orig/js/src/jit/x64/Lowering-x64.cpp	2016-09-07 23:52:03.381583929 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/Lowering-x64.cpp	2016-09-08 02:41:38.234919215 -0700
+@@ -107,6 +107,7 @@
+ void
+ LIRGeneratorX64::visitUnbox(MUnbox* unbox)
+ {
++#if defined(JS_PUNBOX64)
+     MDefinition* box = unbox->getOperand(0);
+ 
+     if (box->type() == MIRType_ObjectOrNull) {
+@@ -134,6 +135,48 @@
+         assignSnapshot(lir, unbox->bailoutKind());
+ 
+     define(lir, unbox);
++#else
++    MDefinition* inner = unbox->getOperand(0);
++
++    if (inner->type() == MIRType_ObjectOrNull) {
++        LUnboxObjectOrNull* lir = new(alloc()) LUnboxObjectOrNull(useRegisterAtStart(inner));
++        if (unbox->fallible())
++            assignSnapshot(lir, unbox->bailoutKind());
++        defineReuseInput(lir, unbox, 0);
++        return;
++    }
++
++    // An unbox on x86 reads in a type tag (either in memory or a register) and
++    // a payload. Unlike most instructions consuming a box, we ask for the type
++    // second, so that the result can re-use the first input.
++    MOZ_ASSERT(inner->type() == MIRType_Value);
++
++    ensureDefined(inner);
++
++    if (IsFloatingPointType(unbox->type())) {
++        LUnboxFloatingPoint* lir = new(alloc()) LUnboxFloatingPoint(unbox->type());
++        if (unbox->fallible())
++            assignSnapshot(lir, unbox->bailoutKind());
++        useBox(lir, LUnboxFloatingPoint::Input, inner);
++        define(lir, unbox);
++        return;
++    }
++
++    // Swap the order we use the box pieces so we can re-use the payload register.
++    LUnbox* lir = new(alloc()) LUnbox;
++    lir->setOperand(0, usePayloadInRegisterAtStart(inner));
++    lir->setOperand(1, useType(inner, LUse::ANY));
++
++    if (unbox->fallible())
++        assignSnapshot(lir, unbox->bailoutKind());
++
++    // Types and payloads form two separate intervals. If the type becomes dead
++    // before the payload, it could be used as a Value without the type being
++    // recoverable. Unbox's purpose is to eagerly kill the definition of a type
++    // tag, so keeping both alive (for the purpose of gcmaps) is unappealing.
++    // Instead, we create a new virtual register.
++    defineReuseInput(lir, unbox, 0);
++#endif
+ }
+ 
+ void
+@@ -180,17 +223,29 @@
+ void
+ LIRGeneratorX64::visitAsmJSUnsignedToDouble(MAsmJSUnsignedToDouble* ins)
+ {
++#if defined(JS_PUNBOX64)
+     MOZ_ASSERT(ins->input()->type() == MIRType_Int32);
+     LAsmJSUInt32ToDouble* lir = new(alloc()) LAsmJSUInt32ToDouble(useRegisterAtStart(ins->input()));
+     define(lir, ins);
++#else
++    MOZ_ASSERT(ins->input()->type() == MIRType_Int32);
++    LAsmJSUInt32ToDouble* lir = new(alloc()) LAsmJSUInt32ToDouble(useRegisterAtStart(ins->input()), temp());
++    define(lir, ins);
++#endif
+ }
+ 
+ void
+ LIRGeneratorX64::visitAsmJSUnsignedToFloat32(MAsmJSUnsignedToFloat32* ins)
+ {
++#if defined(JS_PUNBOX64)
+     MOZ_ASSERT(ins->input()->type() == MIRType_Int32);
+     LAsmJSUInt32ToFloat32* lir = new(alloc()) LAsmJSUInt32ToFloat32(useRegisterAtStart(ins->input()));
+     define(lir, ins);
++#else
++    MOZ_ASSERT(ins->input()->type() == MIRType_Int32);
++    LAsmJSUInt32ToFloat32* lir = new(alloc()) LAsmJSUInt32ToFloat32(useRegisterAtStart(ins->input()), temp());
++    define(lir, ins);
++#endif
+ }
+ 
+ void
+@@ -349,7 +404,11 @@
+ void
+ LIRGeneratorX64::visitAsmJSLoadFuncPtr(MAsmJSLoadFuncPtr* ins)
+ {
++#if defined(JS_PUNBOX64)
+     define(new(alloc()) LAsmJSLoadFuncPtr(useRegister(ins->index()), temp()), ins);
++#else
++    define(new(alloc()) LAsmJSLoadFuncPtr(useRegisterAtStart(ins->index())), ins);
++#endif
+ }
+ 
+ void
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/MacroAssembler-x64.cpp firefox-45.3.0esr/js/src/jit/x64/MacroAssembler-x64.cpp
+--- firefox-45.3.0esr.orig/js/src/jit/x64/MacroAssembler-x64.cpp	2016-09-07 23:52:03.382583929 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/MacroAssembler-x64.cpp	2016-09-08 16:45:56.496588527 -0700
+@@ -18,6 +18,104 @@
+ using namespace js;
+ using namespace js::jit;
+ 
++#if defined(JS_PUNBOX64)
++#else
++// vpunpckldq requires 16-byte boundary for memory operand.
++// See convertUInt64ToDouble for the details.
++MOZ_ALIGNED_DECL(static const uint64_t, 16) TO_DOUBLE[4] = {
++    0x4530000043300000LL,
++    0x0LL,
++    0x4330000000000000LL,
++    0x4530000000000000LL
++};
++
++static const double TO_DOUBLE_HIGH_SCALE = 0x100000000;
++
++void
++MacroAssemblerX64::convertUInt64ToDouble(Register64 src, Register temp, FloatRegister dest)
++{
++    // SUBPD needs SSE2, HADDPD needs SSE3.
++    if (!HasSSE3()) {
++        convertUInt32ToDouble(src.high, dest);
++        movePtr(ImmPtr(&TO_DOUBLE_HIGH_SCALE), temp);
++        loadDouble(Address(temp, 0), ScratchDoubleReg);
++        mulDouble(ScratchDoubleReg, dest);
++        convertUInt32ToDouble(src.low, ScratchDoubleReg);
++        addDouble(ScratchDoubleReg, dest);
++        return;
++    }
++
++    // Following operation uses entire 128-bit of dest XMM register.
++    // Currently higher 64-bit is free when we have access to lower 64-bit.
++    MOZ_ASSERT(dest.size() == 8);
++    FloatRegister dest128 = FloatRegister(dest.encoding(), FloatRegisters::Simd128);
++
++    // Assume that src is represented as following:
++    //   src      = 0x HHHHHHHH LLLLLLLL
++
++    // Move src to dest (=dest128) and ScratchInt32x4Reg (=scratch):
++    //   dest     = 0x 00000000 00000000  00000000 LLLLLLLL
++    //   scratch  = 0x 00000000 00000000  00000000 HHHHHHHH
++    vmovd(src.low, dest128);
++    vmovd(src.high, ScratchSimd128Reg);
++
++    // Unpack and interleave dest and scratch to dest:
++    //   dest     = 0x 00000000 00000000  HHHHHHHH LLLLLLLL
++    vpunpckldq(ScratchSimd128Reg, dest128, dest128);
++
++    // Unpack and interleave dest and a constant C1 to dest:
++    //   C1       = 0x 00000000 00000000  45300000 43300000
++    //   dest     = 0x 45300000 HHHHHHHH  43300000 LLLLLLLL
++    // here, each 64-bit part of dest represents following double:
++    //   HI(dest) = 0x 1.00000HHHHHHHH * 2**84 == 2**84 + 0x HHHHHHHH 00000000
++    //   LO(dest) = 0x 1.00000LLLLLLLL * 2**52 == 2**52 + 0x 00000000 LLLLLLLL
++    movePtr(ImmPtr(TO_DOUBLE), temp);
++    vpunpckldq(Operand(temp, 0), dest128, dest128);
++
++    // Subtract a constant C2 from dest, for each 64-bit part:
++    //   C2       = 0x 45300000 00000000  43300000 00000000
++    // here, each 64-bit part of C2 represents following double:
++    //   HI(C2)   = 0x 1.0000000000000 * 2**84 == 2**84
++    //   LO(C2)   = 0x 1.0000000000000 * 2**52 == 2**52
++    // after the operation each 64-bit part of dest represents following:
++    //   HI(dest) = double(0x HHHHHHHH 00000000)
++    //   LO(dest) = double(0x 00000000 LLLLLLLL)
++    vsubpd(Operand(temp, sizeof(uint64_t) * 2), dest128, dest128);
++
++    // Add HI(dest) and LO(dest) in double and store it into LO(dest),
++    //   LO(dest) = double(0x HHHHHHHH 00000000) + double(0x 00000000 LLLLLLLL)
++    //            = double(0x HHHHHHHH LLLLLLLL)
++    //            = double(src)
++    vhaddpd(dest128, dest128);
++}
++
++void
++MacroAssemblerX64::branchTestValue(Condition cond, const ValueOperand& value, const Value& v, Label* label)
++{
++    jsval_layout jv = JSVAL_TO_IMPL(v);
++    if (v.isMarkable())
++        cmpPtr(value.payloadReg(), ImmGCPtr(reinterpret_cast<gc::Cell*>(v.toGCThing())));
++    else
++        cmpPtr(value.payloadReg(), ImmWord(jv.s.payload.i32));
++
++    if (cond == Equal) {
++        Label done;
++        j(NotEqual, &done);
++        {
++            cmp32(value.typeReg(), Imm32(jv.s.tag));
++            j(Equal, label);
++        }
++        bind(&done);
++    } else {
++        MOZ_ASSERT(cond == NotEqual);
++        j(NotEqual, label);
++
++        cmp32(value.typeReg(), Imm32(jv.s.tag));
++        j(NotEqual, label);
++    }
++}
++#endif
++
+ void
+ MacroAssemblerX64::loadConstantDouble(double d, FloatRegister dest)
+ {
+@@ -383,9 +481,14 @@
+         stackForCall += ComputeByteAlignment(stackForCall + sizeof(intptr_t),
+                                              ABIStackAlignment);
+     } else {
++//#if defined(__ILP32__)
++//        uint32_t alignmentAtPrologue = callFromAsmJS ? sizeof(AsmJSFrame) : 0;
++//        stackForCall += ComputeByteAlignment(stackForCall + framePushed() + alignmentAtPrologue,
++//#else
+         static_assert(sizeof(AsmJSFrame) % ABIStackAlignment == 0,
+                       "AsmJSFrame should be part of the stack alignment.");
+         stackForCall += ComputeByteAlignment(stackForCall + framePushed(),
++//#endif
+                                              ABIStackAlignment);
+     }
+ 
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/MacroAssembler-x64.h firefox-45.3.0esr/js/src/jit/x64/MacroAssembler-x64.h
+--- firefox-45.3.0esr.orig/js/src/jit/x64/MacroAssembler-x64.h	2016-09-07 23:52:03.384583929 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/MacroAssembler-x64.h	2016-09-08 07:13:59.095457686 -0700
+@@ -628,6 +628,9 @@
+         MOZ_ASSERT(cond == Equal || cond == NotEqual);
+         return testDouble(cond, Operand(address));
+     }
++    Condition testNull(Condition cond, const Address& addr) {
++        return testNull(cond, Operand(addr));
++    }
+ #endif
+ 
+ 
+@@ -1634,15 +1637,16 @@
+ #endif
+     }
+ 
++    void unboxInt32(const Operand& src, Register dest) {
++        movl(src, dest);
++    }
++
+ #if defined(JS_PUNBOX64)
+     // Note that the |dest| register here may be ScratchReg, so we shouldn't
+     // use it.
+     void unboxInt32(const ValueOperand& src, Register dest) {
+         movl(src.valueReg(), dest);
+     }
+-    void unboxInt32(const Operand& src, Register dest) {
+-        movl(src, dest);
+-    }
+     void unboxInt32(const Address& src, Register dest) {
+         unboxInt32(Operand(src), dest);
+     }
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/SharedIC-x64.cpp firefox-45.3.0esr/js/src/jit/x64/SharedIC-x64.cpp
+--- firefox-45.3.0esr.orig/js/src/jit/x64/SharedIC-x64.cpp	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/SharedIC-x64.cpp	2016-09-08 19:41:48.250936233 -0700
+@@ -20,6 +20,7 @@
+ bool
+ ICBinaryArith_Int32::Compiler::generateStubCode(MacroAssembler& masm)
+ {
++#if defined(JS_PUNBOX64)
+     // Guard that R0 is an integer and R1 is an integer.
+     Label failure;
+     masm.branchTestInt32(Assembler::NotEqual, R0, &failure);
+@@ -200,11 +201,202 @@
+     EmitStubGuardFailure(masm);
+ 
+     return true;
++#else
++    // Guard that R0 is an integer and R1 is an integer.
++    Label failure;
++    masm.branchTestInt32(Assembler::NotEqual, R0, &failure);
++    masm.branchTestInt32(Assembler::NotEqual, R1, &failure);
++
++    // Add R0 and R1.  Don't need to explicitly unbox, just use the TailCallReg which
++    // should be available.
++    Register scratchReg = ICTailCallReg;
++
++    Label revertRegister, maybeNegZero;
++    switch(op_) {
++      case JSOP_ADD:
++        // Add R0 and R1.  Don't need to explicitly unbox.
++        masm.movl(R0.payloadReg(), scratchReg);
++        masm.addl(R1.payloadReg(), scratchReg);
++
++        // Just jump to failure on overflow.  R0 and R1 are preserved, so we can just jump to
++        // the next stub.
++        masm.j(Assembler::Overflow, &failure);
++
++        // Just overwrite the payload, the tag is still fine.
++        masm.movl(scratchReg, R0.payloadReg());
++        break;
++      case JSOP_SUB:
++        masm.movl(R0.payloadReg(), scratchReg);
++        masm.subl(R1.payloadReg(), scratchReg);
++        masm.j(Assembler::Overflow, &failure);
++        masm.movl(scratchReg, R0.payloadReg());
++        break;
++      case JSOP_MUL:
++        masm.movl(R0.payloadReg(), scratchReg);
++        masm.imull(R1.payloadReg(), scratchReg);
++        masm.j(Assembler::Overflow, &failure);
++
++        masm.test32(scratchReg, scratchReg);
++        masm.j(Assembler::Zero, &maybeNegZero);
++
++        masm.movl(scratchReg, R0.payloadReg());
++        break;
++      case JSOP_DIV:
++      {
++        // Prevent division by 0.
++        masm.branchTest32(Assembler::Zero, R1.payloadReg(), R1.payloadReg(), &failure);
++
++        // Prevent negative 0 and -2147483648 / -1.
++        masm.branch32(Assembler::Equal, R0.payloadReg(), Imm32(INT32_MIN), &failure);
++
++        Label notZero;
++        masm.branch32(Assembler::NotEqual, R0.payloadReg(), Imm32(0), &notZero);
++        masm.branchTest32(Assembler::Signed, R1.payloadReg(), R1.payloadReg(), &failure);
++        masm.bind(&notZero);
++
++        // For idiv we need eax.
++        MOZ_ASSERT(R1.typeReg() == eax);
++        masm.movl(R0.payloadReg(), eax);
++        // Preserve R0.payloadReg()/edx, eax is JSVAL_TYPE_INT32.
++        masm.movl(R0.payloadReg(), scratchReg);
++        // Sign extend eax into edx to make (edx:eax), since idiv is 64-bit.
++        masm.cdq();
++        masm.idiv(R1.payloadReg());
++
++        // A remainder implies a double result.
++        masm.branchTest32(Assembler::NonZero, edx, edx, &revertRegister);
++
++        masm.movl(eax, R0.payloadReg());
++        break;
++      }
++      case JSOP_MOD:
++      {
++        // x % 0 always results in NaN.
++        masm.branchTest32(Assembler::Zero, R1.payloadReg(), R1.payloadReg(), &failure);
++
++        // Prevent negative 0 and -2147483648 % -1.
++        masm.branchTest32(Assembler::Zero, R0.payloadReg(), Imm32(0x7fffffff), &failure);
++
++        // For idiv we need eax.
++        MOZ_ASSERT(R1.typeReg() == eax);
++        masm.movl(R0.payloadReg(), eax);
++        // Preserve R0.payloadReg()/edx, eax is JSVAL_TYPE_INT32.
++        masm.movl(R0.payloadReg(), scratchReg);
++        // Sign extend eax into edx to make (edx:eax), since idiv is 64-bit.
++        masm.cdq();
++        masm.idiv(R1.payloadReg());
++
++        // Fail when we would need a negative remainder.
++        Label done;
++        masm.branchTest32(Assembler::NonZero, edx, edx, &done);
++        masm.branchTest32(Assembler::Signed, scratchReg, scratchReg, &revertRegister);
++        masm.branchTest32(Assembler::Signed, R1.payloadReg(), R1.payloadReg(), &revertRegister);
++
++        masm.bind(&done);
++        // Result is in edx, tag in ecx remains untouched.
++        MOZ_ASSERT(R0.payloadReg() == edx);
++        MOZ_ASSERT(R0.typeReg() == ecx);
++        break;
++      }
++      case JSOP_BITOR:
++        // We can overide R0, because the instruction is unfailable.
++        // The R0.typeReg() is also still intact.
++        masm.orl(R1.payloadReg(), R0.payloadReg());
++        break;
++      case JSOP_BITXOR:
++        masm.xorl(R1.payloadReg(), R0.payloadReg());
++        break;
++      case JSOP_BITAND:
++        masm.andl(R1.payloadReg(), R0.payloadReg());
++        break;
++      case JSOP_LSH:
++        // RHS needs to be in ecx for shift operations.
++        MOZ_ASSERT(R0.typeReg() == ecx);
++        masm.movl(R1.payloadReg(), ecx);
++        masm.shll_cl(R0.payloadReg());
++        // We need to tag again, because we overwrote it.
++        masm.tagValue(JSVAL_TYPE_INT32, R0.payloadReg(), R0);
++        break;
++      case JSOP_RSH:
++        masm.movl(R1.payloadReg(), ecx);
++        masm.sarl_cl(R0.payloadReg());
++        masm.tagValue(JSVAL_TYPE_INT32, R0.payloadReg(), R0);
++        break;
++      case JSOP_URSH:
++        if (!allowDouble_)
++            masm.movl(R0.payloadReg(), scratchReg);
++
++        masm.movl(R1.payloadReg(), ecx);
++        masm.shrl_cl(R0.payloadReg());
++        masm.test32(R0.payloadReg(), R0.payloadReg());
++        if (allowDouble_) {
++            Label toUint;
++            masm.j(Assembler::Signed, &toUint);
++
++            // Box and return.
++            masm.tagValue(JSVAL_TYPE_INT32, R0.payloadReg(), R0);
++            EmitReturnFromIC(masm);
++
++            masm.bind(&toUint);
++            masm.convertUInt32ToDouble(R0.payloadReg(), ScratchDoubleReg);
++            masm.boxDouble(ScratchDoubleReg, R0);
++        } else {
++            masm.j(Assembler::Signed, &revertRegister);
++            masm.tagValue(JSVAL_TYPE_INT32, R0.payloadReg(), R0);
++        }
++        break;
++      default:
++       MOZ_CRASH("Unhandled op for BinaryArith_Int32.");
++    }
++
++    // Return.
++    EmitReturnFromIC(masm);
++
++    switch(op_) {
++      case JSOP_MUL:
++        masm.bind(&maybeNegZero);
++
++        // Result is -0 if exactly one of lhs or rhs is negative.
++        masm.movl(R0.payloadReg(), scratchReg);
++        masm.orl(R1.payloadReg(), scratchReg);
++        masm.j(Assembler::Signed, &failure);
++
++        // Result is +0.
++        masm.mov(ImmWord(0), R0.payloadReg());
++        EmitReturnFromIC(masm);
++        break;
++      case JSOP_DIV:
++      case JSOP_MOD:
++        masm.bind(&revertRegister);
++        masm.movl(scratchReg, R0.payloadReg());
++        masm.movl(ImmType(JSVAL_TYPE_INT32), R1.typeReg());
++        break;
++      case JSOP_URSH:
++        // Revert the content of R0 in the fallible >>> case.
++        if (!allowDouble_) {
++            masm.bind(&revertRegister);
++            masm.tagValue(JSVAL_TYPE_INT32, scratchReg, R0);
++        }
++        break;
++      default:
++        // No special failure handling required.
++        // Fall through to failure.
++        break;
++    }
++
++    // Failure case - jump to next stub
++    masm.bind(&failure);
++    EmitStubGuardFailure(masm);
++
++    return true;
++
++#endif
+ }
+ 
+ bool
+ ICUnaryArith_Int32::Compiler::generateStubCode(MacroAssembler& masm)
+ {
++#if defined(JS_PUNBOX64)
+     Label failure;
+     masm.branchTestInt32(Assembler::NotEqual, R0, &failure);
+ 
+@@ -228,6 +420,29 @@
+     masm.bind(&failure);
+     EmitStubGuardFailure(masm);
+     return true;
++#else
++    Label failure;
++    masm.branchTestInt32(Assembler::NotEqual, R0, &failure);
++
++    switch (op) {
++      case JSOP_BITNOT:
++        masm.notl(R0.payloadReg());
++        break;
++      case JSOP_NEG:
++        // Guard against 0 and MIN_INT, both result in a double.
++        masm.branchTest32(Assembler::Zero, R0.payloadReg(), Imm32(0x7fffffff), &failure);
++        masm.negl(R0.payloadReg());
++        break;
++      default:
++        MOZ_CRASH("Unexpected op");
++    }
++
++    EmitReturnFromIC(masm);
++
++    masm.bind(&failure);
++    EmitStubGuardFailure(masm);
++    return true;
++#endif
+ }
+ 
+ } // namespace jit
+diff -u -r firefox-45.3.0esr.orig/js/src/jit/x64/Trampoline-x64.cpp firefox-45.3.0esr/js/src/jit/x64/Trampoline-x64.cpp
+--- firefox-45.3.0esr.orig/js/src/jit/x64/Trampoline-x64.cpp	2016-05-12 10:09:59.000000000 -0700
++++ firefox-45.3.0esr/js/src/jit/x64/Trampoline-x64.cpp	2016-09-08 16:10:13.868517923 -0700
+@@ -145,9 +145,15 @@
+     // Push the number of actual arguments.  |result| is used to store the
+     // actual number of arguments without adding an extra argument to the enter
+     // JIT.
++#if defined(JS_PUNBOX64) || 1
+     masm.movq(result, reg_argc);
+     masm.unboxInt32(Operand(reg_argc, 0), reg_argc);
+     masm.push(reg_argc);
++#else
++//    masm.mov(Operand(ebp, ARG_RESULT), eax);
++//    masm.unboxInt32(Address(eax, 0x0), eax);
++//    masm.push(eax);
++#endif
+ 
+     // Push the callee token.
+     masm.push(token);
+@@ -492,7 +498,11 @@
+                           &notConstructing);
+ 
+         // thisFrame[numFormals] = prevFrame[argc]
++#if defined(JS_PUNBOX64)
+         ValueOperand newTarget(r10);
++#else
++        ValueOperand newTarget(ecx, edi);
++#endif
+ 
+         // +1 for |this|. We want vp[argc], so don't subtract 1
+         BaseIndex newTargetSrc(r9, rdx, TimesEight, sizeof(RectifierFrameLayout) + sizeof(Value));
+@@ -735,9 +745,25 @@
+                             MoveOp::GENERAL);
+             argDisp += sizeof(void*);
+             break;
++#if defined(JS_PUNBOX64)
+           case VMFunction::DoubleByValue:
+           case VMFunction::DoubleByRef:
+             MOZ_CRASH("NYI: x64 callVM should not be used with 128bits values.");
++#else
++          case VMFunction::DoubleByValue:
++            // We don't pass doubles in float registers on x86, so no need
++            // to check for argPassedInFloatReg.
++            masm.passABIArg(MoveOperand(argsBase, argDisp), MoveOp::GENERAL);
++            argDisp += sizeof(void*);
++            masm.passABIArg(MoveOperand(argsBase, argDisp), MoveOp::GENERAL);
++            argDisp += sizeof(void*);
++            break;
++          case VMFunction::DoubleByRef:
++            masm.passABIArg(MoveOperand(argsBase, argDisp, MoveOperand::EFFECTIVE_ADDRESS),
++                            MoveOp::GENERAL);
++            argDisp += 2 * sizeof(void*);
++            break;
++#endif
+         }
+     }
+ 
