@@ -81,7 +81,7 @@ Works:
 -gimp
 -xscreensaver
 -glxgears from mesa-progs
--chrony and ntpd work.  chrony needs musl struct timex patched
+-chrony and ntpd work.  chrony needs musl struct timex patched with musl from this overlay.
 
 Broken (do not use the ebuild and associated patches from this overlay if broken.  my personal patches may add more complications so do it from scratch again): 
 -Makefile.in or make system - use my bashrc scripts to fix it see below.
