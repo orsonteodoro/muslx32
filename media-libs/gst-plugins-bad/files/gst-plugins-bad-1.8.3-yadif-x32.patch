@@ -1,0 +1,16 @@
+diff -urp gst-plugins-bad-1.8.3.orig/gst/yadif/yadif_template.c gst-plugins-bad-1.8.3/gst/yadif/yadif_template.c
+--- gst-plugins-bad-1.8.3.orig/gst/yadif/yadif_template.c	2016-10-13 13:28:41.137944020 -0700
++++ gst-plugins-bad-1.8.3/gst/yadif/yadif_template.c	2016-10-13 13:28:17.826057326 -0700
+@@ -216,9 +216,9 @@ static void RENAME (yadif_filter_line) (
+             "pminsw    "MM"3, "MM"1 \n\t" /* d = clip(spatial_pred, d-diff, d+diff); */\
+             "packuswb  "MM"1, "MM"1 \n\t"\
+ \
+-            ::[prev] "r"(prev),\
+-             [cur]  "r"(cur),\
+-             [next] "r"(next),\
++            ::[prev] "r"((x86_reg)prev),\
++             [cur]  "r"((x86_reg)cur),\
++             [next] "r"((x86_reg)next),\
+              [prefs]"r"((x86_reg)prefs),\
+              [mrefs]"r"((x86_reg)mrefs),\
+              [mode] "g"(mode),\
