@@ -1,0 +1,13 @@
+diff -urp llvm-3.7.1.src.orig/tools/clang/lib/Driver/ToolChains.cpp llvm-3.7.1.src/tools/clang/lib/Driver/ToolChains.cpp
+--- llvm-3.7.1.src.orig/tools/clang/lib/Driver/ToolChains.cpp	2015-07-13 16:27:56.000000000 -0700
++++ llvm-3.7.1.src/tools/clang/lib/Driver/ToolChains.cpp	2016-10-13 19:32:37.175303912 -0700
+@@ -1289,7 +1289,8 @@ bool Generic_GCC::GCCInstallationDetecto
+       "x86_64-redhat-linux",    "x86_64-suse-linux",
+       "x86_64-manbo-linux-gnu", "x86_64-linux-gnu",
+       "x86_64-slackware-linux", "x86_64-linux-android",
+-      "x86_64-unknown-linux"};
++      "x86_64-unknown-linux",
++      "x86_64-pc-linux-muslx32"};
+   static const char *const X32LibDirs[] = {"/libx32"};
+   static const char *const X86LibDirs[] = {"/lib32", "/lib"};
+   static const char *const X86Triples[] = {

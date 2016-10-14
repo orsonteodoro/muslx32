@@ -225,6 +225,7 @@ src_prepare() {
 		popd >/dev/null || die
 
 		eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-musl-clang-support.patch
+		eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-musl-compiler-rt.patch
 	fi
 
 	if use lldb; then
@@ -243,8 +244,11 @@ src_prepare() {
 		eapply "${FILESDIR}"/3.7.1/lldb/tinfo.patch
 	fi
 
-	eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-musl.patch
+	eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-musl-fixes.patch
 	eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-musl-support.patch
+	if [[ "${CHOST}" =~ "muslx32" ]]; then
+		eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-muslx32-triple.patch
+	fi
 
 	# User patches
 	eapply_user
@@ -340,8 +344,11 @@ multilib_src_configure() {
 		fi
 
 		if use gold; then
+			#mycmakeargs+=(
+			#	-DLLVM_BINUTILS_INCDIR="${EPREFIX}"/usr/include
+			#)
 			mycmakeargs+=(
-				-DLLVM_BINUTILS_INCDIR="${EPREFIX}"/usr/include
+				-DLLVM_BINUTILS_INCDIR="${EPREFIX}/usr/lib/binutils/${CHOST}/`ld -v | awk '{ print $4 }'`/include/"
 			)
 		fi
 

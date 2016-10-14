@@ -1,0 +1,52 @@
+diff -urp llvm-3.7.1.src.orig/projects/compiler-rt/lib/Makefile.mk llvm-3.7.1.src/projects/compiler-rt/lib/Makefile.mk
+--- llvm-3.7.1.src.orig/projects/compiler-rt/lib/Makefile.mk	2015-02-18 14:26:49.000000000 -0800
++++ llvm-3.7.1.src/projects/compiler-rt/lib/Makefile.mk	2016-10-13 18:52:18.795104212 -0700
+@@ -10,10 +10,10 @@
+ SubDirs :=
+ 
+ # Add submodules.
+-SubDirs += asan
++#SubDirs += asan
+ SubDirs += builtins
+ SubDirs += interception
+-SubDirs += lsan
++#SubDirs += lsan
+ SubDirs += profile
+-SubDirs += sanitizer_common
+-SubDirs += ubsan
++#SubDirs += sanitizer_common
++#SubDirs += ubsan
+diff -urp llvm-3.7.1.src.orig/projects/compiler-rt/lib/interception/interception_linux.cc llvm-3.7.1.src/projects/compiler-rt/lib/interception/interception_linux.cc
+--- llvm-3.7.1.src.orig/projects/compiler-rt/lib/interception/interception_linux.cc	2014-02-24 00:37:41.000000000 -0800
++++ llvm-3.7.1.src/projects/compiler-rt/lib/interception/interception_linux.cc	2016-10-13 18:53:21.146479463 -0700
+@@ -24,12 +24,6 @@ bool GetRealFunctionAddress(const char *
+   return real == wrapper;
+ }
+ 
+-#if !defined(__ANDROID__)  // android does not have dlvsym
+-void *GetFuncAddrVer(const char *func_name, const char *ver) {
+-  return dlvsym(RTLD_NEXT, func_name, ver);
+-}
+-#endif  // !defined(__ANDROID__)
+-
+ }  // namespace __interception
+ 
+ 
+diff -urp llvm-3.7.1.src.orig/projects/compiler-rt/lib/interception/interception_linux.h llvm-3.7.1.src/projects/compiler-rt/lib/interception/interception_linux.h
+--- llvm-3.7.1.src.orig/projects/compiler-rt/lib/interception/interception_linux.h	2014-02-24 00:37:41.000000000 -0800
++++ llvm-3.7.1.src/projects/compiler-rt/lib/interception/interception_linux.h	2016-10-13 18:54:23.064838220 -0700
+@@ -34,14 +34,8 @@ void *GetFuncAddrVer(const char *func_na
+       (::__interception::uptr) & (func),                                   \
+       (::__interception::uptr) & WRAP(func))
+ 
+-#if !defined(__ANDROID__)  // android does not have dlvsym
+-# define INTERCEPT_FUNCTION_VER_LINUX_OR_FREEBSD(func, symver) \
+-     ::__interception::real_##func = (func##_f)(unsigned long) \
+-         ::__interception::GetFuncAddrVer(#func, symver)
+-#else
+ # define INTERCEPT_FUNCTION_VER_LINUX_OR_FREEBSD(func, symver) \
+      INTERCEPT_FUNCTION_LINUX_OR_FREEBSD(func)
+-#endif  // !defined(__ANDROID__)
+ 
+ #endif  // INTERCEPTION_LINUX_H
+ #endif  // __linux__ || __FreeBSD__
