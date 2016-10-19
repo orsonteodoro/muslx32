@@ -257,6 +257,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-x32-exclude-atomic-and-personality.patch
 		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-x32-no-x86_64-support-1.patch
 		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-x32-no-x86_64-support-2.patch
+		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-musl-x32-wchar_t.patch
 	fi
 	eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-reorder-environment-parse-musl.patch
 

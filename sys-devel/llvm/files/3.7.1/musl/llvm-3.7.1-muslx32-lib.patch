@@ -80,8 +80,9 @@ diff -urp llvm-3.7.1.src.orig/lib/Target/X86/X86TargetMachine.cpp llvm-3.7.1.src
 @@ -59,7 +59,9 @@ static std::string computeDataLayout(con
    Ret += DataLayout::getManglingComponent(TT);
    // X86 and x32 have 32 bit pointers.
-   if ((TT.isArch64Bit() &&
+-  if ((TT.isArch64Bit() &&
 -       (TT.getEnvironment() == Triple::GNUX32 || TT.isOSNaCl())) ||
++  if ((TT.isArch64Bit() &&
 +       (TT.getEnvironment() == Triple::GNUX32 ||
 +        TT.getEnvironment() == Triple::MuslX32 ||
 +        TT.isOSNaCl())) ||

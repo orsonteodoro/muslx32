@@ -1,0 +1,12 @@
+diff -urp llvm-3.7.1.src.orig/tools/clang/lib/Basic/Targets.cpp llvm-3.7.1.src/tools/clang/lib/Basic/Targets.cpp
+--- llvm-3.7.1.src.orig/tools/clang/lib/Basic/Targets.cpp	2016-10-18 22:05:07.316922118 -0700
++++ llvm-3.7.1.src/tools/clang/lib/Basic/Targets.cpp	2016-10-18 22:18:51.920317159 -0700
+@@ -3862,6 +3862,8 @@ public:
+     IntPtrType  = IsX32 ? SignedInt        : SignedLong;
+     IntMaxType  = IsX32 ? SignedLongLong   : SignedLong;
+     Int64Type   = IsX32 ? SignedLongLong   : SignedLong;
++    if (getTriple().getEnvironment() == llvm::Triple::MuslX32)
++        WCharType = SignedLong;
+     RegParmMax = 6;
+ 
+     // Pointers are 32-bit in x32.

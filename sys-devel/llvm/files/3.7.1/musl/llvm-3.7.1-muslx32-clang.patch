@@ -78,8 +78,9 @@ diff -urp llvm-3.7.1.src.orig/tools/clang/lib/Driver/ToolChains.cpp llvm-3.7.1.s
 @@ -3132,7 +3139,8 @@ static StringRef getOSLibDir(const llvm:
      return "lib32";
  
-   if (Triple.getArch() == llvm::Triple::x86_64 &&
+-  if (Triple.getArch() == llvm::Triple::x86_64 &&
 -      Triple.getEnvironment() == llvm::Triple::GNUX32)
++  if (Triple.getArch() == llvm::Triple::x86_64 &&
 +      (Triple.getEnvironment() == llvm::Triple::GNUX32 ||
 +       Triple.getEnvironment() == llvm::Triple::MuslX32))
      return "libx32";
