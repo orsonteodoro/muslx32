@@ -1,0 +1,52 @@
+diff -urp libvpx-1.5.0.orig/third_party/libyuv/source/x86inc.asm libvpx-1.5.0/third_party/libyuv/source/x86inc.asm
+--- libvpx-1.5.0.orig/third_party/libyuv/source/x86inc.asm	2015-11-09 14:12:38.000000000 -0800
++++ libvpx-1.5.0/third_party/libyuv/source/x86inc.asm	2016-10-19 03:28:27.431302362 -0700
+@@ -556,6 +556,9 @@ section .note.GNU-stack noalloc noexec n
+ %ifidn __OUTPUT_FORMAT__,elf64
+ section .note.GNU-stack noalloc noexec nowrite progbits
+ %endif
++%ifidn __OUTPUT_FORMAT__,elfx32
++section .note.GNU-stack noalloc noexec nowrite progbits
++%endif
+ 
+ ; cpuflags
+ 
+diff -urp libvpx-1.5.0.orig/third_party/x86inc/x86inc.asm libvpx-1.5.0/third_party/x86inc/x86inc.asm
+--- libvpx-1.5.0.orig/third_party/x86inc/x86inc.asm	2015-11-09 14:12:38.000000000 -0800
++++ libvpx-1.5.0/third_party/x86inc/x86inc.asm	2016-10-19 03:28:26.103252083 -0700
+@@ -70,6 +70,8 @@
+     %define mangle(x) x
+ %elifidn __OUTPUT_FORMAT__,elf64
+     %define mangle(x) x
++%elifidn __OUTPUT_FORMAT__,elfx32
++    %define mangle(x) x
+ %elifidn __OUTPUT_FORMAT__,x64
+     %define mangle(x) x
+ %elifidn __OUTPUT_FORMAT__,win64
+@@ -784,6 +786,8 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle,
+         global %2:function %%VISIBILITY
+     %elifidn __OUTPUT_FORMAT__,elf64
+         global %2:function %%VISIBILITY
++    %elifidn __OUTPUT_FORMAT__,elfx32
++        global %2:function %%VISIBILITY
+     %elifidn __OUTPUT_FORMAT__,macho32
+         %ifdef __NASM_VER__
+             global %2
+@@ -831,6 +835,8 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle,
+         global %1:data hidden
+     %elifidn __OUTPUT_FORMAT__,elf64
+         global %1:data hidden
++    %elifidn __OUTPUT_FORMAT__,elfx32
++        global %1:data hidden
+     %else
+         global %1
+     %endif
+@@ -843,6 +849,8 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle,
+ SECTION .note.GNU-stack noalloc noexec nowrite progbits
+ %elifidn __OUTPUT_FORMAT__,elf64
+ SECTION .note.GNU-stack noalloc noexec nowrite progbits
++%elifidn __OUTPUT_FORMAT__,elfx32
++SECTION .note.GNU-stack noalloc noexec nowrite progbits
+ %endif
+ 
+ ; cpuflags
