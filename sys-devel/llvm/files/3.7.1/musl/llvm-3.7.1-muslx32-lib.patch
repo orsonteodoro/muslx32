@@ -1,0 +1,90 @@
+diff -urp llvm-3.7.1.src.orig/lib/Support/Triple.cpp llvm-3.7.1.src/lib/Support/Triple.cpp
+--- llvm-3.7.1.src.orig/lib/Support/Triple.cpp	2016-10-17 18:17:06.490604153 -0700
++++ llvm-3.7.1.src/lib/Support/Triple.cpp	2016-10-17 18:31:26.009108374 -0700
+@@ -193,6 +193,7 @@ const char *Triple::getEnvironmentTypeNa
+   case EABI: return "eabi";
+   case EABIHF: return "eabihf";
+   case Musl: return "musl";
++  case MuslX32: return "muslx32";
+   case MuslEABI: return "musleabi";
+   case MuslEABIHF: return "musleabihf";
+   case Android: return "android";
+@@ -430,6 +431,7 @@ static Triple::EnvironmentType parseEnvi
+     .StartsWith("code16", Triple::CODE16)
+     .StartsWith("gnu", Triple::GNU)
+     .StartsWith("musl", Triple::Musl)
++    .StartsWith("muslx32", Triple::MuslX32)
+     .StartsWith("musleabi", Triple::MuslEABI)
+     .StartsWith("musleabihf", Triple::MuslEABIHF)
+     .StartsWith("android", Triple::Android)
+diff -urp llvm-3.7.1.src.orig/lib/Target/X86/MCTargetDesc/X86AsmBackend.cpp llvm-3.7.1.src/lib/Target/X86/MCTargetDesc/X86AsmBackend.cpp
+--- llvm-3.7.1.src.orig/lib/Target/X86/MCTargetDesc/X86AsmBackend.cpp	2015-07-05 03:25:41.000000000 -0700
++++ llvm-3.7.1.src/lib/Target/X86/MCTargetDesc/X86AsmBackend.cpp	2016-10-17 18:19:09.973273850 -0700
+@@ -800,7 +800,8 @@ MCAsmBackend *llvm::createX86_64AsmBacke
+ 
+   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TheTriple.getOS());
+ 
+-  if (TheTriple.getEnvironment() == Triple::GNUX32)
++  if (TheTriple.getEnvironment() == Triple::GNUX32 ||
++      TheTriple.getEnvironment() == Triple::MuslX32)
+     return new ELFX86_X32AsmBackend(T, OSABI, CPU);
+   return new ELFX86_64AsmBackend(T, OSABI, CPU);
+ }
+diff -urp llvm-3.7.1.src.orig/lib/Target/X86/MCTargetDesc/X86MCAsmInfo.cpp llvm-3.7.1.src/lib/Target/X86/MCTargetDesc/X86MCAsmInfo.cpp
+--- llvm-3.7.1.src.orig/lib/Target/X86/MCTargetDesc/X86MCAsmInfo.cpp	2015-05-29 18:25:56.000000000 -0700
++++ llvm-3.7.1.src/lib/Target/X86/MCTargetDesc/X86MCAsmInfo.cpp	2016-10-17 18:32:05.848614994 -0700
+@@ -88,7 +88,8 @@ void X86ELFMCAsmInfo::anchor() { }
+ 
+ X86ELFMCAsmInfo::X86ELFMCAsmInfo(const Triple &T) {
+   bool is64Bit = T.getArch() == Triple::x86_64;
+-  bool isX32 = T.getEnvironment() == Triple::GNUX32;
++  bool isX32 = T.getEnvironment() == Triple::GNUX32 ||
++               T.getEnvironment() == Triple::MuslX32;
+ 
+   // For ELF, x86-64 pointer size depends on the ABI.
+   // For x86-64 without the x32 ABI, pointer size is 8. For x86 and for x86-64
+diff -urp llvm-3.7.1.src.orig/lib/Target/X86/X86RegisterInfo.cpp llvm-3.7.1.src/lib/Target/X86/X86RegisterInfo.cpp
+--- llvm-3.7.1.src.orig/lib/Target/X86/X86RegisterInfo.cpp	2015-07-10 11:13:17.000000000 -0700
++++ llvm-3.7.1.src/lib/Target/X86/X86RegisterInfo.cpp	2016-10-17 18:19:52.500882095 -0700
+@@ -73,7 +73,8 @@ X86RegisterInfo::X86RegisterInfo(const T
+     // This matches the simplified 32-bit pointer code in the data layout
+     // computation.
+     // FIXME: Should use the data layout?
+-    bool Use64BitReg = TT.getEnvironment() != Triple::GNUX32;
++    bool Use64BitReg = TT.getEnvironment() != Triple::GNUX32 &&
++                       TT.getEnvironment() != Triple::MuslX32;
+     StackPtr = Use64BitReg ? X86::RSP : X86::ESP;
+     FramePtr = Use64BitReg ? X86::RBP : X86::EBP;
+     BasePtr = Use64BitReg ? X86::RBX : X86::EBX;
+diff -urp llvm-3.7.1.src.orig/lib/Target/X86/X86Subtarget.h llvm-3.7.1.src/lib/Target/X86/X86Subtarget.h
+--- llvm-3.7.1.src.orig/lib/Target/X86/X86Subtarget.h	2015-07-08 14:03:47.000000000 -0700
++++ llvm-3.7.1.src/lib/Target/X86/X86Subtarget.h	2016-10-17 18:20:30.708326975 -0700
+@@ -306,12 +306,14 @@ public:
+   /// Is this x86_64 with the ILP32 programming model (x32 ABI)?
+   bool isTarget64BitILP32() const {
+     return In64BitMode && (TargetTriple.getEnvironment() == Triple::GNUX32 ||
++                           TargetTriple.getEnvironment() == Triple::MuslX32 ||
+                            TargetTriple.isOSNaCl());
+   }
+ 
+   /// Is this x86_64 with the LP64 programming model (standard AMD64, no x32)?
+   bool isTarget64BitLP64() const {
+     return In64BitMode && (TargetTriple.getEnvironment() != Triple::GNUX32 &&
++                           TargetTriple.getEnvironment() != Triple::MuslX32 &&
+                            !TargetTriple.isOSNaCl());
+   }
+ 
+diff -urp llvm-3.7.1.src.orig/lib/Target/X86/X86TargetMachine.cpp llvm-3.7.1.src/lib/Target/X86/X86TargetMachine.cpp
+--- llvm-3.7.1.src.orig/lib/Target/X86/X86TargetMachine.cpp	2015-06-22 11:29:44.000000000 -0700
++++ llvm-3.7.1.src/lib/Target/X86/X86TargetMachine.cpp	2016-10-17 18:31:29.465239075 -0700
+@@ -59,7 +59,9 @@ static std::string computeDataLayout(con
+   Ret += DataLayout::getManglingComponent(TT);
+   // X86 and x32 have 32 bit pointers.
+   if ((TT.isArch64Bit() &&
+-       (TT.getEnvironment() == Triple::GNUX32 || TT.isOSNaCl())) ||
++       (TT.getEnvironment() == Triple::GNUX32 ||
++        TT.getEnvironment() == Triple::MuslX32 ||
++        TT.isOSNaCl())) ||
+       !TT.isArch64Bit())
+     Ret += "-p:32:32";
+ 

@@ -1,0 +1,83 @@
+diff -urp llvm-3.7.1.src.orig/tools/clang/runtime/compiler-rt/Makefile llvm-3.7.1.src/tools/clang/runtime/compiler-rt/Makefile
+--- llvm-3.7.1.src.orig/tools/clang/runtime/compiler-rt/Makefile	2015-03-23 16:14:05.000000000 -0700
++++ llvm-3.7.1.src/tools/clang/runtime/compiler-rt/Makefile	2016-10-18 20:04:25.373241701 -0700
+@@ -121,25 +121,68 @@ TryCompile = \
+     $(1) $$cflags $(2) -o /dev/null > /dev/null 2> /dev/null ; \
+     echo $$?)
+ 
+-# We try to build 32-bit runtimes both on 32-bit hosts and 64-bit hosts.
+-Runtime32BitConfigs = \
++# We try to build x86 runtimes both on x86 hosts and 64-bit hosts.
++Runtimex86Configs = \
+ 	builtins-i386.a profile-i386.a
++Runtime64BitConfigs = \
++	builtins-x86_64.a profile-x86_64.a
++Runtimex32Configs = \
++	builtins-x32.a profile-x32.a
+ 
+ # We currently only try to generate runtime libraries on x86.
+ ifeq ($(ARCH),x86)
+-RuntimeLibrary.linux.Configs += $(Runtime32BitConfigs)
++RuntimeLibrary.linux.Configs += $(Runtimex32Configs)
+ endif
+ 
+ ifeq ($(ARCH),x86_64)
+-RuntimeLibrary.linux.Configs += \
+-	builtins-x86_64.a profile-x86_64.a
+-# We need to build 32-bit libraries on 64-bit platform, and add them
+-# to the list of runtime libraries to make "clang -m32" work.
+-# We check that Clang can produce working 32-bit binaries by compiling a simple
++CompilerTargetTriple := $(shell \
++	$(CC) -v 2>&1 | grep 'Target:' | cut -d' ' -f2)
++ifeq ($(CompilerTargetTriple),)
++$(error "unable to infer compiler target triple for $(CC)")
++endif
++ifeq ($(lastword $(subst -gnu, ,$(CompilerTargetTriple))),x32)
++ARCH=x32
++RuntimeLibrary.linux.Configs += $(Runtimex32Configs)
++# We need to build x86 libraries on x32 platform, and add them
++# to the list of runtime libraries to make "clang -m32/-m64" work.
++# We check that Clang can produce working 32/64-bit binaries by compiling a simple
+ # executable.
+ test_source = $(LLVM_SRC_ROOT)/tools/clang/runtime/compiler-rt/clang_linux_test_input.c
++ifeq ($(call TryCompile,$(ToolDir)/clang,$(test_source),-m64),0)
++RuntimeLibrary.linux.Configs += $(Runtime64BitConfigs)
++endif
+ ifeq ($(call TryCompile,$(ToolDir)/clang,$(test_source),-m32),0)
+-RuntimeLibrary.linux.Configs += $(Runtime32BitConfigs)
++RuntimeLibrary.linux.Configs += $(Runtimex32Configs)
++endif
++else ifeq ($(lastword $(subst -musl, ,$(CompilerTargetTriple))),x32)
++ARCH=x32
++RuntimeLibrary.linux.Configs += $(Runtimex32Configs)
++# We need to build x86 ASan/UBsan libraries on x32 platform, and add them
++# to the list of runtime libraries to make
++# "clang -fsanitize=(address|undefined) -m32/-m64" work.
++# We check that Clang can produce working 32/64-bit binaries by compiling a simple
++# executable.
++test_source = $(LLVM_SRC_ROOT)/tools/clang/runtime/compiler-rt/clang_linux_test_input.c
++ifeq ($(call TryCompile,$(ToolDir)/clang,$(test_source),-m64),0)
++RuntimeLibrary.linux.Configs += $(Runtime64BitConfigs)
++endif
++ifeq ($(call TryCompile,$(ToolDir)/clang,$(test_source),-m32),0)
++RuntimeLibrary.linux.Configs += $(Runtimex86Configs)
++endif
++else
++RuntimeLibrary.linux.Configs += $(Runtime64BitConfigs)
++# We need to build x86/x32 ASan/UBsan libraries on 64-bit platform, and add them
++# to the list of runtime libraries to make
++# "clang -fsanitize=(address|undefined) -m32/-mx32" work.
++# We check that Clang can produce working x86 binaries by compiling a simple
++# executable.
++test_source = $(LLVM_SRC_ROOT)/tools/clang/runtime/compiler-rt/clang_linux_test_input.c
++ifeq ($(call TryCompile,$(ToolDir)/clang,$(test_source),-m32),0)
++RuntimeLibrary.linux.Configs += $(Runtimex86Configs)
++endif
++ifeq ($(call TryCompile,$(ToolDir)/clang,$(test_source),-mx32),0)
++RuntimeLibrary.linux.Configs += $(Runtimex32Configs)
++endif
+ endif
+ endif
+ 
+Only in llvm-3.7.1.src/tools/clang/runtime/compiler-rt: Makefile.orig
+Only in llvm-3.7.1.src/tools/clang/runtime/compiler-rt: Makefile.rej

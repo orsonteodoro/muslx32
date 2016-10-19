@@ -1,0 +1,16 @@
+diff -urp llvm-3.5.0.src.orig/projects/compiler-rt/make/platform/clang_linux.mk llvm-3.5.0.src/projects/compiler-rt/make/platform/clang_linux.mk
+--- llvm-3.5.0.src.orig/projects/compiler-rt/make/platform/clang_linux.mk	2016-10-18 18:18:47.461637907 -0700
++++ llvm-3.5.0.src/projects/compiler-rt/make/platform/clang_linux.mk	2016-10-18 18:27:07.530622163 -0700
+@@ -50,9 +50,9 @@ else
+     endif
+   else ifeq ($(lastword $(subst -musl, ,$(CompilerTargetTriple))),x32)
+     SupportedArches := x32
+-    ifeq ($(call TryCompile,$(CC),$(test_source),-m64),0)
+-      SupportedArches += x86_64
+-    endif
++    #ifeq ($(call TryCompile,$(CC),$(test_source),-m64),0)
++    #  SupportedArches += x86_64
++    #endif
+   else
+     SupportedArches := x86_64
+     ifeq ($(call TryCompile,$(CC),$(test_source),-mx32),0)
