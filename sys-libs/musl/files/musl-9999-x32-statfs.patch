@@ -1,0 +1,15 @@
+diff -ur musl-9999.orig/arch/x32/bits/statfs.h musl-9999/arch/x32/bits/statfs.h
+--- musl-9999.orig/arch/x32/bits/statfs.h	2016-10-14 22:59:49.620788379 -0700
++++ musl-9999/arch/x32/bits/statfs.h	2016-10-14 23:27:42.308018929 -0700
+@@ -1,8 +1,8 @@
+ struct statfs {
+ 	unsigned long f_type, __pad0, f_bsize, __pad1;
+-	fsblkcnt_t f_blocks, f_bfree, f_bavail;
+-	fsfilcnt_t f_files, f_ffree;
++	unsigned long f_blocks, f_bfree, f_bavail;
++	unsigned long f_files, f_ffree;
+ 	fsid_t f_fsid;
+ 	unsigned long f_namelen, __pad2, f_frsize, __pad3;
+ 	unsigned long f_flags, __pad4;
+ 	unsigned long long f_spare[4];
+ };
