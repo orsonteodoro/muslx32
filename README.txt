@@ -1690,14 +1690,35 @@ PORTAGE_IONICE_COMMAND="ionice -c 3 -p \${PID}"
 MAKEOPTS="-j1"
 
 ----
-#might need this to get firefox to play sound properly
-~/.asoundrc
+#You might need this to get firefox to play sound properly.
+#These settings allow to mix two or more sound sources to one sound card.
+#Here are contents of ~/.asoundrc
 pcm.!default {
     type plug
-    slave.pcm "hw:0,0"
+    slave.pcm "dmixer"
 }
 
-ctl.!default {
+pcm.dmixer {
+    type dmix
+    ipc_key 1024
+    slave {
+      pcm "hw:0,0"
+      rate 44100
+    }
+}
+
+ctl.dmixer {
+    type hw
+    card 0
+    device 0
+}
+
+pcm.dsp {
+    type plug
+    slave.pcm "dmixer"
+}
+
+ctl.mixer {
     type hw
     card 0
 }
