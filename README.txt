@@ -82,6 +82,7 @@ Works:
 -xscreensaver
 -glxgears from mesa-progs
 -chrony and ntpd work.  chrony needs musl struct timex patched with musl from this overlay.
+-clang - clang 3.7 should now work with simple hello world... it still needs more testing
 
 Broken (do not use the ebuild and associated patches from this overlay if broken.  my personal patches may add more complications so do it from scratch again): 
 -Makefile.in or make system - use my bashrc scripts to fix it see below.
@@ -99,7 +100,6 @@ Details about the problem can be found at https://github.com/orsonteodoro/muslx3
 -mono C# (incomplete patch from PLD Linux... was testing) details (https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html) on what needs to be done.
 
 -import (from imagematick) - cannot take a screenshot use imlib2 
--clang - cannot compile it yet
 -wine - it's broken and never supported x32.  x86 (win32/win16) may never be supported but x86_64 based windows apps may be supported.  Problems and immaturity of musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 assembly instructions and same registers which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produce with the microsoft toolchain.
 -libreoffice - the one from musl overlay is broken and can't be compiled on this toolchain or configuration.
 
