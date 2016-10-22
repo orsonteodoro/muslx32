@@ -1,0 +1,76 @@
+diff --git a/libavcodec/x86/h264_idct.asm b/libavcodec/x86/h264_idct.asm
+index 30cecd9..7486ac8 100644
+--- a/libavcodec/x86/h264_idct.asm
++++ b/libavcodec/x86/h264_idct.asm
+@@ -619,9 +619,9 @@ cglobal h264_idct_add8_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride,
+     mov          r5, 32
+     add          r2, 384
+ %if ARCH_X86_64
+-    add       dst2q, gprsize
++    add       dst2q, ptrsize
+ %else
+-    add        r0mp, gprsize
++    add        r0mp, ptrsize
+ %endif
+     call         h264_idct_add8_mmx_plane
+     RET
+@@ -634,7 +634,7 @@ h264_idct_add8_mmxext_plane:
+     jz .try_dc
+ %if ARCH_X86_64
+     mov         r0d, dword [r1+r5*4]
+-    add          r0, [dst2q]
++    add         r0p, [dst2q]
+ %else
+     mov          r0, r1m ; XXX r1m here is actually r0m of the calling func
+     mov          r0, [r0]
+@@ -653,7 +653,7 @@ h264_idct_add8_mmxext_plane:
+     DC_ADD_MMXEXT_INIT r2, r3, r6
+ %if ARCH_X86_64
+     mov         r0d, dword [r1+r5*4]
+-    add          r0, [dst2q]
++    add         r0p, [dst2q]
+ %else
+     mov          r0, r1m ; XXX r1m here is actually r0m of the calling func
+     mov          r0, [r0]
+@@ -683,9 +683,9 @@ cglobal h264_idct_add8_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride,
+     mov          r5, 32
+     add          r2, 384
+ %if ARCH_X86_64
+-    add       dst2q, gprsize
++    add       dst2q, ptrsize
+ %else
+-    add        r0mp, gprsize
++    add        r0mp, ptrsize
+ %endif
+     call h264_idct_add8_mmxext_plane
+     RET
+@@ -814,7 +814,7 @@ cglobal h264_idct_add16intra_8, 5, 7 + ARCH_X86_64, 8
+     jz .try%1dc
+ %if ARCH_X86_64
+     mov        r0d, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
+-    add         r0, [r7]
++    add        r0p, [r7]
+ %else
+     mov         r0, r0m
+     mov         r0, [r0]
+@@ -828,7 +828,7 @@ cglobal h264_idct_add16intra_8, 5, 7 + ARCH_X86_64, 8
+     jz .cycle%1end
+ %if ARCH_X86_64
+     mov        r0d, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
+-    add         r0, [r7]
++    add        r0p, [r7]
+ %else
+     mov         r0, r0m
+     mov         r0, [r0]
+@@ -853,9 +853,9 @@ cglobal h264_idct_add8_8, 5, 7 + ARCH_X86_64, 8
+     add8_sse2_cycle 0, 0x34
+     add8_sse2_cycle 1, 0x3c
+ %if ARCH_X86_64
+-    add          r7, gprsize
++    add          r7, ptrsize
+ %else
+-    add        r0mp, gprsize
++    add        r0mp, ptrsize
+ %endif
+     add8_sse2_cycle 2, 0x5c
+     add8_sse2_cycle 3, 0x64

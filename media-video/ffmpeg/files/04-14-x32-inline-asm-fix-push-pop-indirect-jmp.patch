@@ -1,0 +1,309 @@
+--- ffmpeg-2.8.6.orig/libswscale/x86/swscale_template.c	2016-01-31 16:52:22.000000000 -0800
++++ ffmpeg-2.8.6/libswscale/x86/swscale_template.c	2016-10-19 22:33:52.814598010 -0700
+@@ -893,12 +893,12 @@ static void RENAME(yuv2rgb32_2)(SwsConte
+         const int16_t *abuf0 = abuf[0], *abuf1 = abuf[1];
+ #if ARCH_X86_64
+         __asm__ volatile(
+-            YSCALEYUV2RGB(%%r8, %5)
+-            YSCALEYUV2RGB_YA(%%r8, %5, %6, %7)
++            YSCALEYUV2RGB(%%REG8, %5)
++            YSCALEYUV2RGB_YA(%%REG8, %5, %6, %7)
+             "psraw                  $3, %%mm1       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
+             "psraw                  $3, %%mm7       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
+             "packuswb            %%mm7, %%mm1       \n\t"
+-            WRITEBGR32(%4, DSTW_OFFSET"(%5)", %%r8, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
++            WRITEBGR32(%4, DSTW_OFFSET"(%5)", %%REG8, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "r" (dest),
+                "a" (&c->redDither),
+                "r" (abuf0), "r" (abuf1)
+@@ -910,7 +910,7 @@ static void RENAME(yuv2rgb32_2)(SwsConte
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2RGB(%%REGBP, %5)
+             "push                   %0              \n\t"
+             "push                   %1              \n\t"
+@@ -923,7 +923,7 @@ static void RENAME(yuv2rgb32_2)(SwsConte
+             "pop                    %1              \n\t"
+             "pop                    %0              \n\t"
+             WRITEBGR32(%%REGb, DSTW_OFFSET"(%5)", %%REGBP, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+@@ -933,11 +933,11 @@ static void RENAME(yuv2rgb32_2)(SwsConte
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2RGB(%%REGBP, %5)
+             "pcmpeqd %%mm7, %%mm7                   \n\t"
+             WRITEBGR32(%%REGb, DSTW_OFFSET"(%5)", %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+@@ -956,11 +956,11 @@ static void RENAME(yuv2bgr24_2)(SwsConte
+     __asm__ volatile(
+         "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+         "mov        %4, %%"REG_b"               \n\t"
+-        "push %%"REG_BP"                        \n\t"
++        "push %%"REG_rBP"                        \n\t"
+         YSCALEYUV2RGB(%%REGBP, %5)
+         "pxor    %%mm7, %%mm7                   \n\t"
+         WRITEBGR24(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-        "pop %%"REG_BP"                         \n\t"
++        "pop %%"REG_rBP"                         \n\t"
+         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+            "a" (&c->redDither)
+@@ -979,7 +979,7 @@ static void RENAME(yuv2rgb555_2)(SwsCont
+     __asm__ volatile(
+         "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+         "mov        %4, %%"REG_b"               \n\t"
+-        "push %%"REG_BP"                        \n\t"
++        "push %%"REG_rBP"                        \n\t"
+         YSCALEYUV2RGB(%%REGBP, %5)
+         "pxor    %%mm7, %%mm7                   \n\t"
+         /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+@@ -989,7 +989,7 @@ static void RENAME(yuv2rgb555_2)(SwsCont
+         "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+ #endif
+         WRITERGB15(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-        "pop %%"REG_BP"                         \n\t"
++        "pop %%"REG_rBP"                         \n\t"
+         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+            "a" (&c->redDither)
+@@ -1008,7 +1008,7 @@ static void RENAME(yuv2rgb565_2)(SwsCont
+     __asm__ volatile(
+         "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+         "mov        %4, %%"REG_b"               \n\t"
+-        "push %%"REG_BP"                        \n\t"
++        "push %%"REG_rBP"                        \n\t"
+         YSCALEYUV2RGB(%%REGBP, %5)
+         "pxor    %%mm7, %%mm7                   \n\t"
+         /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+@@ -1018,7 +1018,7 @@ static void RENAME(yuv2rgb565_2)(SwsCont
+         "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+ #endif
+         WRITERGB16(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-        "pop %%"REG_BP"                         \n\t"
++        "pop %%"REG_rBP"                         \n\t"
+         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+            "a" (&c->redDither)
+@@ -1077,10 +1077,10 @@ static void RENAME(yuv2yuyv422_2)(SwsCon
+     __asm__ volatile(
+         "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+         "mov %4, %%"REG_b"                        \n\t"
+-        "push %%"REG_BP"                        \n\t"
++        "push %%"REG_rBP"                        \n\t"
+         YSCALEYUV2PACKED(%%REGBP, %5)
+         WRITEYUY2(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-        "pop %%"REG_BP"                         \n\t"
++        "pop %%"REG_rBP"                         \n\t"
+         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+            "a" (&c->redDither)
+@@ -1219,11 +1219,11 @@ static void RENAME(yuv2rgb32_1)(SwsConte
+             __asm__ volatile(
+                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                 "mov        %4, %%"REG_b"               \n\t"
+-                "push %%"REG_BP"                        \n\t"
++                "push %%"REG_rBP"                        \n\t"
+                 YSCALEYUV2RGB1(%%REGBP, %5)
+                 YSCALEYUV2RGB1_ALPHA(%%REGBP)
+                 WRITEBGR32(%%REGb, DSTW_OFFSET"(%5)", %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+-                "pop %%"REG_BP"                         \n\t"
++                "pop %%"REG_rBP"                         \n\t"
+                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                 :: "c" (buf0), "d" (abuf0), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                    "a" (&c->redDither)
+@@ -1232,11 +1232,11 @@ static void RENAME(yuv2rgb32_1)(SwsConte
+             __asm__ volatile(
+                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                 "mov        %4, %%"REG_b"               \n\t"
+-                "push %%"REG_BP"                        \n\t"
++                "push %%"REG_rBP"                        \n\t"
+                 YSCALEYUV2RGB1(%%REGBP, %5)
+                 "pcmpeqd %%mm7, %%mm7                   \n\t"
+                 WRITEBGR32(%%REGb, DSTW_OFFSET"(%5)", %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+-                "pop %%"REG_BP"                         \n\t"
++                "pop %%"REG_rBP"                         \n\t"
+                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                 :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                    "a" (&c->redDither)
+@@ -1248,11 +1248,11 @@ static void RENAME(yuv2rgb32_1)(SwsConte
+             __asm__ volatile(
+                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                 "mov        %4, %%"REG_b"               \n\t"
+-                "push %%"REG_BP"                        \n\t"
++                "push %%"REG_rBP"                        \n\t"
+                 YSCALEYUV2RGB1b(%%REGBP, %5)
+                 YSCALEYUV2RGB1_ALPHA(%%REGBP)
+                 WRITEBGR32(%%REGb, DSTW_OFFSET"(%5)", %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+-                "pop %%"REG_BP"                         \n\t"
++                "pop %%"REG_rBP"                         \n\t"
+                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                 :: "c" (buf0), "d" (abuf0), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                    "a" (&c->redDither)
+@@ -1261,11 +1261,11 @@ static void RENAME(yuv2rgb32_1)(SwsConte
+             __asm__ volatile(
+                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                 "mov        %4, %%"REG_b"               \n\t"
+-                "push %%"REG_BP"                        \n\t"
++                "push %%"REG_rBP"                        \n\t"
+                 YSCALEYUV2RGB1b(%%REGBP, %5)
+                 "pcmpeqd %%mm7, %%mm7                   \n\t"
+                 WRITEBGR32(%%REGb, DSTW_OFFSET"(%5)", %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+-                "pop %%"REG_BP"                         \n\t"
++                "pop %%"REG_rBP"                         \n\t"
+                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                 :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                    "a" (&c->redDither)
+@@ -1287,11 +1287,11 @@ static void RENAME(yuv2bgr24_1)(SwsConte
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2RGB1(%%REGBP, %5)
+             "pxor    %%mm7, %%mm7                   \n\t"
+             WRITEBGR24(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+@@ -1302,11 +1302,11 @@ static void RENAME(yuv2bgr24_1)(SwsConte
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2RGB1b(%%REGBP, %5)
+             "pxor    %%mm7, %%mm7                   \n\t"
+             WRITEBGR24(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+@@ -1328,7 +1328,7 @@ static void RENAME(yuv2rgb555_1)(SwsCont
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2RGB1(%%REGBP, %5)
+             "pxor    %%mm7, %%mm7                   \n\t"
+             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+@@ -1338,7 +1338,7 @@ static void RENAME(yuv2rgb555_1)(SwsCont
+             "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+ #endif
+             WRITERGB15(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+@@ -1349,7 +1349,7 @@ static void RENAME(yuv2rgb555_1)(SwsCont
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2RGB1b(%%REGBP, %5)
+             "pxor    %%mm7, %%mm7                   \n\t"
+             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+@@ -1359,7 +1359,7 @@ static void RENAME(yuv2rgb555_1)(SwsCont
+             "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+ #endif
+             WRITERGB15(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+@@ -1381,7 +1381,7 @@ static void RENAME(yuv2rgb565_1)(SwsCont
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2RGB1(%%REGBP, %5)
+             "pxor    %%mm7, %%mm7                   \n\t"
+             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+@@ -1391,7 +1391,7 @@ static void RENAME(yuv2rgb565_1)(SwsCont
+             "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+ #endif
+             WRITERGB16(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+@@ -1402,7 +1402,7 @@ static void RENAME(yuv2rgb565_1)(SwsCont
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2RGB1b(%%REGBP, %5)
+             "pxor    %%mm7, %%mm7                   \n\t"
+             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+@@ -1412,7 +1412,7 @@ static void RENAME(yuv2rgb565_1)(SwsCont
+             "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+ #endif
+             WRITERGB16(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+@@ -1471,10 +1471,10 @@ static void RENAME(yuv2yuyv422_1)(SwsCon
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2PACKED1(%%REGBP, %5)
+             WRITEYUY2(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+@@ -1484,10 +1484,10 @@ static void RENAME(yuv2yuyv422_1)(SwsCon
+         __asm__ volatile(
+             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+             "mov        %4, %%"REG_b"               \n\t"
+-            "push %%"REG_BP"                        \n\t"
++            "push %%"REG_rBP"                        \n\t"
+             YSCALEYUV2PACKED1b(%%REGBP, %5)
+             WRITEYUY2(%%REGb, DSTW_OFFSET"(%5)", %%REGBP)
+-            "pop %%"REG_BP"                         \n\t"
++            "pop %%"REG_rBP"                         \n\t"
+             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
+                "a" (&c->redDither)
+diff -urp ffmpeg-2.8.6.orig/libavcodec/x86/mlpdsp_init.c ffmpeg-2.8.6/libavcodec/x86/mlpdsp_init.c
+--- ffmpeg-2.8.6.orig/libavcodec/x86/mlpdsp_init.c	2015-12-19 18:07:46.000000000 -0800
++++ ffmpeg-2.8.6/libavcodec/x86/mlpdsp_init.c	2016-10-20 00:18:44.585485541 -0700
+@@ -175,8 +175,8 @@ static void mlp_filter_channel_x86(int32
+           /* 2*/"+r"(sample_buffer),
+ #if ARCH_X86_64
+           /* 3*/"+r"(blocksize)
+-        : /* 4*/"r"((x86_reg)mask), /* 5*/"r"(firjump),
+-          /* 6*/"r"(iirjump)      , /* 7*/"c"(filter_shift)
++        : /* 4*/"r"((x86_native_reg)mask), /* 5*/"r"((x86_native_reg)(uintptr_t)firjump),
++          /* 6*/"r"((x86_native_reg)(uintptr_t)iirjump)      , /* 7*/"c"(filter_shift)
+         , /* 8*/"r"((int64_t)coeff[0])
+         : "rax", "rdx", "rsi"
+ #else /* ARCH_X86_32 */

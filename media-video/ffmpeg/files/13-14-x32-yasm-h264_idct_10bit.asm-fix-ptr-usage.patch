@@ -1,0 +1,23 @@
+diff --git a/libavcodec/x86/h264_idct_10bit.asm b/libavcodec/x86/h264_idct_10bit.asm
+index 51965f0..4cf5cf7 100644
+--- a/libavcodec/x86/h264_idct_10bit.asm
++++ b/libavcodec/x86/h264_idct_10bit.asm
+@@ -291,15 +291,15 @@ cglobal h264_idct_add8_10,5,8,7
+     mov      r7, r0
+ %endif
+     add      r2, 1024
+-    mov      r0, [r0]
++    mov     r0p, [r0]
+     ADD16_OP_INTRA 16, 4+ 6*8
+     ADD16_OP_INTRA 18, 4+ 7*8
+     add      r2, 1024-128*2
+ %if ARCH_X86_64
+-    mov      r0, [r7+gprsize]
++    mov     r0p, [r7+ptrsize]
+ %else
+     mov      r0, r0m
+-    mov      r0, [r0+gprsize]
++    mov     r0p, [r0+ptrsize]
+ %endif
+     ADD16_OP_INTRA 32, 4+11*8
+     ADD16_OP_INTRA 34, 4+12*8

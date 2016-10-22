@@ -1,0 +1,21 @@
+diff -urp ffmpeg-2.8.6.orig/libavcodec/x86/videodsp.asm ffmpeg-2.8.6/libavcodec/x86/videodsp.asm
+--- ffmpeg-2.8.6.orig/libavcodec/x86/videodsp.asm	2016-10-21 23:25:58.195022842 -0700
++++ ffmpeg-2.8.6/libavcodec/x86/videodsp.asm	2016-10-21 23:40:49.608958165 -0700
+@@ -426,10 +426,17 @@ cglobal emu_edge_hfix %+ %%n, 4, 4, 1, d
+ cglobal emu_edge_hfix %+ %%n, 4, 5, 1, dst, dst_stride, start_x, bh, val
+ %endif
+ .loop_y:                                        ; do {
++%ifdef __ILP32__
++    READ_V_PIXEL    %%n, [dstd+start_xd]        ;   $variable_regs = read($n)
++    WRITE_V_PIXEL   %%n, dstd                   ;   write($variable_regs, $n)
++    add            dstd, dst_strided            ;   dst += dst_stride
++    dec             bhd                         ; } while (--bh)
++%else
+     READ_V_PIXEL    %%n, [dstq+start_xq]        ;   $variable_regs = read($n)
+     WRITE_V_PIXEL   %%n, dstq                   ;   write($variable_regs, $n)
+     add            dstq, dst_strideq            ;   dst += dst_stride
+     dec             bhq                         ; } while (--bh)
++%endif
+     jnz .loop_y
+     RET
+ %assign %%n %%n+2

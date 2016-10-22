@@ -1,0 +1,113 @@
+diff --git a/libavresample/x86/audio_mix.asm b/libavresample/x86/audio_mix.asm
+index 8a298e2..9bbbae7 100644
+--- a/libavresample/x86/audio_mix.asm
++++ b/libavresample/x86/audio_mix.asm
+@@ -31,10 +31,10 @@ SECTION_TEXT
+ 
+ %macro MIX_2_TO_1_FLTP_FLT 0
+ cglobal mix_2_to_1_fltp_flt, 3,4,6, src, matrix, len, src1
+-    mov       src1q, [srcq+gprsize]
+-    mov        srcq, [srcq        ]
++    mov       src1p, [srcq+ptrsize]
++    mov        srcp, [srcq        ]
+     sub       src1q, srcq
+-    mov     matrixq, [matrixq  ]
++    mov     matrixp, [matrixq  ]
+     VBROADCASTSS m4, [matrixq  ]
+     VBROADCASTSS m5, [matrixq+4]
+     ALIGN 16
+@@ -65,10 +65,10 @@ MIX_2_TO_1_FLTP_FLT
+ 
+ %macro MIX_2_TO_1_S16P_FLT 0
+ cglobal mix_2_to_1_s16p_flt, 3,4,6, src, matrix, len, src1
+-    mov       src1q, [srcq+gprsize]
+-    mov        srcq, [srcq]
++    mov       src1p, [srcq+ptrsize]
++    mov        srcp, [srcq]
+     sub       src1q, srcq
+-    mov     matrixq, [matrixq  ]
++    mov     matrixp, [matrixq  ]
+     VBROADCASTSS m4, [matrixq  ]
+     VBROADCASTSS m5, [matrixq+4]
+     ALIGN 16
+@@ -109,10 +109,10 @@ MIX_2_TO_1_S16P_FLT
+ 
+ INIT_XMM sse2
+ cglobal mix_2_to_1_s16p_q8, 3,4,6, src, matrix, len, src1
+-    mov       src1q, [srcq+gprsize]
+-    mov        srcq, [srcq]
++    mov       src1p, [srcq+ptrsize]
++    mov        srcp, [srcq]
+     sub       src1q, srcq
+-    mov     matrixq, [matrixq]
++    mov     matrixp, [matrixq]
+     movd         m4, [matrixq]
+     movd         m5, [matrixq]
+     SPLATW       m4, m4, 0
+@@ -150,11 +150,11 @@ cglobal mix_2_to_1_s16p_q8, 3,4,6, src, matrix, len, src1
+ 
+ %macro MIX_1_TO_2_FLTP_FLT 0
+ cglobal mix_1_to_2_fltp_flt, 3,5,4, src0, matrix0, len, src1, matrix1
+-    mov       src1q, [src0q+gprsize]
+-    mov       src0q, [src0q]
++    mov       src1p, [src0q+ptrsize]
++    mov       src0p, [src0q]
+     sub       src1q, src0q
+-    mov    matrix1q, [matrix0q+gprsize]
+-    mov    matrix0q, [matrix0q]
++    mov    matrix1p, [matrix0q+ptrsize]
++    mov    matrix0p, [matrix0q]
+     VBROADCASTSS m2, [matrix0q]
+     VBROADCASTSS m3, [matrix1q]
+     ALIGN 16
+@@ -182,11 +182,11 @@ MIX_1_TO_2_FLTP_FLT
+ 
+ %macro MIX_1_TO_2_S16P_FLT 0
+ cglobal mix_1_to_2_s16p_flt, 3,5,6, src0, matrix0, len, src1, matrix1
+-    mov       src1q, [src0q+gprsize]
+-    mov       src0q, [src0q]
++    mov       src1p, [src0q+ptrsize]
++    mov       src0p, [src0q]
+     sub       src1q, src0q
+-    mov    matrix1q, [matrix0q+gprsize]
+-    mov    matrix0q, [matrix0q]
++    mov    matrix1p, [matrix0q+ptrsize]
++    mov    matrix0p, [matrix0q]
+     VBROADCASTSS m4, [matrix0q]
+     VBROADCASTSS m5, [matrix1q]
+     ALIGN 16
+@@ -279,10 +279,12 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, n
+ ; load matrix pointers
+ %define matrix0q r1q
+ %define matrix1q r3q
++%define matrix0p r1p
++%define matrix1p r3p
+ %if stereo
+-    mov      matrix1q, [matrix0q+gprsize]
++    mov      matrix1p, [matrix0q+ptrsize]
+ %endif
+-    mov      matrix0q, [matrix0q]
++    mov      matrix0p, [matrix0q]
+ 
+ ; define matrix coeff names
+ %assign %%i 0
+@@ -341,16 +343,16 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, n
+ %assign %%i 1
+ %rep (in_channels - 1)
+     %if ARCH_X86_32 && in_channels >= 7 && %%i >= 5
+-    mov         src5q, [src0q+%%i*gprsize]
++    mov         src5p, [src0q+%%i*ptrsize]
+     add         src5q, lenq
+     mov         src %+ %%i %+ m, src5q
+     %else
+-    mov         src %+ %%i %+ q, [src0q+%%i*gprsize]
++    mov         src %+ %%i %+ p, [src0q+%%i*ptrsize]
+     add         src %+ %%i %+ q, lenq
+     %endif
+     %assign %%i %%i+1
+ %endrep
+-    mov         src0q, [src0q]
++    mov         src0p, [src0q]
+     add         src0q, lenq
+     neg          lenq
+ .loop:

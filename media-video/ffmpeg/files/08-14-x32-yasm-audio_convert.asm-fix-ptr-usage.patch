@@ -1,0 +1,244 @@
+diff --git a/libavresample/x86/audio_convert.asm b/libavresample/x86/audio_convert.asm
+index 1af1429..b140aca 100644
+--- a/libavresample/x86/audio_convert.asm
++++ b/libavresample/x86/audio_convert.asm
+@@ -236,8 +236,8 @@ CONV_FLT_TO_S32
+ 
+ %macro CONV_S16P_TO_S16_2CH 0
+ cglobal conv_s16p_to_s16_2ch, 3,4,5, dst, src0, len, src1
+-    mov       src1q, [src0q+gprsize]
+-    mov       src0q, [src0q        ]
++    mov       src1p, [src0q+ptrsize]
++    mov       src0p, [src0q        ]
+     lea        lenq, [2*lend]
+     add       src0q, lenq
+     add       src1q, lenq
+@@ -285,12 +285,12 @@ cglobal conv_s16p_to_s16_6ch, 3,8,7, dst, src0, len, src1, src2, src3, src4, src
+ cglobal conv_s16p_to_s16_6ch, 2,7,7, dst, src0, src1, src2, src3, src4, src5
+ %define lend dword r2m
+ %endif
+-    mov      src1q, [src0q+1*gprsize]
+-    mov      src2q, [src0q+2*gprsize]
+-    mov      src3q, [src0q+3*gprsize]
+-    mov      src4q, [src0q+4*gprsize]
+-    mov      src5q, [src0q+5*gprsize]
+-    mov      src0q, [src0q]
++    mov      src1p, [src0q+1*ptrsize]
++    mov      src2p, [src0q+2*ptrsize]
++    mov      src3p, [src0q+3*ptrsize]
++    mov      src4p, [src0q+4*ptrsize]
++    mov      src5p, [src0q+5*ptrsize]
++    mov      src0p, [src0q]
+     sub      src1q, src0q
+     sub      src2q, src0q
+     sub      src3q, src0q
+@@ -393,8 +393,8 @@ CONV_S16P_TO_S16_6CH
+ %macro CONV_S16P_TO_FLT_2CH 0
+ cglobal conv_s16p_to_flt_2ch, 3,4,6, dst, src0, len, src1
+     lea       lenq, [2*lend]
+-    mov      src1q, [src0q+gprsize]
+-    mov      src0q, [src0q        ]
++    mov      src1p, [src0q+ptrsize]
++    mov      src0p, [src0q        ]
+     lea       dstq, [dstq+4*lenq]
+     add      src0q, lenq
+     add      src1q, lenq
+@@ -444,12 +444,12 @@ cglobal conv_s16p_to_flt_6ch, 3,8,8, dst, src, len, src1, src2, src3, src4, src5
+ cglobal conv_s16p_to_flt_6ch, 2,7,8, dst, src, src1, src2, src3, src4, src5
+ %define lend dword r2m
+ %endif
+-    mov     src1q, [srcq+1*gprsize]
+-    mov     src2q, [srcq+2*gprsize]
+-    mov     src3q, [srcq+3*gprsize]
+-    mov     src4q, [srcq+4*gprsize]
+-    mov     src5q, [srcq+5*gprsize]
+-    mov      srcq, [srcq]
++    mov     src1p, [srcq+1*ptrsize]
++    mov     src2p, [srcq+2*ptrsize]
++    mov     src3p, [srcq+3*ptrsize]
++    mov     src4p, [srcq+4*ptrsize]
++    mov     src5p, [srcq+5*ptrsize]
++    mov      srcp, [srcq]
+     sub     src1q, srcq
+     sub     src2q, srcq
+     sub     src3q, srcq
+@@ -542,8 +542,8 @@ CONV_S16P_TO_FLT_6CH
+ %macro CONV_FLTP_TO_S16_2CH 0
+ cglobal conv_fltp_to_s16_2ch, 3,4,3, dst, src0, len, src1
+     lea      lenq, [4*lend]
+-    mov     src1q, [src0q+gprsize]
+-    mov     src0q, [src0q        ]
++    mov     src1p, [src0q+ptrsize]
++    mov     src0p, [src0q        ]
+     add      dstq, lenq
+     add     src0q, lenq
+     add     src1q, lenq
+@@ -588,12 +588,12 @@ cglobal conv_fltp_to_s16_6ch, 3,8,7, dst, src, len, src1, src2, src3, src4, src5
+ cglobal conv_fltp_to_s16_6ch, 2,7,7, dst, src, src1, src2, src3, src4, src5
+ %define lend dword r2m
+ %endif
+-    mov        src1q, [srcq+1*gprsize]
+-    mov        src2q, [srcq+2*gprsize]
+-    mov        src3q, [srcq+3*gprsize]
+-    mov        src4q, [srcq+4*gprsize]
+-    mov        src5q, [srcq+5*gprsize]
+-    mov         srcq, [srcq]
++    mov        src1p, [srcq+1*ptrsize]
++    mov        src2p, [srcq+2*ptrsize]
++    mov        src3p, [srcq+3*ptrsize]
++    mov        src4p, [srcq+4*ptrsize]
++    mov        src5p, [srcq+5*ptrsize]
++    mov         srcp, [srcq]
+     sub        src1q, srcq
+     sub        src2q, srcq
+     sub        src3q, srcq
+@@ -695,8 +695,8 @@ CONV_FLTP_TO_S16_6CH
+ 
+ %macro CONV_FLTP_TO_FLT_2CH 0
+ cglobal conv_fltp_to_flt_2ch, 3,4,5, dst, src0, len, src1
+-    mov  src1q, [src0q+gprsize]
+-    mov  src0q, [src0q]
++    mov  src1p, [src0q+ptrsize]
++    mov  src0p, [src0q]
+     lea   lenq, [4*lend]
+     add  src0q, lenq
+     add  src1q, lenq
+@@ -735,12 +735,12 @@ cglobal conv_fltp_to_flt_6ch, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
+ %else
+     %define lend dword r2m
+ %endif
+-    mov    src1q, [srcq+1*gprsize]
+-    mov    src2q, [srcq+2*gprsize]
+-    mov    src3q, [srcq+3*gprsize]
+-    mov    src4q, [srcq+4*gprsize]
+-    mov    src5q, [srcq+5*gprsize]
+-    mov     srcq, [srcq]
++    mov    src1p, [srcq+1*ptrsize]
++    mov    src2p, [srcq+2*ptrsize]
++    mov    src3p, [srcq+3*ptrsize]
++    mov    src4p, [srcq+4*ptrsize]
++    mov    src5p, [srcq+5*ptrsize]
++    mov     srcp, [srcq]
+     sub    src1q, srcq
+     sub    src2q, srcq
+     sub    src3q, srcq
+@@ -810,8 +810,8 @@ CONV_FLTP_TO_FLT_6CH
+ %macro CONV_S16_TO_S16P_2CH 0
+ cglobal conv_s16_to_s16p_2ch, 3,4,4, dst0, src, len, dst1
+     lea       lenq, [2*lend]
+-    mov      dst1q, [dst0q+gprsize]
+-    mov      dst0q, [dst0q        ]
++    mov      dst1p, [dst0q+ptrsize]
++    mov      dst0p, [dst0q        ]
+     lea       srcq, [srcq+2*lenq]
+     add      dst0q, lenq
+     add      dst1q, lenq
+@@ -861,12 +861,12 @@ cglobal conv_s16_to_s16p_6ch, 3,8,5, dst, src, len, dst1, dst2, dst3, dst4, dst5
+ cglobal conv_s16_to_s16p_6ch, 2,7,5, dst, src, dst1, dst2, dst3, dst4, dst5
+ %define lend dword r2m
+ %endif
+-    mov     dst1q, [dstq+  gprsize]
+-    mov     dst2q, [dstq+2*gprsize]
+-    mov     dst3q, [dstq+3*gprsize]
+-    mov     dst4q, [dstq+4*gprsize]
+-    mov     dst5q, [dstq+5*gprsize]
+-    mov      dstq, [dstq          ]
++    mov     dst1p, [dstq+  ptrsize]
++    mov     dst2p, [dstq+2*ptrsize]
++    mov     dst3p, [dstq+3*ptrsize]
++    mov     dst4p, [dstq+4*ptrsize]
++    mov     dst5p, [dstq+5*ptrsize]
++    mov      dstp, [dstq          ]
+     sub     dst1q, dstq
+     sub     dst2q, dstq
+     sub     dst3q, dstq
+@@ -914,8 +914,8 @@ CONV_S16_TO_S16P_6CH
+ %macro CONV_S16_TO_FLTP_2CH 0
+ cglobal conv_s16_to_fltp_2ch, 3,4,5, dst0, src, len, dst1
+     lea       lenq, [4*lend]
+-    mov      dst1q, [dst0q+gprsize]
+-    mov      dst0q, [dst0q        ]
++    mov      dst1p, [dst0q+ptrsize]
++    mov      dst0p, [dst0q        ]
+     add       srcq, lenq
+     add      dst0q, lenq
+     add      dst1q, lenq
+@@ -954,12 +954,12 @@ cglobal conv_s16_to_fltp_6ch, 3,8,7, dst, src, len, dst1, dst2, dst3, dst4, dst5
+ cglobal conv_s16_to_fltp_6ch, 2,7,7, dst, src, dst1, dst2, dst3, dst4, dst5
+ %define lend dword r2m
+ %endif
+-    mov     dst1q, [dstq+  gprsize]
+-    mov     dst2q, [dstq+2*gprsize]
+-    mov     dst3q, [dstq+3*gprsize]
+-    mov     dst4q, [dstq+4*gprsize]
+-    mov     dst5q, [dstq+5*gprsize]
+-    mov      dstq, [dstq          ]
++    mov     dst1p, [dstq+  ptrsize]
++    mov     dst2p, [dstq+2*ptrsize]
++    mov     dst3p, [dstq+3*ptrsize]
++    mov     dst4p, [dstq+4*ptrsize]
++    mov     dst5p, [dstq+5*ptrsize]
++    mov      dstp, [dstq          ]
+     sub     dst1q, dstq
+     sub     dst2q, dstq
+     sub     dst3q, dstq
+@@ -1029,8 +1029,8 @@ CONV_S16_TO_FLTP_6CH
+ %macro CONV_FLT_TO_S16P_2CH 0
+ cglobal conv_flt_to_s16p_2ch, 3,4,6, dst0, src, len, dst1
+     lea       lenq, [2*lend]
+-    mov      dst1q, [dst0q+gprsize]
+-    mov      dst0q, [dst0q        ]
++    mov      dst1p, [dst0q+ptrsize]
++    mov      dst0p, [dst0q        ]
+     lea       srcq, [srcq+4*lenq]
+     add      dst0q, lenq
+     add      dst1q, lenq
+@@ -1077,12 +1077,12 @@ cglobal conv_flt_to_s16p_6ch, 3,8,7, dst, src, len, dst1, dst2, dst3, dst4, dst5
+ cglobal conv_flt_to_s16p_6ch, 2,7,7, dst, src, dst1, dst2, dst3, dst4, dst5
+ %define lend dword r2m
+ %endif
+-    mov     dst1q, [dstq+  gprsize]
+-    mov     dst2q, [dstq+2*gprsize]
+-    mov     dst3q, [dstq+3*gprsize]
+-    mov     dst4q, [dstq+4*gprsize]
+-    mov     dst5q, [dstq+5*gprsize]
+-    mov      dstq, [dstq          ]
++    mov     dst1p, [dstq+  ptrsize]
++    mov     dst2p, [dstq+2*ptrsize]
++    mov     dst3p, [dstq+3*ptrsize]
++    mov     dst4p, [dstq+4*ptrsize]
++    mov     dst5p, [dstq+5*ptrsize]
++    mov      dstp, [dstq          ]
+     sub     dst1q, dstq
+     sub     dst2q, dstq
+     sub     dst3q, dstq
+@@ -1143,8 +1143,8 @@ CONV_FLT_TO_S16P_6CH
+ %macro CONV_FLT_TO_FLTP_2CH 0
+ cglobal conv_flt_to_fltp_2ch, 3,4,3, dst0, src, len, dst1
+     lea    lenq, [4*lend]
+-    mov   dst1q, [dst0q+gprsize]
+-    mov   dst0q, [dst0q        ]
++    mov   dst1p, [dst0q+ptrsize]
++    mov   dst0p, [dst0q        ]
+     lea    srcq, [srcq+2*lenq]
+     add   dst0q, lenq
+     add   dst1q, lenq
+@@ -1177,12 +1177,12 @@ cglobal conv_flt_to_fltp_6ch, 3,8,7, dst, src, len, dst1, dst2, dst3, dst4, dst5
+ cglobal conv_flt_to_fltp_6ch, 2,7,7, dst, src, dst1, dst2, dst3, dst4, dst5
+ %define lend dword r2m
+ %endif
+-    mov     dst1q, [dstq+  gprsize]
+-    mov     dst2q, [dstq+2*gprsize]
+-    mov     dst3q, [dstq+3*gprsize]
+-    mov     dst4q, [dstq+4*gprsize]
+-    mov     dst5q, [dstq+5*gprsize]
+-    mov      dstq, [dstq          ]
++    mov     dst1p, [dstq+  ptrsize]
++    mov     dst2p, [dstq+2*ptrsize]
++    mov     dst3p, [dstq+3*ptrsize]
++    mov     dst4p, [dstq+4*ptrsize]
++    mov     dst5p, [dstq+5*ptrsize]
++    mov      dstp, [dstq          ]
+     sub     dst1q, dstq
+     sub     dst2q, dstq
+     sub     dst3q, dstq

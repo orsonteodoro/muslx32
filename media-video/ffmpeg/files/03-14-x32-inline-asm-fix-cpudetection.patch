@@ -1,0 +1,25 @@
+diff --git a/libavutil/x86/cpu.c b/libavutil/x86/cpu.c
+index 3b36fd0..a1c85c2 100644
+--- a/libavutil/x86/cpu.c
++++ b/libavutil/x86/cpu.c
+@@ -40,9 +40,9 @@
+ /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
+ #define cpuid(index, eax, ebx, ecx, edx)                        \
+     __asm__ volatile (                                          \
+-        "mov    %%"REG_b", %%"REG_S" \n\t"                      \
++        "mov    %%"REG_rb", %%"REG_rS" \n\t"                    \
+         "cpuid                       \n\t"                      \
+-        "xchg   %%"REG_b", %%"REG_S                             \
++        "xchg   %%"REG_rb", %%"REG_rS                           \
+         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
+         : "0" (index))
+ 
+@@ -73,7 +73,7 @@
+ 
+ static int cpuid_test(void)
+ {
+-    x86_reg a, c;
++    x86_native_reg a, c;
+ 
+     /* Check if CPUID is supported by attempting to toggle the ID bit in
+      * the EFLAGS register. */

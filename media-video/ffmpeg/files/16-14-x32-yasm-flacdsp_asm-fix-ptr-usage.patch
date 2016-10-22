@@ -1,0 +1,44 @@
+--- ffmpeg-2.8.6.orig/libavcodec/x86/flacdsp.asm	2016-01-31 16:52:19.000000000 -0800
++++ ffmpeg-2.8.6/libavcodec/x86/flacdsp.asm	2016-10-20 11:11:38.313166933 -0700
+@@ -94,9 +94,9 @@ cglobal flac_decorrelate_%1_16, 2, 4, 4,
+ %endif
+     movd       m3, r4m
+     shl      lend, 2
+-    mov      in1q, [in0q + gprsize]
+-    mov      in0q, [in0q]
+-    mov      outq, [outq]
++    mov      in1p, [in0q + ptrsize]
++    mov      in0p, [in0q]
++    mov      outp, [outq]
+     add      in1q, lenq
+     add      in0q, lenq
+     add      outq, lenq
+@@ -138,9 +138,9 @@ cglobal flac_decorrelate_%1_32, 2, 4, 4,
+     mov      lend, lenm
+ %endif
+     movd       m3, r4m
+-    mov      in1q, [in0q + gprsize]
+-    mov      in0q, [in0q]
+-    mov      outq, [outq]
++    mov      in1p, [in0q + ptrsize]
++    mov      in0p, [in0q]
++    mov      outp, [outq]
+     sub      in1q, in0q
+ 
+ align 16
+@@ -195,12 +195,12 @@ cglobal flac_decorrelate_indep%2_%1, 2,
+ 
+ %assign %%i 1
+ %rep %2-1
+-    mov      in %+ %%i %+ q, [in0q+%%i*gprsize]
++    mov      in %+ %%i %+ p, [in0q+%%i*ptrsize]
+ %assign %%i %%i+1
+ %endrep
+ 
+-    mov      in0q, [in0q]
+-    mov      outq, [outq]
++    mov      in0p, [in0q]
++    mov      outp, [outq]
+ 
+ %assign %%i 1
+ %rep %2-1

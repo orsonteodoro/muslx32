@@ -1,0 +1,40 @@
+--- ffmpeg-2.8.6.orig/configure	2016-01-31 16:52:15.000000000 -0800
++++ ffmpeg-2.8.6/configure	2016-10-19 23:45:21.899257886 -0700
+@@ -1570,6 +1570,8 @@ ARCH_LIST="
+     x86
+     x86_32
+     x86_64
++    x86_64_x64
++    x86_64_x32
+ "
+ 
+ ARCH_EXT_LIST_ARM="
+@@ -4245,10 +4247,16 @@ case "$arch" in
+         spic=$shared
+     ;;
+     x86)
+-        check_64bit x86_32 x86_64 'sizeof(void *) > 4'
++        check_64bit x86_32 'x86_64 x86_64_x64' 'sizeof(void *) > 4'
+         # Treat x32 as x64 for now. Note it also needs spic=$shared
+-        test "$subarch" = "x86_32" && check_cpp_condition stddef.h 'defined(__x86_64__)' &&
++        if test "$subarch" = "x86_32"; then
+             subarch=x86_64
++            check_64bit x86_32 'x86_64 x86_64_x32' '
++                #if defined __x86_64__ && defined  __ILP32__
++                1
++                #endif
++            '
++        fi
+         if test "$subarch" = "x86_64"; then
+             spic=$shared
+         fi
+@@ -4960,7 +4968,8 @@ EOF
+ 
+     if ! disabled_any asm mmx yasm; then
+         if check_cmd $yasmexe --version; then
+-            enabled x86_64 && yasm_extra="-m amd64"
++            enabled x86_64_x64 && yasm_extra="-m amd64" && objformat=elf64
++            enabled x86_64_x32 && yasm_extra="-m x32 -D__ILP32__" && objformat=elfx32
+             yasm_debug="-g dwarf2"
+         elif check_cmd nasm -v; then
+             yasmexe=nasm
