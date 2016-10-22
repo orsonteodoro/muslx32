@@ -29,7 +29,7 @@
          %xdefine %1d r %+ %%i %+ d
          %xdefine %1w r %+ %%i %+ w
          %xdefine %1h r %+ %%i %+ h
-@@ -1455,6 +1463,32 @@ FMA_INSTR pmadcswd, pmaddwd, paddd
+@@ -1455,6 +1463,44 @@ FMA_INSTR pmadcswd, pmaddwd, paddd
  ; This lets us use tzcnt without bumping the yasm version requirement yet.
  %define tzcnt rep bsf
  
@@ -46,6 +46,12 @@
 +%xdefine r7p r7d
 +%xdefine r8p r8d
 +%xdefine r9p r9d
++%xdefine r10p r10d
++%xdefine r11p r11d
++%xdefine r12p r12d
++%xdefine r13p r13d
++%xdefine r14p r14d
++%xdefine r15p r15d
 +%else
 +%xdefine r0p r0
 +%xdefine r1p r1
@@ -57,6 +63,12 @@
 +%xdefine r7p r7
 +%xdefine r8p r8
 +%xdefine r9p r9
++%xdefine r10p r10
++%xdefine r11p r11
++%xdefine r12p r12
++%xdefine r13p r13
++%xdefine r14p r14
++%xdefine r15p r15
 +%endif
 +
  ; convert FMA4 to FMA3 if possible

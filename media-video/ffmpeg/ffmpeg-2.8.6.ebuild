@@ -298,7 +298,7 @@ src_prepare() {
 	epatch "${FILESDIR}"/${PN}-2.8.6-x32-postprocess_template_c.patch
 
 	#most x32 patches come from from Matthias Räncker <theonetruecamper@gmx.de>
-        #patches 14a, 15, 16 from Orson Teodoro <orsonteodoro@yahoo.com>
+        #patches 14a, 15, 16, postprocess, resample_asm from Orson Teodoro <orsonteodoro@yahoo.com>
 	epatch "${FILESDIR}"/01-14-x32-configure-add-abi-detection.patch
 	epatch "${FILESDIR}"/02-14-x32-inline-asm-fix-asm.h.patch
 	epatch "${FILESDIR}"/03-14-x32-inline-asm-fix-cpudetection.patch
@@ -315,7 +315,8 @@ src_prepare() {
 	epatch "${FILESDIR}"/14a-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
 	epatch "${FILESDIR}"/15-14-x32-yasm-audio_convert_asm-fix-ptr-usage.patch
 	epatch "${FILESDIR}"/16-14-x32-yasm-flacdsp_asm-fix-ptr-usage.patch
-	epatch "${FILESDIR}"/ffmpeg-2.8.6-1-byte-overread-videodsp_am.patch
+	epatch "${FILESDIR}"/${PN}-2.8.6-1-byte-overread-videodsp_am.patch #from Ronald S. Bultje
+	epatch "${FILESDIR}"/${PN}-2.8.6-x32-resample_asm-ptr-usage.patch
 
 	epatch_user
 }
