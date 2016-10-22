@@ -1,0 +1,76 @@
+diff -urp libjpeg-turbo-1.5.0.orig/jchuff.c libjpeg-turbo-1.5.0/jchuff.c
+--- libjpeg-turbo-1.5.0.orig/jchuff.c	2016-06-07 10:33:40.000000000 -0700
++++ libjpeg-turbo-1.5.0/jchuff.c	2016-10-21 17:37:44.696199955 -0700
+@@ -67,7 +67,7 @@
+  */
+ 
+ typedef struct {
+-  size_t put_buffer;            /* current bit-accumulation buffer */
++  PUTBUFFER_T put_buffer;            /* current bit-accumulation buffer */
+   int put_bits;                 /* # of bits now in it */
+   int last_dc_val[MAX_COMPS_IN_SCAN]; /* last DC coef for each component */
+ } savable_state;
+@@ -464,7 +464,7 @@ LOCAL(boolean)
+ flush_bits (working_state *state)
+ {
+   JOCTET _buffer[BUFSIZE], *buffer;
+-  size_t put_buffer;  int put_bits;
++  PUTBUFFER_T put_buffer;  int put_bits;
+   size_t bytes, bytestocopy;  int localbuf = 0;
+ 
+   put_buffer = state->cur.put_buffer;
+@@ -510,7 +510,7 @@ encode_one_block (working_state *state,
+   int nbits;
+   int r, code, size;
+   JOCTET _buffer[BUFSIZE], *buffer;
+-  size_t put_buffer;  int put_bits;
++  PUTBUFFER_T put_buffer;  int put_bits;
+   int code_0xf0 = actbl->ehufco[0xf0], size_0xf0 = actbl->ehufsi[0xf0];
+   size_t bytes, bytestocopy;  int localbuf = 0;
+ 
+diff -urp libjpeg-turbo-1.5.0.orig/jcphuff.c libjpeg-turbo-1.5.0/jcphuff.c
+--- libjpeg-turbo-1.5.0.orig/jcphuff.c	2016-06-07 10:33:40.000000000 -0700
++++ libjpeg-turbo-1.5.0/jcphuff.c	2016-10-21 17:37:46.791279679 -0700
+@@ -35,7 +35,7 @@ typedef struct {
+    */
+   JOCTET *next_output_byte;     /* => next byte to write in buffer */
+   size_t free_in_buffer;        /* # of byte spaces remaining in buffer */
+-  size_t put_buffer;            /* current bit-accumulation buffer */
++  PUTBUFFER_T put_buffer;            /* current bit-accumulation buffer */
+   int put_bits;                 /* # of bits now in it */
+   j_compress_ptr cinfo;         /* link to cinfo (needed for dump_buffer) */
+ 
+@@ -231,7 +231,7 @@ emit_bits (phuff_entropy_ptr entropy, un
+ /* Emit some bits, unless we are in gather mode */
+ {
+   /* This routine is heavily used, so it's worth coding tightly. */
+-  register size_t put_buffer = (size_t) code;
++  register PUTBUFFER_T put_buffer = (PUTBUFFER_T) code;
+   register int put_bits = entropy->put_bits;
+ 
+   /* if size is 0, caller used an invalid Huffman table entry */
+@@ -241,7 +241,7 @@ emit_bits (phuff_entropy_ptr entropy, un
+   if (entropy->gather_statistics)
+     return;                     /* do nothing if we're only getting stats */
+ 
+-  put_buffer &= (((size_t) 1)<<size) - 1; /* mask off any extra bits in code */
++  put_buffer &= (((PUTBUFFER_T) 1)<<size) - 1; /* mask off any extra bits in code */
+ 
+   put_bits += size;             /* new number of bits in buffer */
+ 
+diff -urp libjpeg-turbo-1.5.0.orig/jpeglib.h libjpeg-turbo-1.5.0/jpeglib.h
+--- libjpeg-turbo-1.5.0.orig/jpeglib.h	2016-06-07 10:33:40.000000000 -0700
++++ libjpeg-turbo-1.5.0/jpeglib.h	2016-10-21 17:33:52.779374657 -0700
+@@ -66,6 +66,11 @@ extern "C" {
+ /* Data structures for images (arrays of samples and of DCT coefficients).
+  */
+ 
++#if defined(__x86_64__) && defined(__ILP32__)
++typedef long long  PUTBUFFER_T;
++#else
++typedef size_t  PUTBUFFER_T;
++#endif
+ typedef JSAMPLE *JSAMPROW;      /* ptr to one image row of pixel samples. */
+ typedef JSAMPROW *JSAMPARRAY;   /* ptr to some rows (a 2-D sample array) */
+ typedef JSAMPARRAY *JSAMPIMAGE; /* a 3-D sample array: top index is color */
+diff -urp libjpeg-turbo-1.5.0.orig/simd/jchuff-sse2-64.asm libjpeg-turbo-1.5.0/simd/jchuff-sse2-64.asm
