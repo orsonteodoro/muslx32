@@ -313,6 +313,7 @@ src_prepare() {
 	epatch "${FILESDIR}"/12-14-x32-yasm-h264_idct.asm-fix-ptr-usage.patch
 	epatch "${FILESDIR}"/13-14-x32-yasm-h264_idct_10bit.asm-fix-ptr-usage.patch
 	epatch "${FILESDIR}"/14a-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
+	epatch "${FILESDIR}"/14b-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
 	epatch "${FILESDIR}"/15-14-x32-yasm-audio_convert_asm-fix-ptr-usage.patch
 	epatch "${FILESDIR}"/16-14-x32-yasm-flacdsp_asm-fix-ptr-usage.patch
 	epatch "${FILESDIR}"/${PN}-2.8.6-1-byte-overread-videodsp_am.patch #from Ronald S. Bultje
