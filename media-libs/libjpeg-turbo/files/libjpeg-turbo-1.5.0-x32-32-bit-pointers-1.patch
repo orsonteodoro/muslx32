@@ -12,13 +12,13 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jccolext-sse2-64.asm libjpeg-turbo-1.5.0
  ; r13 = JDIMENSION output_row
  ; r14 = int num_rows
  
-@@ -57,11 +57,20 @@ EXTN(jsimd_rgb_ycc_convert_sse2):
+@@ -57,11 +57,21 @@ EXTN(jsimd_rgb_ycc_convert_sse2):
  
          push    rcx
  
 +%ifdef __ILP32__
-+        and     r11, 0x00000000FFFFFFFF
-+        and     r12, 0x00000000FFFFFFFF
++        mov     r11d, r11d
++        mov     r12d, r12d
 +%endif
          mov rsi, r12
          mov ecx, r13d
@@ -26,9 +26,10 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jccolext-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rbx, JSAMPARRAY [rsi+1*SIZEOF_JSAMPARRAY]
 -        mov     rdx, JSAMPARRAY [rsi+2*SIZEOF_JSAMPARRAY]
 +%ifdef __ILP32__
-+        mov rdi, 0
-+        mov rbx, 0
-+        mov rdx, 0
++        mov edi, edi
++        mov ebx, ebx
++        mov edx, edx
++        mov ecx, ecx
 +%endif
 +        mov     REG_DI, JSAMPARRAY [rsi+0*SIZEOF_JSAMPARRAY]
 +        mov     REG_B, JSAMPARRAY [rsi+1*SIZEOF_JSAMPARRAY]
@@ -45,10 +46,10 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jccolext-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rbx, JSAMPROW [rbx]     ; outptr1
 -        mov     rdx, JSAMPROW [rdx]     ; outptr2
 +%ifdef __ILP32__
-+        and rsi, 0x00000000FFFFFFFF
-+        and rdi, 0x00000000FFFFFFFF
-+        and rbx, 0x00000000FFFFFFFF
-+        and rdx, 0x00000000FFFFFFFF
++        mov esi, esi
++        mov edi, edi
++        mov ebx, ebx
++        mov edx, edx
 +%endif
 +        mov     REG_SI, JSAMPROW [rsi]     ; inptr
 +        mov     REG_DI, JSAMPROW [rdi]     ; outptr0
@@ -71,19 +72,20 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jcgryext-sse2-64.asm libjpeg-turbo-1.5.0
  ; r13 = JDIMENSION output_row
  ; r14 = int num_rows
  
-@@ -57,9 +57,16 @@ EXTN(jsimd_rgb_gray_convert_sse2):
+@@ -57,9 +57,17 @@ EXTN(jsimd_rgb_gray_convert_sse2):
  
          push    rcx
  
 +%ifdef __ILP32__
-+        and     r11,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r11d, r11d
++        mov     r12d, r12d
 +%endif
          mov rsi, r12
          mov ecx, r13d
 -        mov     rdi, JSAMPARRAY [rsi+0*SIZEOF_JSAMPARRAY]
 +%ifdef __ILP32__
-+        and     rdi,0x00000000FFFFFFFF
++        mov     edi, edi
++        mov     ecx, ecx
 +%endif
 +        mov     REG_DI, JSAMPARRAY [rsi+0*SIZEOF_JSAMPARRAY]
          lea     rdi, [rdi+rcx*SIZEOF_JSAMPROW]
@@ -96,8 +98,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jcgryext-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rsi, JSAMPROW [rsi]     ; inptr
 -        mov     rdi, JSAMPROW [rdi]     ; outptr0
 +%ifdef __ILP32__
-+        and     rsi,0x00000000FFFFFFFF
-+        and     rdi,0x00000000FFFFFFFF
++        mov     esi, esi
++        mov     edi, edi
 +%endif
 +        mov     REG_SI, JSAMPROW [rsi]     ; inptr
 +        mov     REG_DI, JSAMPROW [rdi]     ; outptr0
@@ -130,11 +132,11 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jchuff-sse2-64.asm libjpeg-turbo-1.5.0/s
          push rbx
  
 +%ifdef __ILP32__
-+        and r10,0x00000000FFFFFFFF
-+        and r11,0x00000000FFFFFFFF
-+        and r12,0x00000000FFFFFFFF
-+        and r14,0x00000000FFFFFFFF
-+        and r15,0x00000000FFFFFFFF
++        mov r10d, r10d
++        mov r11d, r11d
++        mov r12d, r12d
++        mov r14d, r14d
++        mov r15d, r15d
 +%endif
          mov buffer, r11  ; r11 is now sratch
  
@@ -158,8 +160,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jcsample-sse2-64.asm libjpeg-turbo-1.5.0
  
          cld
 +%ifdef __ILP32__
-+        and     r14,0x00000000FFFFFFFF
-+        and     r15,0x00000000FFFFFFFF
++        mov     r14d, r14d
++        mov     r15d, r15d
 +%endif
          mov     rsi, r14        ; input_data
  .expandloop:
@@ -168,7 +170,7 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jcsample-sse2-64.asm libjpeg-turbo-1.5.0
  
 -        mov     rdi, JSAMPROW [rsi]
 +%ifdef __ILP32__
-+        and     rdi,0x00000000FFFFFFFF
++        mov     edi, edi
 +%endif
 +        mov     REG_DI, JSAMPROW [rsi]
          add     rdi,rdx
@@ -181,8 +183,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jcsample-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rsi, JSAMPROW [rsi]             ; inptr
 -        mov rdi, JSAMPROW [rdi]         ; outptr
 +%ifdef __ILP32__
-+        and     rsi,0x00000000FFFFFFFF
-+        and     rdi,0x00000000FFFFFFFF
++        mov     esi, esi
++        mov     edi, edi
 +%endif
 +        mov     REG_SI, JSAMPROW [rsi]             ; inptr
 +        mov     REG_DI, JSAMPROW [rdi]         ; outptr
@@ -205,8 +207,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jcsample-sse2-64.asm libjpeg-turbo-1.5.0
  
          cld
 +%ifdef __ILP32__
-+        and r14,0x00000000FFFFFFFF
-+        and r15,0x00000000FFFFFFFF
++        and r14d, r14d
++        and r15d, r15d
 +%endif
          mov     rsi, r14        ; input_data
  .expandloop:
@@ -215,7 +217,7 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jcsample-sse2-64.asm libjpeg-turbo-1.5.0
  
 -        mov     rdi, JSAMPROW [rsi]
 +%ifdef __ILP32__
-+        and     rdi,0x00000000FFFFFFFF
++        mov     edi, edi
 +%endif
 +        mov     REG_DI, JSAMPROW [rsi]
          add     rdi,rdx
@@ -229,9 +231,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jcsample-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rsi, JSAMPROW [rsi+1*SIZEOF_JSAMPROW]   ; inptr1
 -        mov     rdi, JSAMPROW [rdi]                     ; outptr
 +%ifdef __ILP32__
-+        and     rdx,0x00000000FFFFFFFF
-+        and     rsi,0x00000000FFFFFFFF
-+        and     rdi,0x00000000FFFFFFFF
++        mov     edx, edx
++        mov     esi, esi
++        mov     edi, edi
 +%endif
 +        mov     REG_D, JSAMPROW [rsi+0*SIZEOF_JSAMPROW]   ; inptr0
 +        mov     REG_SI, JSAMPROW [rsi+1*SIZEOF_JSAMPROW]   ; inptr1
@@ -259,8 +261,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdcolext-sse2-64.asm libjpeg-turbo-1.5.0
          push    rbx
  
 +%ifdef __ILP32__
-+        and     r11,0x00000000FFFFFFFF
-+        and     r13,0x00000000FFFFFFFF
++        mov     r11d, r11d
++        mov     r13d, r13d
 +%endif
          mov     ecx, r10d        ; num_cols
          test    rcx,rcx
@@ -273,9 +275,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdcolext-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rbx, JSAMPARRAY [rdi+1*SIZEOF_JSAMPARRAY]
 -        mov     rdx, JSAMPARRAY [rdi+2*SIZEOF_JSAMPARRAY]
 +%ifdef __ILP32__
-+        and rsi,0x00000000FFFFFFFF
-+        and rbx,0x00000000FFFFFFFF
-+        and rdx,0x00000000FFFFFFFF
++        mov esi, esi
++        mov ebx, ebx
++        mov edx, edx
 +%endif
 +        mov     REG_SI, JSAMPARRAY [rdi+0*SIZEOF_JSAMPARRAY]
 +        mov     REG_B, JSAMPARRAY [rdi+1*SIZEOF_JSAMPARRAY]
@@ -292,10 +294,10 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdcolext-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rdx, JSAMPROW [rdx]     ; inptr2
 -        mov     rdi, JSAMPROW [rdi]     ; outptr
 +%ifdef __ILP32__
-+        and     rsi,0x00000000FFFFFFFF
-+        and     rbx,0x00000000FFFFFFFF
-+        and     rdx,0x00000000FFFFFFFF
-+        and     rdi,0x00000000FFFFFFFF
++        mov     esi, esi
++        mov     ebx, ebx
++        mov     edx, edx
++        mov     edi, edi
 +%endif
 +        mov     REG_SI, JSAMPROW [rsi]     ; inptr0
 +        mov     REG_B, JSAMPROW [rbx]     ; inptr1
@@ -319,13 +321,13 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdmrgext-sse2-64.asm libjpeg-turbo-1.5.0
  
  %define wk(i)           rbp-(WK_NUM-(i))*SIZEOF_XMMWORD ; xmmword wk[WK_NUM]
  %define WK_NUM          3
-@@ -57,16 +57,31 @@ EXTN(jsimd_h2v1_merged_upsample_sse2):
+@@ -57,16 +57,33 @@ EXTN(jsimd_h2v1_merged_upsample_sse2):
  
          push    rcx
  
 +%ifdef __ILP32__
-+        and     r11,0x00000000FFFFFFFF
-+        and     r13,0x00000000FFFFFFFF
++        mov     r11d, r11d
++        mov     r13d, r13d
 +%endif
          mov     rdi, r11
          mov     ecx, r12d
@@ -333,9 +335,10 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdmrgext-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rbx, JSAMPARRAY [rdi+1*SIZEOF_JSAMPARRAY]
 -        mov     rdx, JSAMPARRAY [rdi+2*SIZEOF_JSAMPARRAY]
 +%ifdef __ILP32__
-+        and     rsi,0x00000000FFFFFFFF
-+        and     rbx,0x00000000FFFFFFFF
-+        and     rdx,0x00000000FFFFFFFF
++        mov     esi, esi
++        mov     ebx, ebx
++        mov     edx, edx
++        mov     ecx, ecx
 +%endif
 +        mov     REG_SI, JSAMPARRAY [rdi+0*SIZEOF_JSAMPARRAY]
 +        mov     REG_B, JSAMPARRAY [rdi+1*SIZEOF_JSAMPARRAY]
@@ -346,10 +349,11 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdmrgext-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rdx, JSAMPROW [rdx+rcx*SIZEOF_JSAMPROW]         ; inptr2
 -        mov     rdi, JSAMPROW [rdi]                             ; outptr
 +%ifdef __ILP32__
-+        and     rsi,0x00000000FFFFFFFF
-+        and     rbx,0x00000000FFFFFFFF
-+        and     rdx,0x00000000FFFFFFFF
-+        and     rdi,0x00000000FFFFFFFF
++        mov     esi, esi
++        mov     ebx, ebx
++        mov     edx, edx
++        mov     edi, edi
++        mov     ecx, ecx
 +%endif
 +        mov     REG_SI, JSAMPROW [rsi+rcx*SIZEOF_JSAMPROW]         ; inptr0
 +        mov     REG_B, JSAMPROW [rbx+rcx*SIZEOF_JSAMPROW]         ; inptr1
@@ -375,8 +379,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdmrgext-sse2-64.asm libjpeg-turbo-1.5.0
          mov     eax, r10d
  
 +%ifdef __ILP32__
-+        and     r11,0x00000000FFFFFFFF
-+        and     r13,0x00000000FFFFFFFF
++        mov     r11d, r11d
++        mov     r13d, r13d
 +%endif
          mov     rdi, r11
          mov     ecx, r12d
@@ -384,9 +388,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdmrgext-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rbx, JSAMPARRAY [rdi+1*SIZEOF_JSAMPARRAY]
 -        mov     rdx, JSAMPARRAY [rdi+2*SIZEOF_JSAMPARRAY]
 +%ifdef __ILP32__
-+        and     rsi,0x00000000FFFFFFFF
-+        and     rbx,0x00000000FFFFFFFF
-+        and     rdx,0x00000000FFFFFFFF
++        mov     esi, esi
++        mov     ebx, ebx
++        mov     edx, edx
 +%endif
 +        mov     REG_SI, JSAMPARRAY [rdi+0*SIZEOF_JSAMPARRAY]
 +        mov     REG_B, JSAMPARRAY [rdi+1*SIZEOF_JSAMPARRAY]
@@ -413,14 +417,14 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdsample-sse2-64.asm libjpeg-turbo-1.5.0
          jz      near .return
  
 +%ifdef __ILP32__
-+        and     r12,0x00000000FFFFFFFF
-+        and     r13,0x00000000FFFFFFFF
++        mov     r12d, r12d
++        mov     r13d, r13d
 +%endif
          mov     rsi, r12        ; input_data
          mov     rdi, r13
 -        mov     rdi, JSAMPARRAY [rdi]                   ; output_data
 +%ifdef __ILP32__
-+        and     rdi,0x00000000FFFFFFFF
++        mov     edi, edi
 +%endif
 +        mov     REG_DI, JSAMPARRAY [rdi]                   ; output_data
  .rowloop:
@@ -431,8 +435,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdsample-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rsi, JSAMPROW [rsi]     ; inptr
 -        mov     rdi, JSAMPROW [rdi]     ; outptr
 +%ifdef __ILP32__
-+        and     rsi,0x00000000FFFFFFFF
-+        and     rdi,0x00000000FFFFFFFF
++        mov     esi, esi
++        mov     edi, edi
 +%endif
 +        mov     REG_SI, JSAMPROW [rsi]     ; inptr
 +        mov     REG_DI, JSAMPROW [rdi]     ; outptr
@@ -455,14 +459,14 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdsample-sse2-64.asm libjpeg-turbo-1.5.0
          jz      near .return
  
 +%ifdef __ILP32__
-+        and     r12,0x00000000FFFFFFFF
-+        and     r13,0x00000000FFFFFFFF
++        mov     r12d, r12d
++        mov     r13d, r13d
 +%endif
          mov     rsi, r12        ; input_data
          mov     rdi, r13
 -        mov     rdi, JSAMPARRAY [rdi]                   ; output_data
 +%ifdef __ILP32__
-+        and     rdi,0x00000000FFFFFFFF
++        mov     edi, edi
 +%endif
 +        mov     REG_DI, JSAMPARRAY [rdi]                   ; output_data
  .rowloop:
@@ -477,11 +481,11 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdsample-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]   ; outptr0
 -        mov     rdi, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]   ; outptr1
 +%ifdef __ILP32__
-+        and rcx,0x00000000FFFFFFFF
-+        and rbx,0x00000000FFFFFFFF
-+        and rsi,0x00000000FFFFFFFF
-+        and rdx,0x00000000FFFFFFFF
-+        and rdi,0x00000000FFFFFFFF
++        mov ecx, ecx
++        mov ebx, ebx
++        mov esi, esi
++        mov edx, edx
++        mov edi, edi
 +%endif
 +        mov     REG_C, JSAMPROW [rsi-1*SIZEOF_JSAMPROW]   ; inptr1(above)
 +        mov     REG_B, JSAMPROW [rsi+0*SIZEOF_JSAMPROW]   ; inptr0
@@ -507,8 +511,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdsample-sse2-64.asm libjpeg-turbo-1.5.0
          collect_args
  
 +%ifdef __ILP32__
-+        and     r12,0x00000000FFFFFFFF
-+        and     r13,0x00000000FFFFFFFF
++        mov     r12d, r12d
++        mov     r13d, r13d
 +%endif
 +
          mov     edx, r11d
@@ -520,7 +524,7 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdsample-sse2-64.asm libjpeg-turbo-1.5.0
          mov     rdi, r13
 -        mov     rdi, JSAMPARRAY [rdi]                   ; output_data
 +%ifdef __ILP32__
-+        and     rdi,0x00000000FFFFFFFF
++        mov     edi, edi
 +%endif
 +        mov     REG_DI, JSAMPARRAY [rdi]                   ; output_data
  .rowloop:
@@ -530,8 +534,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdsample-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rsi, JSAMPROW [rsi]             ; inptr
 -        mov     rdi, JSAMPROW [rdi]             ; outptr
 +%ifdef __ILP32__
-+        and rsi,0x00000000FFFFFFFF
-+        and rdi,0x00000000FFFFFFFF
++        mov esi, esi
++        mov edi, edi
 +%endif
 +        mov     REG_SI, JSAMPROW [rsi]             ; inptr
 +        mov     REG_DI, JSAMPROW [rdi]             ; outptr
@@ -554,14 +558,14 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdsample-sse2-64.asm libjpeg-turbo-1.5.0
          jz      near .return
  
 +%ifdef __ILP32__
-+        and     r12,0x00000000FFFFFFFF
-+        and     r13,0x00000000FFFFFFFF
++        mov     r12d, r12d
++        mov     r13d, r13d
 +%endif
          mov     rsi, r12        ; input_data
          mov     rdi, r13
 -        mov     rdi, JSAMPARRAY [rdi]                   ; output_data
 +%ifdef __ILP32__
-+        and     rdi,0x00000000FFFFFFFF
++        mov     edi, edi
 +%endif
 +        mov     REG_DI, JSAMPARRAY [rdi]                   ; output_data
  .rowloop:
@@ -572,9 +576,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jdsample-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rbx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]   ; outptr0
 -        mov     rdi, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]   ; outptr1
 +%ifdef __ILP32__
-+        and     rsi,0x00000000FFFFFFFF
-+        and     rbx,0x00000000FFFFFFFF
-+        and     rdi,0x00000000FFFFFFFF
++        mov     esi, esi
++        mov     ebx, ebx
++        mov     edi, edi
 +%endif
 +        mov     REG_SI, JSAMPROW [rsi]                     ; inptr
 +        mov     REG_B, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]   ; outptr0
@@ -599,7 +603,7 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jfdctflt-sse-64.asm libjpeg-turbo-1.5.0/
          ; ---- Pass 1: process rows.
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
++        mov     r10d, r10d
 +%endif
          mov     rdx, r10        ; (FAST_FLOAT *)
          mov     rcx, DCTSIZE/4
@@ -621,7 +625,7 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jfdctfst-sse2-64.asm libjpeg-turbo-1.5.0
          ; ---- Pass 1: process rows.
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
++        mov     r10d, r10d
 +%endif
          mov     rdx, r10        ; (DCTELEM *)
  
@@ -644,7 +648,7 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jfdctint-sse2-64.asm libjpeg-turbo-1.5.0
  
 -        mov     rdx, r10        ; (DCTELEM *)
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
++        mov     r10d, r10d
 +%endif
 +        mov     REG_D, r10p        ; (DCTELEM *)
  
@@ -671,9 +675,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jidctflt-sse2-64.asm libjpeg-turbo-1.5.0
          ; ---- Pass 1: process columns from input, store into work array.
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
-+        and     r11,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r10d, r10d
++        mov     r11d, r11d
++        mov     r12d, r12d
 +%endif
          mov     rdx, r10                ; quantptr
          mov     rsi, r11                ; inptr
@@ -685,8 +689,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jidctflt-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 -        mov     rbx, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
 +%ifdef __ILP32__
-+        and     rdx,0x00000000FFFFFFFF
-+        and     rbx,0x00000000FFFFFFFF
++        and     edx, edx
++        and     ebx, ebx
 +%endif
 +        mov     REG_D, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 +        mov     REG_B, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
@@ -720,9 +724,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jidctfst-sse2-64.asm libjpeg-turbo-1.5.0
          ; ---- Pass 1: process columns from input.
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
-+        and     r11,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r10d, r10d
++        mov     r11d, r11d
++        mov     r12d, r12d
 +%endif
          mov     rdx, r10                ; quantptr
          mov     rsi, r11                ; inptr
@@ -734,8 +738,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jidctfst-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 -        mov     rsi, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
 +%ifdef __ILP32__
-+        and     rdx,0x00000000FFFFFFFF
-+        and     rsi,0x00000000FFFFFFFF
++        mov     edx, edx
++        mov     esi, esi
 +%endif
 +        mov     REG_D, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 +        mov     REG_SI, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
@@ -782,22 +786,23 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jidctint-sse2-64.asm libjpeg-turbo-1.5.0
          ; ---- Pass 1: process columns from input.
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
-+        and     r11,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r10d, r10d
++        mov     r11d, r11d
++        mov     r12d, r12d
 +%endif
          mov     rdx, r10                ; quantptr
          mov     rsi, r11                ; inptr
  
-@@ -818,21 +823,25 @@ EXTN(jsimd_idct_islow_sse2):
+@@ -818,21 +823,26 @@ EXTN(jsimd_idct_islow_sse2):
          pshufd  xmm2,xmm4,0x4E  ; xmm2=(50 51 52 53 54 55 56 57 40 41 42 43 44 45 46 47)
          pshufd  xmm5,xmm3,0x4E  ; xmm5=(70 71 72 73 74 75 76 77 60 61 62 63 64 65 66 67)
  
 -        mov     rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 -        mov     rsi, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
 +%ifdef __ILP32__
-+        and     rdx,0x00000000FFFFFFFF
-+        and     rsi,0x00000000FFFFFFFF
++        mov     edx, edx
++        mov     esi, esi
++        mov     eax, eax
 +%endif
 +        mov     REG_D, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 +        mov     REG_SI, JSAMPROW [rdi+2*SIZEOF_JSAMPROW]
@@ -844,9 +849,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jidctred-sse2-64.asm libjpeg-turbo-1.5.0
          ; ---- Pass 1: process columns from input.
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
-+        and     r11,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r10d, r10d
++        mov     r11d, r11d
++        mov     r12d, r12d
 +%endif
          mov     rdx, r10                ; quantptr
          mov     rsi, r11                ; inptr
@@ -858,8 +863,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jidctred-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 -        mov     rsi, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
 +%ifdef __ILP32__
-+        and     rdx,0x00000000FFFFFFFF
-+        and     rsi,0x00000000FFFFFFFF
++        mov     edx, edx
++        mov     esi, esi
 +%endif
 +        mov     REG_D, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 +        mov     REG_SI, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
@@ -890,9 +895,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jidctred-sse2-64.asm libjpeg-turbo-1.5.0
          ; ---- Pass 1: process columns from input.
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
-+        and     r11,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r10d, r10d
++        mov     r11d, r11d
++        mov     r12d, r12d
 +%endif
          mov     rdx, r10                ; quantptr
          mov     rsi, r11                ; inptr
@@ -904,8 +909,8 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jidctred-sse2-64.asm libjpeg-turbo-1.5.0
 -        mov     rdx, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 -        mov     rsi, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
 +%ifdef __ILP32__
-+        and     rdx,0x00000000FFFFFFFF
-+        and     rsi,0x00000000FFFFFFFF
++        mov     edx, edx
++        mov     esi, esi
 +%endif
 +        mov     REG_D, JSAMPROW [rdi+0*SIZEOF_JSAMPROW]
 +        mov     REG_SI, JSAMPROW [rdi+1*SIZEOF_JSAMPROW]
@@ -927,13 +932,13 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jquantf-sse2-64.asm libjpeg-turbo-1.5.0/
  
          align   16
          global  EXTN(jsimd_convsamp_float_sse2)
-@@ -48,13 +48,21 @@ EXTN(jsimd_convsamp_float_sse2):
+@@ -48,13 +48,22 @@ EXTN(jsimd_convsamp_float_sse2):
          psllw    xmm7,7
          packsswb xmm7,xmm7              ; xmm7 = PB_CENTERJSAMPLE (0x808080..)
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r10d, r10d
++        mov     r12d, r12d
 +%endif
          mov rsi, r10
          mov     eax, r11d
@@ -943,8 +948,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jquantf-sse2-64.asm libjpeg-turbo-1.5.0/
 -        mov     rbx, JSAMPROW [rsi+0*SIZEOF_JSAMPROW]   ; (JSAMPLE *)
 -        mov rdx, JSAMPROW [rsi+1*SIZEOF_JSAMPROW]       ; (JSAMPLE *)
 +%ifdef __ILP32__
-+        and     rbx,0x00000000FFFFFFFF
-+        and     rdx,0x00000000FFFFFFFF
++        mov     ebx, ebx
++        mov     edx, edx
++        mov     eax, eax
 +%endif
 +        mov     REG_B, JSAMPROW [rsi+0*SIZEOF_JSAMPROW]   ; (JSAMPLE *)
 +        mov REG_D, JSAMPROW [rsi+1*SIZEOF_JSAMPROW]       ; (JSAMPLE *)
@@ -969,9 +975,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jquantf-sse2-64.asm libjpeg-turbo-1.5.0/
          collect_args
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
-+        and     r11,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r10d, r10d
++        mov     r11d, r11d
++        mov     r12d, r12d
 +%endif
          mov rsi, r12
          mov rdx, r11
@@ -991,13 +997,13 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jquanti-sse2-64.asm libjpeg-turbo-1.5.0/
  
          align   16
          global  EXTN(jsimd_convsamp_sse2)
-@@ -48,19 +48,27 @@ EXTN(jsimd_convsamp_sse2):
+@@ -48,19 +48,28 @@ EXTN(jsimd_convsamp_sse2):
          pcmpeqw xmm7,xmm7
          psllw   xmm7,7                  ; xmm7={0xFF80 0xFF80 0xFF80 0xFF80 ..}
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r10d, r10d
++        mov     r12d, r12d
 +%endif
          mov rsi, r10
          mov eax, r11d
@@ -1007,8 +1013,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jquanti-sse2-64.asm libjpeg-turbo-1.5.0/
 -        mov     rbx, JSAMPROW [rsi+0*SIZEOF_JSAMPROW]   ; (JSAMPLE *)
 -        mov rdx, JSAMPROW [rsi+1*SIZEOF_JSAMPROW]       ; (JSAMPLE *)
 +%ifdef __ILP32__
-+        and     rbx,0x00000000FFFFFFFF
-+        and     rdx,0x00000000FFFFFFFF
++        mov     ebx, ebx
++        mov     edx, edx
++        mov     eax, eax
 +%endif
 +        mov     REG_B, JSAMPROW [rsi+0*SIZEOF_JSAMPROW]   ; (JSAMPLE *)
 +        mov     REG_D, JSAMPROW [rsi+1*SIZEOF_JSAMPROW]       ; (JSAMPLE *)
@@ -1041,9 +1048,9 @@ diff -urp libjpeg-turbo-1.5.0.orig/simd/jquanti-sse2-64.asm libjpeg-turbo-1.5.0/
          collect_args
  
 +%ifdef __ILP32__
-+        and     r10,0x00000000FFFFFFFF
-+        and     r11,0x00000000FFFFFFFF
-+        and     r12,0x00000000FFFFFFFF
++        mov     r10d, r10d
++        mov     r11d, r11d
++        mov     r12d, r12d
 +%endif
          mov rsi, r12
          mov rdx, r11
