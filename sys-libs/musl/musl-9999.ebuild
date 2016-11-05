@@ -64,11 +64,11 @@ pkg_setup() {
 }
 
 src_prepare() {
-	epatch "${FILESDIR}"/musl-9999-gdb-ptrace.patch
-	epatch "${FILESDIR}"/musl-9999-x32-relative64-1.patch
-	epatch "${FILESDIR}"/musl-9999-pthread_setname_np.patch #for firefox 49.x
+	epatch "${FILESDIR}"/musl-9999-gdb-ptrace.patch #for gdb on x32
+	epatch "${FILESDIR}"/musl-9999-x32-relative64-1.patch #for wine x32
+	#epatch "${FILESDIR}"/musl-9999-pthread_setname_np.patch #for firefox 49.x
 	epatch "${FILESDIR}"/musl-9999-timex-x32.patch #for chrony
-	#epatch "${FILESDIR}"/musl-9999-x32-statfs.patch #testing
+	epatch_user
 }
 
 src_configure() {
