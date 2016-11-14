@@ -86,9 +86,8 @@ Works:
 Broken (do not use the ebuild and associated patches from this overlay if broken.  my personal patches may add more complications so do it from scratch again): 
 -Makefile.in or make system - use my bashrc scripts to fix it see below.
 -Chromium (v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
-Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  Creating a snapshot is broken.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32.  
-I was using parts of the x87 code for 32-bit parts in x64 files.  The shift_size in lithium-codegen-x64.cc (in chromium-52.0.2743.116-x32-22.patch) may need to be uncommented.  movp maybe changed to movesxlp since i don't know which to use.
-Details about the problem can be found at https://github.com/orsonteodoro/muslx32/issues/2 .  
+Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32.  
+I am currently working on this.  There is a very good chance that I will be able to get Chromium on x32.  The strategy to fix this is undo some changesets that cause the breakage and it has been working up to 5.4.200.  We need 5.4.500.31 which exactly matches chromium-54.0.2840.59 stable from the portage tree because the wrappers depend on a particular version of v8.  Progress can be found at https://github.com/orsonteodoro/muslx32/issues/2.
 -wayland (dunno)
 -weston (segfaults)
 -pulseaudio (cannot connect pavucontrol or pulseaudio apps)
