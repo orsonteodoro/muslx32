@@ -1,11 +1,13 @@
 # muslx32
 This is an unofficial muslx32 (musl libc and x32 ABI) overlay for Gentoo Linux
 
-This profile uses a 64-bit linux kernel with x32 abi compatibility.  All of the userland libraries and programs are built as native x32 ABI without duplicate 64-bit and 32-bit versions (a.k.a. multilib).
+### About the muslx32 profile
+
+This profile uses a 64-bit linux kernel with x32 abi compatibility.  All of the userland libraries and programs are built as native x32 ABI without duplicate 64-bit and 32-bit versions (a.k.a. multilib).  The profile contains patches that fix x32 problems and musl problems.  Other overlays seperate them but in this overlay, we combine them.
 
 ### Current goals
 
-Getting popular packages and necessary developer tools working on the platform/profile for widespread adoption.
+The current go is trying to get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
 ### Why musl and x32 and Gentoo? 
 
@@ -17,22 +19,27 @@ x32 ABI is 32-bit (4-bytes) per integer, long, pointer using all of the x86_64 g
 
 ### Advantages of this platform
 
+#### x32 ABI vs x86 ABI
 x32 is better than x86 because the compiler can utilize the x86_64 calling convention by dumping arguments to the registers first before dumping additional arguments on the stack.  The compiler can futher optimize the code by reducing the number of instructions executed and utilize the full register and 64 bit instructions.
 
+#### x32 ABI vs x86_64 ABI
 x32 is better than x86_64 because of reduced pointer size and reduced virtual space.  Reduced virtual space is better safeguard against memory hogs and better memory/cache locality to reduce cache/page miss in theory.
 
-### Disadvantages of this platform
+### Disadvantages of the unilib muslx32 platform
 
-No binary packages work (e.g. spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
+No binary exclusive packages work (e.g. spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
 
 ### Who should use muslx32?
 
 Early adopters of 64 bit and older PCs and laptops
 
-### Other recommendations
-Use -Os and use kernel zswap+zbud to significantly reduce swapping.  Use cache to ram for Firefox if using Gentoo from a usbstick.
+Those that enjoy the challenge of fixing bugs especially assembly bugs and those related to musl.
 
-### Sources of patches
+### Other recommendations
+
+Use -Os and use kernel z3fold to significantly reduce swapping.  Use cache to ram for Firefox if using Gentoo from a usbstick.
+
+### Sources and credits of patches
 
 Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi)) .... (will update this list)
 
@@ -56,10 +63,10 @@ Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void 
 package | notes
 --- | ---
 firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.
-strace | For debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
-gdb | For debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
-X | For windowing system
-wpa_supplicant | For wifi
+strace | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
+gdb | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
+X | Is for the windowing system.  You need to copy 20-nouveau.conf to etc/X11/xorg.conf.d/20-video.conf and edit it especially the Hz and the driver.  This special file loads the proper modules explicitly in the correct order instead of lazy loading them.
+wpa_supplicant | Is for WIFI support
 xf86-video-nouveau |
 xf86-video-ati |
 mplayer | 
@@ -72,7 +79,7 @@ xfce4-terminal |
 gimp |
 xscreensaver |
 glxgears from mesa-progs |
-chrony and ntpd work | chrony needs musl struct timex patched with musl from this overlay.
+chrony and ntpd work | Chrony needs musl struct timex patched with musl from this overlay.
 alsa | You need to copy _.asound.rc to `/<user>/.asound.rc`
 
 ### Broken packages
@@ -81,7 +88,7 @@ alsa | You need to copy _.asound.rc to `/<user>/.asound.rc`
 
 package | notes
 --- | ---
-Makefile.in or make system | Use my bashrc scripts to fix it see below.
+Makefile.in or make system | Use my bashrc script to fix it see the muslx32toolkit below.
 Chromium | v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32. I decided to stop working on this.  As of 20170507 there is some chance if someone other than me that will be able to get Chromium on x32.  The strategy to fix this is undo some changesets that cause the breakage and it has been working up to 5.4.200.  We need 5.4.500.31 which exactly matches chromium-54.0.2840.59 stable from the portage tree because the wrappers depend on a particular version of v8.  Progress can be found at https://github.com/orsonteodoro/muslx32/issues/2.  I stopped working on this because I cannot find the bug.  I had a working v8 but there are problems on the browser side not v8 JavaScript engine which did pass unit tests up to 5.3.201 and did have a working mksnapshot as of 5.4.259.  The browser interface does work, but it is not showing content from the web.
 wayland | I don't know if it is just weston causing the problem
 weston | Segfaults
