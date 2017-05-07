@@ -74,7 +74,7 @@ I am currently working on this.  There is a very good chance that I will be able
 -libreoffice - the one from musl overlay is broken and can't be compiled on this toolchain or configuration.
 -clang - clang 3.7 does work with compiling a hello world program, but it still broken when used as system-wide compiler.  It failed with a simple program like gnome-calculator.  https://llvm.org/bugs/show_bug.cgi?id=13666 at comment 3 needs to be fixed first.  This ebuild will compile clang to the end even though the bug report says otherwise because we can skip over compiling atomic.c and gcc_personality_v0.c.
 
-Instructions:
+Instructions for creating the muslx32 toolchain:
 You need the muslx32toolkit below.  It has convenience scripts to build stage3 and stage4 images.  You can build the images using your existing Gentoo installation.
 
 https://github.com/orsonteodoro/muslx32toolkit
