@@ -5,7 +5,7 @@ This profile uses a 64-bit linux kernel with x32 abi compatibility.  All of the 
 
 ### Current goals
 
-get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
+Getting popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
 ### Why musl and x32 and Gentoo? 
 
@@ -55,11 +55,11 @@ Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void 
 
 package | notes
 --- | ---
-firefox 45.x only | except when using pulseaudio and jit.  javascript works but through interpreter. YouTube works with alsa audio.  firefox 47+ and 49+ is broken on x32 with 45.x patches applied.
-strace | for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
-gdb | for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
-X | for windowing system
-wpa_supplicant | for wifi
+firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.
+strace | For debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
+gdb | For debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
+X | For windowing system
+wpa_supplicant | For wifi
 xf86-video-nouveau |
 xf86-video-ati |
 mplayer | 
@@ -67,13 +67,13 @@ mpd |
 geany |
 dwm |
 xfce4 |
-aterm | from this overlay
+aterm | Works only from this overlay
 xfce4-terminal |
 gimp |
 xscreensaver |
 glxgears from mesa-progs |
 chrony and ntpd work | chrony needs musl struct timex patched with musl from this overlay.
-alsa | you need to copy _.asound.rc to `/<user>/.asound.rc`
+alsa | You need to copy _.asound.rc to `/<user>/.asound.rc`
 
 ### Broken packages
 
@@ -81,21 +81,21 @@ alsa | you need to copy _.asound.rc to `/<user>/.asound.rc`
 
 package | notes
 --- | ---
-Makefile.in or make system | use my bashrc scripts to fix it see below.
+Makefile.in or make system | Use my bashrc scripts to fix it see below.
 Chromium | v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32. I decided to stop working on this.  As of 20170507 there is some chance if someone other than me that will be able to get Chromium on x32.  The strategy to fix this is undo some changesets that cause the breakage and it has been working up to 5.4.200.  We need 5.4.500.31 which exactly matches chromium-54.0.2840.59 stable from the portage tree because the wrappers depend on a particular version of v8.  Progress can be found at https://github.com/orsonteodoro/muslx32/issues/2.  I stopped working on this because I cannot find the bug.  I had a working v8 but there are problems on the browser side not v8 JavaScript engine which did pass unit tests up to 5.3.201 and did have a working mksnapshot as of 5.4.259.  The browser interface does work, but it is not showing content from the web.
-wayland | dunno if it is just weston causing the problem
-weston | segfaults
-pulseaudio | cannot connect pavucontrol or pulseaudio apps
-webkit-gtk | just gives a blank screen.  jit is broken or something else related not relevant to the patches.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
-evdev | semi broken and quirky; dev permissions need to be manually set or devices reloaded. init script fixes are in these instructions
-grub2-install | doesn't work natively in x32 use lilo.  you can still install grub from amd64 profile.
-xterm | works in root but not as user
-mono | C# (incomplete patch from PLD Linux... was testing) details (https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html) on what needs to be done.  From previous attempt, the fix is not trivial which PLD would suggest.
-nodejs | depends on v8.  v8 doesn't support x32.
-import (from imagematick) | cannot take a screenshot use imlib2 
-wine | it's broken and never supported x32.  x86 (win32/win16) may never be supported but x86_64 based windows apps may be supported.  Problems and immaturity of musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 assembly instructions and same registers which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produced with the microsoft toolchain.
-libreoffice | the one from musl overlay is broken and can't be compiled on this toolchain or configuration.
-clang | clang 3.7 does work with compiling a hello world program, but it still broken when used as system-wide compiler.  It failed with a simple program like gnome-calculator.  https://llvm.org/bugs/show_bug.cgi?id=13666 at comment 3 needs to be fixed first.  This ebuild will compile clang to the end even though the bug report says otherwise because we can skip over compiling atomic.c and gcc_personality_v0.c.
+wayland | I don't know if it is just weston causing the problem
+weston | Segfaults
+pulseaudio | It cannot connect to pavucontrol or pulseaudio apps
+webkit-gtk | It just gives a blank screen.  Jit is broken or something else related not relevant to the patches.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
+evdev | Semi broken and quirky; dev permissions need to be manually set or devices reloaded. init script fixes are in these instructions
+grub2-install | It doesn't work natively in x32 use lilo.  you can still install grub from amd64 profile.
+xterm | It works in root but not as user
+mono | It is for C#.  The patches from PLD Linux are incomplete.  Details of the patch can be found on https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html for what needs to be done.  From my previous attempt, the fix is not trivial which PLD would suggest.
+nodejs | It depends on v8.  v8 doesn't support x32.
+import (from imagematick) | It cannot take a screenshot use imlib2 instead.
+wine | It's broken and never supported x32.  x86 (win32/win16) may never be supported but x86_64 based windows apps may be supported.  Problems and immaturity of musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 assembly instructions and same registers which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produced with the microsoft toolchain.
+libreoffice | The one from musl overlay is broken and can't be compiled on this toolchain or configuration.
+clang | Clang 3.7 does work with compiling a hello world program, but it still broken when used as system-wide compiler.  It failed with a simple program like gnome-calculator.  https://llvm.org/bugs/show_bug.cgi?id=13666 at comment 3 needs to be fixed first.  This ebuild will compile clang to the end even though the bug report says otherwise because we can skip over compiling atomic.c and gcc_personality_v0.c.
 
 ### Instructions for creating the muslx32 toolchain
 
