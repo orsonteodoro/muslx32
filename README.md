@@ -39,14 +39,13 @@ Where can we meet on IRC?
 package | notes
 --- | ---
 firefox 45.x only | except when using pulseaudio and jit.  javascript works but through interpreter. YouTube works with alsa audio.  firefox 47+ and 49+ is broken on x32 with 45.x patches applied.
-strace | (for debugging) from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
-gdb | (for debugging) from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
-X | (for windowing system)
-wpa_supplicant | (for wifi)
+strace | for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
+gdb | for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
+X | for windowing system
+wpa_supplicant | for wifi
 xf86-video-nouveau |
 xf86-video-ati |
-*see bottom of readme for details emerged packages
-mplayer | (but without simd optimizations)
+mplayer | 
 mpd |
 geany |
 dwm |
@@ -56,7 +55,7 @@ xfce4-terminal |
 gimp |
 xscreensaver |
 glxgears from mesa-progs |
-chrony and ntpd work |  chrony needs musl struct timex patched with musl from this overlay.
+chrony and ntpd work | chrony needs musl struct timex patched with musl from this overlay.
 
 ## Broken
 
@@ -65,18 +64,15 @@ chrony and ntpd work |  chrony needs musl struct timex patched with musl from th
 package | notes
 --- | ---
 Makefile.in or make system | use my bashrc scripts to fix it see below.
-Chromium | v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping
-Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32.
-I decided to stop working on this.  As of 20170507 there is some chance if someone other than me that will be able to get Chromium on x32.  The strategy to fix this is undo some changesets that cause the breakage and it has been working up to 5.4.200.  We need 5.4.500.31 which exactly matches chromium-54.0.2840.59 stable from the portage tree because the wrappers depend on a particular version of v8.  Progress can be found at https://github.com/orsonteodoro/muslx32/issues/2.  
-I stopped working on this because I cannot find the bug.  I had a working v8 but there are problems on the browser side not v8 JavaScript engine which did pass unit tests up to 5.3.201 and did have a working mksnapshot as of 5.4.259.  The browser interface does work, but it is not showing content from the web.
-wayland | (dunno)
-weston | (segfaults)
-pulseaudio | (cannot connect pavucontrol or pulseaudio apps)
+Chromium | v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32. I decided to stop working on this.  As of 20170507 there is some chance if someone other than me that will be able to get Chromium on x32.  The strategy to fix this is undo some changesets that cause the breakage and it has been working up to 5.4.200.  We need 5.4.500.31 which exactly matches chromium-54.0.2840.59 stable from the portage tree because the wrappers depend on a particular version of v8.  Progress can be found at https://github.com/orsonteodoro/muslx32/issues/2.  I stopped working on this because I cannot find the bug.  I had a working v8 but there are problems on the browser side not v8 JavaScript engine which did pass unit tests up to 5.3.201 and did have a working mksnapshot as of 5.4.259.  The browser interface does work, but it is not showing content from the web.
+wayland | dunno if it is just weston causing the problem
+weston | segfaults
+pulseaudio | cannot connect pavucontrol or pulseaudio apps
 webkit-gtk | just gives a blank screen.  jit is broken or something else related not relevant to the patches.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
-evdev | (semi broken and quirky; dev permissions need to be manually set or devices reloaded. init script fixes are in these instructions)
-grub2-install | (doesn't work in x32 use lilo)
-xterm | (works in root but not as user)
-mono | C# (incomplete patch from PLD Linux... was testing) details (https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html) on what needs to be done.
+evdev | semi broken and quirky; dev permissions need to be manually set or devices reloaded. init script fixes are in these instructions
+grub2-install | doesn't work natively in x32 use lilo.  you can still install grub from amd64 profile.
+xterm | works in root but not as user
+mono | C# (incomplete patch from PLD Linux... was testing) details (https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html) on what needs to be done.  From previous attempt, the fix is not trivial which PLD would suggest.
 nodejs | depends on v8.  v8 doesn't support x32.
 import (from imagematick) | cannot take a screenshot use imlib2 
 wine | it's broken and never supported x32.  x86 (win32/win16) may never be supported but x86_64 based windows apps may be supported.  Problems and immaturity of musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 assembly instructions and same registers which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produced with the microsoft toolchain.
