@@ -3,38 +3,55 @@ This is an unofficial muslx32 (musl libc and x32 ABI) overlay for Gentoo Linux
 
 This profile uses a 64-bit linux kernel with x32 abi compatibility.  All of the userland libraries and programs are built as native x32 ABI without duplicate 64-bit and 32-bit versions (a.k.a. multilib).
 
-Current goals:  get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
+### Current goals
 
-Why musl and x32 and Gentoo?  Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  I was really disappointed about Alpine and the shortcomings of the other previously tested distros.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux and Slax packages were pretty much outdated.  blueness said that he wouldn't make muslx32 as top priority or it wasn't his job to do or after the hardened gcc patches for the platform were ready, so I decided to just do it myself without the hardened part.
+get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
-What is x32?  x32 ABI is 32-bit (4-bytes) per integer, long, pointer using all of the x86_64 general purpose registers identified as (rax,rbx,rcx,r11-r15,rsi,rdi) and using sse registers.  Long-long integers are 8 bytes.  C/C++ programs will use __ILP32__ preprocessor checks to distinguish between 32/64 bit systems.  The build system may also compare sizeof(void*) to see if it has 4 bytes for 32-bit for 8 bytes and 64-bit for LP64 (longs are 8 bytes as well as pointers) and __x86_64__ defined.  
+### Why musl and x32 and Gentoo? 
+
+Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  I was really disappointed about Alpine and the shortcomings of the other previously tested distros.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux and Slax packages were pretty much outdated.  blueness said that he wouldn't make muslx32 as top priority or it wasn't his job to do or after the hardened gcc patches for the platform were ready, so I decided to just do it myself without the hardened part.
+
+### What is x32?
+
+x32 ABI is 32-bit (4-bytes) per integer, long, pointer using all of the x86_64 general purpose registers identified as (rax,rbx,rcx,r11-r15,rsi,rdi) and using sse registers.  Long-long integers are 8 bytes.  C/C++ programs will use __ILP32__ preprocessor checks to distinguish between 32/64 bit systems.  The build system may also compare sizeof(void*) to see if it has 4 bytes for 32-bit for 8 bytes and 64-bit for LP64 (longs are 8 bytes as well as pointers) and __x86_64__ defined.  
+
+### Advantages of this platform
 
 x32 is better than x86 because the compiler can utilize the x86_64 calling convention by dumping arguments to the registers first before dumping additional arguments on the stack.  The compiler can futher optimize the code by reducing the number of instructions executed and utilize the full register and 64 bit instructions.
 
 x32 is better than x86_64 because of reduced pointer size and reduced virtual space.  Reduced virtual space is better safeguard against memory hogs and better memory/cache locality to reduce cache/page miss in theory.
 
-Disadvantages of this platform:  No binary packages work (e.g. spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
+### Disadvantages of this platform
 
-Other recommendations?  Use -Os and use kernel zswap+zbud to significantly reduce swapping.  Use cache to ram for Firefox if using Gentoo from a usbstick.
+No binary packages work (e.g. spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
 
-You need use crossdev to build this.  Crossdev is used to build the cross-compile toolchain.  Use the cross-compile toolchain to build system.  Use the system to build world.  The result is a stage 3/4 image like the tarball you download from Gentoo.  It sounds easy but there are a lot of broken ebuilds and packages that need patches.  It took me several weeks to get it right.  I give you the overlay this time, so it will only take you a few days.
+### Who should use muslx32?
+
+Early adopters of 64 bit and older PCs and laptops
+
+### Other recommendations
+Use -Os and use kernel zswap+zbud to significantly reduce swapping.  Use cache to ram for Firefox if using Gentoo from a usbstick.
+
+### Sources of patches
 
 Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi)) .... (will update this list)
 
-What you can do to help?:  
--Clean the ebuilds with proper x32 ABI and musl CHOST checks and submit them to Gentoo.
--Write/Fix assembly code for the jit based packages and assembly based packages.
--Test and patch new ebuilds for these use cases or stakeholders: server, web, gaming, etc, entertainment, developer, science, business, graphic artists.
--Fix the build system to get rid of the bashrc script and odd quirks.
--Check and fix packages that use elf_x86_64 when it should link using elf32_x86_64.
--Check and fix packages that use constant numbers for syscalls.  The syscall needs to added/or'ed by __X32_SYSCALL_BIT or 0x40000000.
--Check all sizeof(void*) and similar to be sure they are in the 4G address range if porting from 64 bit code.
--Replace all important longs that assume 64-bit as long long.  In x32, long is actual 4 bytes.
+### What you can do to help?
 
-Where can we meet on IRC?
+* Clean the ebuilds with proper x32 ABI and musl CHOST checks and submit them to Gentoo.
+* Write/Fix assembly code for the jit based packages and assembly based packages.
+* Test and patch new ebuilds for these use cases or stakeholders: server, web, gaming, etc, entertainment, developer, science, business, graphic artists.
+* Fix the build system to get rid of the bashrc script and odd quirks.
+* Check and fix packages that use elf_x86_64 when it should link using elf32_x86_64.
+* Check and fix packages that use constant numbers for syscalls.  The syscall needs to added/or'ed by __X32_SYSCALL_BIT or 0x40000000.
+* Check all sizeof(void*) and similar to be sure they are in the 4G address range if porting from 64 bit code.
+* Replace all important longs that assume 64-bit as long long.  In x32, long is actual 4 bytes.
+
+### Where can we meet on IRC?
+
 #gentoo-muslx32 on freenode
 
-## Works
+### Working packages
 
 package | notes
 --- | ---
@@ -56,8 +73,9 @@ gimp |
 xscreensaver |
 glxgears from mesa-progs |
 chrony and ntpd work | chrony needs musl struct timex patched with musl from this overlay.
+alsa | you need to copy _.asound.rc to `/<user>/.asound.rc`
 
-## Broken
+### Broken packages
 
 (do not use the ebuild and associated patches from this overlay if broken.  my personal patches may add more complications so do it from scratch again): 
 
@@ -79,8 +97,10 @@ wine | it's broken and never supported x32.  x86 (win32/win16) may never be supp
 libreoffice | the one from musl overlay is broken and can't be compiled on this toolchain or configuration.
 clang | clang 3.7 does work with compiling a hello world program, but it still broken when used as system-wide compiler.  It failed with a simple program like gnome-calculator.  https://llvm.org/bugs/show_bug.cgi?id=13666 at comment 3 needs to be fixed first.  This ebuild will compile clang to the end even though the bug report says otherwise because we can skip over compiling atomic.c and gcc_personality_v0.c.
 
-Instructions for creating the muslx32 toolchain:
+### Instructions for creating the muslx32 toolchain
+
 You need the muslx32toolkit below.  It has convenience scripts to build stage3 and stage4 images.  You can build the images using your existing Gentoo installation.
 
+Building the stage 3/4 image will take around 2 days with the muslx32toolkit which has been cut from the old documented method which took weeks.  You can still follow the old method by just reading the scripts and preforming the steps by hand to understand how to build an image using cross profile for those more interested in how crossdev works.
 
 https://github.com/orsonteodoro/muslx32toolkit
