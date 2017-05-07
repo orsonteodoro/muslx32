@@ -84,7 +84,7 @@ alsa | You need to copy _.asound.rc to `/<user>/.asound.rc`
 
 ### Broken packages
 
-(do not use the ebuild and associated patches from this overlay if broken.  my personal patches may add more complications so do it from scratch again): 
+(Do not use the ebuild and associated patches from this overlay if broken if you are planning to fix it.  My personal patches may add more complications so do it from scratch again): 
 
 package | notes
 --- | ---
