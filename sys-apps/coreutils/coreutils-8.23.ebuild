@@ -80,6 +80,9 @@ src_configure() {
 	use static && append-ldflags -static && sed -i '/elf_sys=yes/s:yes:no:' configure #321821
 	use selinux || export ac_cv_{header_selinux_{context,flash,selinux}_h,search_setfilecon}=no #301782
 	use userland_BSD && myconf="${myconf} -program-prefix=g --program-transform-name=s/stat/nustat/"
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		myconf+=" --with-included-regex"
+	fi
 	# kill/uptime - procps
 	# groups/su   - shadow
 	# hostname    - net-tools
@@ -98,6 +101,14 @@ src_configure() {
 		$(use_enable xattr) \
 		$(use_with gmp) \
 		${myconf}
+}
+
+#added by muslx32
+src_compile() {
+	default
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		make src/chroot
+	fi
 }
 
 src_test() {
@@ -135,6 +146,10 @@ src_install() {
 
 	insinto /etc
 	newins src/dircolors.hin DIR_COLORS
+
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		cp "${S}"/src/chroot "${ED}"/usr/bin/
+	fi
 
 	if [[ ${USERLAND} == "GNU" ]] ; then
 		cd "${ED}"/usr/bin

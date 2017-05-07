@@ -1,0 +1,12 @@
+diff -urp wine-1.9.9.orig/include/winbase.h wine-1.9.9/include/winbase.h
+--- wine-1.9.9.orig/include/winbase.h	2016-10-25 03:03:53.165537572 -0700
++++ wine-1.9.9/include/winbase.h	2016-10-25 03:15:39.871334716 -0700
+@@ -2885,7 +2885,7 @@ static FORCEINLINE PVOID WINAPI Interloc
+ {
+     PVOID ret;
+ #ifdef __x86_64__
+-    __asm__ __volatile__( "lock; xchgq %0,(%1)" : "=r" (ret) :"r" (dest), "0" (val) : "memory" );
++    __asm__ __volatile__( "lock; xchg %0,(%1)" : "=r" (ret) :"r" (dest), "0" (val) : "memory" );
+ #else
+     do ret = *dest; while (!__sync_bool_compare_and_swap( dest, ret, val ));
+ #endif

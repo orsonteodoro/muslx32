@@ -5,7 +5,7 @@
 EAPI="4"
 
 # NOTE: we cannot depend on autotools here starting with gcc-4.3.x
-inherit eutils libtool multilib multilib-minimal
+inherit eutils libtool multilib multilib-minimal flag-o-matic
 
 MY_PV=${PV/_p*}
 MY_P=${PN}-${MY_PV}
@@ -23,6 +23,14 @@ RDEPEND=">=dev-libs/gmp-4.1.4-r2[${MULTILIB_USEDEP},static-libs?]"
 DEPEND="${RDEPEND}"
 
 S=${WORKDIR}/${MY_P}
+
+#pkg_setup() {
+#	default
+#	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+#		ewarn "this package needs to be cross compiled."
+#		ewarn "todo: it also needs to be patch so it can be compiled natively."
+#	fi
+#}
 
 src_prepare() {
 	if [[ ${PLEVEL} != ${PV} ]] ; then

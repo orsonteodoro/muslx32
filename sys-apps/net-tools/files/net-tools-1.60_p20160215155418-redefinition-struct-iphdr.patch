@@ -1,0 +1,11 @@
+diff -urp net-tools-1.60_p20160215155418.orig/iptunnel.c net-tools-1.60_p20160215155418/iptunnel.c
+--- net-tools-1.60_p20160215155418.orig/iptunnel.c	2017-05-02 05:18:29.811008107 +0000
++++ net-tools-1.60_p20160215155418/iptunnel.c	2017-05-02 05:21:04.340941332 +0000
+@@ -26,7 +26,6 @@
+ #include <sys/socket.h>
+ #include <sys/ioctl.h>
+ #include <netinet/in.h>
+-#include <netinet/ip.h>
+ #include <arpa/inet.h>
+ #include <net/if_arp.h>
+ /* We only care about linux/if_tunnel.h.  Unfortunately, older Linux headers

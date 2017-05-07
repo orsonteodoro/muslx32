@@ -1,0 +1,12 @@
+diff -ur chromium-53.0.2785.143.orig/gin/public/context_holder.h chromium-53.0.2785.143/gin/public/context_holder.h
+--- chromium-53.0.2785.143.orig/gin/public/context_holder.h	2016-09-29 12:02:21.000000000 -0700
++++ chromium-53.0.2785.143/gin/public/context_holder.h	2016-10-05 17:14:14.299552547 -0700
+@@ -19,7 +19,7 @@
+ // The field at kDebugIdIndex is treated specially by V8 and is reserved for
+ // a V8 debugger implementation (not used by gin).
+ enum ContextEmbedderDataFields {
+-  kDebugIdIndex = v8::Context::kDebugIdIndex,
++  //kDebugIdIndex = v8::Context::kDebugIdIndex,
+   kPerContextDataStartIndex,
+ };
+ 

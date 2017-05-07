@@ -1,0 +1,34 @@
+diff -urp libjpeg-turbo-1.5.0.orig/simd/jdmrgext-sse2-64.asm libjpeg-turbo-1.5.0/simd/jdmrgext-sse2-64.asm
+--- libjpeg-turbo-1.5.0.orig/simd/jdmrgext-sse2-64.asm	2016-10-25 00:27:46.895066909 -0700
++++ libjpeg-turbo-1.5.0/simd/jdmrgext-sse2-64.asm	2016-10-25 00:53:14.955056727 -0700
+@@ -51,6 +51,10 @@ EXTN(jsimd_h2v1_merged_upsample_sse2):
+         collect_args
+         push    rbx
+ 
++%ifdef __ILP32__
++        mov     r10d, r10d
++        mov     ecx, ecx
++%endif
+         mov     ecx, r10d        ; col
+         test    rcx,rcx
+         jz      near .return
+
+diff -urp libjpeg-turbo-1.5.0.orig/simd/jdmrgext-sse2-64.asm libjpeg-turbo-1.5.0/simd/jdmrgext-sse2-64.asm
+--- libjpeg-turbo-1.5.0.orig/simd/jdmrgext-sse2-64.asm	2016-10-25 01:06:13.930582361 -0700
++++ libjpeg-turbo-1.5.0/simd/jdmrgext-sse2-64.asm	2016-10-25 01:07:13.980858455 -0700
+@@ -84,10 +84,10 @@ EXTN(jsimd_h2v1_merged_upsample_sse2):
+         mov     edi, edi
+         mov     ecx, ecx
+ %endif
+-        mov     REG_SI, JSAMPROW [rsi+rcx*SIZEOF_JSAMPROW]         ; inptr0
+-        mov     REG_B, JSAMPROW [rbx+rcx*SIZEOF_JSAMPROW]         ; inptr1
+-        mov     REG_D, JSAMPROW [rdx+rcx*SIZEOF_JSAMPROW]         ; inptr2
+-        mov     REG_DI, JSAMPROW [rdi]                             ; outptr
++        mov     REG_SI, JSAMPROW [esi+ecx*SIZEOF_JSAMPROW]         ; inptr0
++        mov     REG_B, JSAMPROW [ebx+ecx*SIZEOF_JSAMPROW]         ; inptr1
++        mov     REG_D, JSAMPROW [edx+ecx*SIZEOF_JSAMPROW]         ; inptr2
++        mov     REG_DI, JSAMPROW [edi]                             ; outptr
+ 
+         pop     rcx                     ; col
+ 
+

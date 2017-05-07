@@ -1,0 +1,30 @@
+diff -ur mono-4.4.0.orig/mono/profiler/proflog.c mono-4.4.0/mono/profiler/proflog.c
+--- mono-4.4.0.orig/mono/profiler/proflog.c	2016-03-16 09:00:32.000000000 -0700
++++ mono-4.4.0/mono/profiler/proflog.c	2016-07-04 00:05:14.344018168 -0700
+@@ -2567,8 +2567,12 @@
+ {
+ 	attr->size = PERF_ATTR_SIZE_VER0;
+ 	//printf ("perf attr size: %d\n", attr->size);
+ #if defined(__x86_64__)
+-	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
++#  if defined(__ILP32__)
++ 	return syscall(/*__NR_perf_event_open*/ 0x40000000+298, attr, pid, cpu, group_fd, (unsigned long long)flags);
++#  else
++	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
++#  endif
+ #elif defined(__i386__)
+ 	return syscall(/*__NR_perf_event_open*/ 336, attr, pid, cpu, group_fd, flags);
+ #elif defined(__arm__) || defined (__aarch64__)
+diff -urp mono-4.4.0.orig/mono/mini/mini-amd64.c mono-4.4.0/mono/mini/mini-amd64.c
+--- mono-4.4.0.orig/mono/mini/mini-amd64.c	2016-03-16 09:00:32.000000000 -0700
++++ mono-4.4.0/mono/mini/mini-amd64.c	2016-10-24 19:13:52.754098352 -0700
+@@ -7519,7 +7519,7 @@ mono_arch_emit_exceptions (MonoCompile *
+ 		if (patch_info->type == MONO_PATCH_INFO_R4)
+ 			code_size += 4 + 15; /* sizeof (float) + alignment */
+ 		if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR)
+-			code_size += 8 + 7; /*sizeof (void*) + alignment */
++			code_size += SIZEOF_VOID_P + 7; /*sizeof (void*) + alignment */
+ 	}
+ 
+ #ifdef __native_client_codegen__
+

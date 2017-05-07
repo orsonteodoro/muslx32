@@ -39,9 +39,13 @@ src_configure() {
 	export ac_cv_search_pcre_compile=$(
 		usex pcre "$($(tc-getPKG_CONFIG) --libs $(usex static --static '') libpcre)" ''
 	)
+	local myconf
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		myconf=( --with-included-regex )
+	fi
 	econf \
-		--with-included-regex \
 		--bindir="${EPREFIX}"/bin \
 		$(use_enable nls) \
-		$(use_enable pcre perl-regexp)
+		$(use_enable pcre perl-regexp) \
+		${myconf[@]}
 }

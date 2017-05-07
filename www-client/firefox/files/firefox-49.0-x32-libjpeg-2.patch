@@ -1,0 +1,79 @@
+diff -urp firefox-49.0.orig/media/libjpeg/jchuff.c firefox-49.0/media/libjpeg/jchuff.c
+--- firefox-49.0.orig/media/libjpeg/jchuff.c	2016-05-12 10:13:16.000000000 -0700
++++ firefox-49.0/media/libjpeg/jchuff.c	2016-10-23 12:01:48.776611403 -0700
+@@ -64,7 +64,7 @@
+  */
+ 
+ typedef struct {
+-  size_t put_buffer;            /* current bit-accumulation buffer */
++  PUTBUFFER_T put_buffer;            /* current bit-accumulation buffer */
+   int put_bits;                 /* # of bits now in it */
+   int last_dc_val[MAX_COMPS_IN_SCAN]; /* last DC coef for each component */
+ } savable_state;
+@@ -457,7 +457,7 @@ LOCAL(boolean)
+ flush_bits (working_state * state)
+ {
+   JOCTET _buffer[BUFSIZE], *buffer;
+-  size_t put_buffer;  int put_bits;
++  PUTBUFFER_T put_buffer;  int put_bits;
+   size_t bytes, bytestocopy;  int localbuf = 0;
+ 
+   put_buffer = state->cur.put_buffer;
+@@ -486,7 +486,7 @@ encode_one_block (working_state * state,
+   int nbits;
+   int r, code, size;
+   JOCTET _buffer[BUFSIZE], *buffer;
+-  size_t put_buffer;  int put_bits;
++  PUTBUFFER_T put_buffer;  int put_bits;
+   int code_0xf0 = actbl->ehufco[0xf0], size_0xf0 = actbl->ehufsi[0xf0];
+   size_t bytes, bytestocopy;  int localbuf = 0;
+ 
+Only in firefox-49.0/media/libjpeg: jchuff.c.orig
+diff -urp firefox-49.0.orig/media/libjpeg/jcphuff.c firefox-49.0/media/libjpeg/jcphuff.c
+--- firefox-49.0.orig/media/libjpeg/jcphuff.c	2016-05-12 10:13:16.000000000 -0700
++++ firefox-49.0/media/libjpeg/jcphuff.c	2016-10-23 12:02:54.967098220 -0700
+@@ -34,7 +34,7 @@ typedef struct {
+    */
+   JOCTET * next_output_byte;    /* => next byte to write in buffer */
+   size_t free_in_buffer;        /* # of byte spaces remaining in buffer */
+-  INT32 put_buffer;             /* current bit-accumulation buffer */
++  PUTBUFFER_T put_buffer;             /* current bit-accumulation buffer */
+   int put_bits;                 /* # of bits now in it */
+   j_compress_ptr cinfo;         /* link to cinfo (needed for dump_buffer) */
+ 
+@@ -230,7 +230,7 @@ emit_bits (phuff_entropy_ptr entropy, un
+ /* Emit some bits, unless we are in gather mode */
+ {
+   /* This routine is heavily used, so it's worth coding tightly. */
+-  register INT32 put_buffer = (INT32) code;
++  register PUTBUFFER_T put_buffer = (INT32) code;
+   register int put_bits = entropy->put_bits;
+ 
+   /* if size is 0, caller used an invalid Huffman table entry */
+@@ -240,7 +240,7 @@ emit_bits (phuff_entropy_ptr entropy, un
+   if (entropy->gather_statistics)
+     return;                     /* do nothing if we're only getting stats */
+ 
+-  put_buffer &= (((INT32) 1)<<size) - 1; /* mask off any extra bits in code */
++  put_buffer &= (((PUTBUFFER_T) 1)<<size) - 1; /* mask off any extra bits in code */
+ 
+   put_bits += size;             /* new number of bits in buffer */
+ 
+Only in firefox-49.0/media/libjpeg: jcphuff.c.orig
+Only in firefox-49.0/media/libjpeg: jcphuff.c.rej
+diff -urp firefox-49.0.orig/media/libjpeg/jpeglib.h firefox-49.0/media/libjpeg/jpeglib.h
+--- firefox-49.0.orig/media/libjpeg/jpeglib.h	2016-05-12 10:13:16.000000000 -0700
++++ firefox-49.0/media/libjpeg/jpeglib.h	2016-10-23 12:01:48.780611554 -0700
+@@ -64,6 +64,11 @@ extern "C" {
+ /* Data structures for images (arrays of samples and of DCT coefficients).
+  */
+ 
++#if defined(__x86_64__) && defined(__ILP32__)
++typedef long long  PUTBUFFER_T;
++#else
++typedef size_t  PUTBUFFER_T;
++#endif
+ typedef JSAMPLE *JSAMPROW;      /* ptr to one image row of pixel samples. */
+ typedef JSAMPROW *JSAMPARRAY;   /* ptr to some rows (a 2-D sample array) */
+ typedef JSAMPARRAY *JSAMPIMAGE; /* a 3-D sample array: top index is color */
+Only in firefox-49.0/media/libjpeg: jpeglib.h.orig

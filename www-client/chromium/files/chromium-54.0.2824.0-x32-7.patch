@@ -1,0 +1,469 @@
+diff -pur -x '*.rej' -x '*.orig' chromium-54.0.2824.0.orig/v8/src/compiler/x64/instruction-selector-x64.cc chromium-54.0.2824.0/v8/src/compiler/x64/instruction-selector-x64.cc
+--- chromium-54.0.2824.0.orig/v8/src/compiler/x64/instruction-selector-x64.cc	2016-08-17 16:51:01.089982727 -0700
++++ chromium-54.0.2824.0/v8/src/compiler/x64/instruction-selector-x64.cc	2016-08-17 16:56:53.818977080 -0700
+@@ -476,6 +476,7 @@ void InstructionSelector::VisitWord32And
+ void InstructionSelector::VisitWord64And(Node* node) {
+   VisitBinop(this, node, kX64And);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitWord32Or(Node* node) {
+@@ -483,9 +484,11 @@ void InstructionSelector::VisitWord32Or(
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64Or(Node* node) {
+   VisitBinop(this, node, kX64Or);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitWord32Xor(Node* node) {
+@@ -498,7 +501,7 @@ void InstructionSelector::VisitWord32Xor
+   }
+ }
+ 
+-
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64Xor(Node* node) {
+   X64OperandGenerator g(this);
+   Uint64BinopMatcher m(node);
+@@ -508,6 +511,7 @@ void InstructionSelector::VisitWord64Xor
+     VisitBinop(this, node, kX64Xor);
+   }
+ }
++#endif
+ 
+ 
+ namespace {
+@@ -592,7 +596,7 @@ void InstructionSelector::VisitWord32Shl
+   VisitWord32Shift(this, node, kX64Shl32);
+ }
+ 
+-
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64Shl(Node* node) {
+   X64OperandGenerator g(this);
+   Int64ScaleMatcher m(node, true);
+@@ -617,6 +621,7 @@ void InstructionSelector::VisitWord64Shl
+   }
+   VisitWord64Shift(this, node, kX64Shl);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitWord32Shr(Node* node) {
+@@ -624,9 +629,11 @@ void InstructionSelector::VisitWord32Shr
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64Shr(Node* node) {
+   VisitWord64Shift(this, node, kX64Shr);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitWord32Sar(Node* node) {
+@@ -646,6 +653,7 @@ void InstructionSelector::VisitWord32Sar
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64Sar(Node* node) {
+   X64OperandGenerator g(this);
+   Int64BinopMatcher m(node);
+@@ -718,6 +726,7 @@ void InstructionSelector::VisitWord64Sar
+   }
+   VisitWord64Shift(this, node, kX64Sar);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitWord32Ror(Node* node) {
+@@ -725,15 +734,19 @@ void InstructionSelector::VisitWord32Ror
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64Ror(Node* node) {
+   VisitWord64Shift(this, node, kX64Ror);
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64Clz(Node* node) {
+   X64OperandGenerator g(this);
+   Emit(kX64Lzcnt, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitWord32Clz(Node* node) {
+@@ -742,10 +755,12 @@ void InstructionSelector::VisitWord32Clz
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64Ctz(Node* node) {
+   X64OperandGenerator g(this);
+   Emit(kX64Tzcnt, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitWord32Ctz(Node* node) {
+@@ -757,7 +772,9 @@ void InstructionSelector::VisitWord32Ctz
+ void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
++#endif
+ 
+ void InstructionSelector::VisitWord64ReverseBytes(Node* node) { UNREACHABLE(); }
+ 
+@@ -769,10 +786,12 @@ void InstructionSelector::VisitWord32Pop
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitWord64Popcnt(Node* node) {
+   X64OperandGenerator g(this);
+   Emit(kX64Popcnt, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+ }
++#endif
+ 
+ void InstructionSelector::VisitInt32Add(Node* node) {
+   X64OperandGenerator g(this);
+@@ -791,6 +810,7 @@ void InstructionSelector::VisitInt32Add(
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitInt64Add(Node* node) {
+   X64OperandGenerator g(this);
+ 
+@@ -806,8 +826,10 @@ void InstructionSelector::VisitInt64Add(
+   // No leal pattern match, use addq
+   VisitBinop(this, node, kX64Add);
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitInt64AddWithOverflow(Node* node) {
+   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
+     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
+@@ -816,6 +838,7 @@ void InstructionSelector::VisitInt64AddW
+   FlagsContinuation cont;
+   VisitBinop(this, node, kX64Add, &cont);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitInt32Sub(Node* node) {
+@@ -837,6 +860,7 @@ void InstructionSelector::VisitInt32Sub(
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitInt64Sub(Node* node) {
+   X64OperandGenerator g(this);
+   Int64BinopMatcher m(node);
+@@ -854,8 +878,10 @@ void InstructionSelector::VisitInt64Sub(
+     VisitBinop(this, node, kX64Sub);
+   }
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitInt64SubWithOverflow(Node* node) {
+   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
+     FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
+@@ -864,6 +890,7 @@ void InstructionSelector::VisitInt64SubW
+   FlagsContinuation cont;
+   VisitBinop(this, node, kX64Sub, &cont);
+ }
++#endif
+ 
+ 
+ namespace {
+@@ -943,9 +970,11 @@ void InstructionSelector::VisitInt32MulW
+   VisitBinop(this, node, kX64Imul32, &cont);
+ }
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitInt64Mul(Node* node) {
+   VisitMul(this, node, kX64Imul);
+ }
++#endif
+ 
+ void InstructionSelector::VisitInt32MulHigh(Node* node) {
+   VisitMulHigh(this, node, kX64ImulHigh32);
+@@ -957,9 +986,11 @@ void InstructionSelector::VisitInt32Div(
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitInt64Div(Node* node) {
+   VisitDiv(this, node, kX64Idiv);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitUint32Div(Node* node) {
+@@ -967,9 +998,11 @@ void InstructionSelector::VisitUint32Div
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitUint64Div(Node* node) {
+   VisitDiv(this, node, kX64Udiv);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitInt32Mod(Node* node) {
+@@ -977,9 +1010,11 @@ void InstructionSelector::VisitInt32Mod(
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitInt64Mod(Node* node) {
+   VisitMod(this, node, kX64Idiv);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitUint32Mod(Node* node) {
+@@ -987,9 +1022,11 @@ void InstructionSelector::VisitUint32Mod
+ }
+ 
+ 
+-void InstructionSelector::VisitUint64Mod(Node* node) {
++#if V8_TARGET_ARCH_64_BIT
++void InstructionSelector::VisitUint64Mod(Node* node) { //
+   VisitMod(this, node, kX64Udiv);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitUint32MulHigh(Node* node) {
+@@ -1045,6 +1082,7 @@ void InstructionSelector::VisitTruncateF
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitTryTruncateFloat32ToInt64(Node* node) {
+   X64OperandGenerator g(this);
+   InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
+@@ -1059,8 +1097,10 @@ void InstructionSelector::VisitTryTrunca
+ 
+   Emit(kSSEFloat32ToInt64, output_count, outputs, 1, inputs);
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitTryTruncateFloat64ToInt64(Node* node) {
+   X64OperandGenerator g(this);
+   InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
+@@ -1075,8 +1115,10 @@ void InstructionSelector::VisitTryTrunca
+ 
+   Emit(kSSEFloat64ToInt64, output_count, outputs, 1, inputs);
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitTryTruncateFloat32ToUint64(Node* node) {
+   X64OperandGenerator g(this);
+   InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
+@@ -1091,8 +1133,10 @@ void InstructionSelector::VisitTryTrunca
+ 
+   Emit(kSSEFloat32ToUint64, output_count, outputs, 1, inputs);
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitTryTruncateFloat64ToUint64(Node* node) {
+   X64OperandGenerator g(this);
+   InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
+@@ -1109,6 +1153,7 @@ void InstructionSelector::VisitTryTrunca
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
+   X64OperandGenerator g(this);
+   Node* const value = node->InputAt(0);
+@@ -1142,8 +1187,10 @@ void InstructionSelector::VisitChangeInt
+     Emit(kX64Movsxlq, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+   }
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
+   X64OperandGenerator g(this);
+   Node* value = node->InputAt(0);
+@@ -1179,6 +1226,7 @@ void InstructionSelector::VisitChangeUin
+   }
+   Emit(kX64Movl, g.DefineAsRegister(node), g.Use(value));
+ }
++#endif
+ 
+ 
+ namespace {
+@@ -1239,6 +1287,7 @@ void InstructionSelector::VisitTruncateF
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
+   X64OperandGenerator g(this);
+   Node* value = node->InputAt(0);
+@@ -1260,6 +1309,7 @@ void InstructionSelector::VisitTruncateI
+   }
+   Emit(kX64Movl, g.DefineAsRegister(node), g.Use(value));
+ }
++#endif
+ 
+ void InstructionSelector::VisitRoundFloat64ToInt32(Node* node) {
+   VisitRO(this, node, kSSEFloat64ToInt32);
+@@ -1271,16 +1321,20 @@ void InstructionSelector::VisitRoundInt3
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitRoundInt64ToFloat32(Node* node) {
+   X64OperandGenerator g(this);
+   Emit(kSSEInt64ToFloat32, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitRoundInt64ToFloat64(Node* node) {
+   X64OperandGenerator g(this);
+   Emit(kSSEInt64ToFloat64, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitRoundUint32ToFloat32(Node* node) {
+@@ -1289,20 +1343,24 @@ void InstructionSelector::VisitRoundUint
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitRoundUint64ToFloat32(Node* node) {
+   X64OperandGenerator g(this);
+   InstructionOperand temps[] = {g.TempRegister()};
+   Emit(kSSEUint64ToFloat32, g.DefineAsRegister(node), g.Use(node->InputAt(0)),
+        arraysize(temps), temps);
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitRoundUint64ToFloat64(Node* node) {
+   X64OperandGenerator g(this);
+   InstructionOperand temps[] = {g.TempRegister()};
+   Emit(kSSEUint64ToFloat64, g.DefineAsRegister(node), g.Use(node->InputAt(0)),
+        arraysize(temps), temps);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitBitcastFloat32ToInt32(Node* node) {
+@@ -1311,10 +1369,12 @@ void InstructionSelector::VisitBitcastFl
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitBitcastFloat64ToInt64(Node* node) {
+   X64OperandGenerator g(this);
+   Emit(kX64BitcastDL, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitBitcastInt32ToFloat32(Node* node) {
+@@ -1323,11 +1383,11 @@ void InstructionSelector::VisitBitcastIn
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitBitcastInt64ToFloat64(Node* node) {
+   X64OperandGenerator g(this);
+   Emit(kX64BitcastLD, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+ }
+-
+ #endif //V8_TARGET_ARCH_64_BIT
+ 
+ #if V8_TARGET_ARCH_32_BIT
+@@ -2050,7 +2110,8 @@ void InstructionSelector::VisitUint32Les
+ }
+ 
+ 
+-void InstructionSelector::VisitWord64Equal(Node* const node) {
++#if V8_TARGET_ARCH_64_BIT
++void InstructionSelector::VisitWord64Equal(Node* const node) { //ot
+   FlagsContinuation cont = FlagsContinuation::ForSet(kEqual, node);
+   Int64BinopMatcher m(node);
+   if (m.right().Is(0)) {
+@@ -2070,6 +2131,7 @@ void InstructionSelector::VisitWord64Equ
+   }
+   VisitWord64Compare(this, node, &cont);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitInt32AddWithOverflow(Node* node) {
+@@ -2092,30 +2154,38 @@ void InstructionSelector::VisitInt32SubW
+ }
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitInt64LessThan(Node* node) {
+   FlagsContinuation cont = FlagsContinuation::ForSet(kSignedLessThan, node);
+   VisitWord64Compare(this, node, &cont);
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitInt64LessThanOrEqual(Node* node) {
+   FlagsContinuation cont =
+       FlagsContinuation::ForSet(kSignedLessThanOrEqual, node);
+   VisitWord64Compare(this, node, &cont);
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitUint64LessThan(Node* node) {
+   FlagsContinuation cont = FlagsContinuation::ForSet(kUnsignedLessThan, node);
+   VisitWord64Compare(this, node, &cont);
+ }
++#endif
+ 
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void InstructionSelector::VisitUint64LessThanOrEqual(Node* node) {
+   FlagsContinuation cont =
+       FlagsContinuation::ForSet(kUnsignedLessThanOrEqual, node);
+   VisitWord64Compare(this, node, &cont);
+ }
++#endif
+ 
+ 
+ void InstructionSelector::VisitFloat32Equal(Node* node) {

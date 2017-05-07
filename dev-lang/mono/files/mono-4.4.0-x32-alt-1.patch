@@ -1,0 +1,70 @@
+diff -urp mono-4.4.0.orig/libgc/include/private/gc_locks.h mono-4.4.0/libgc/include/private/gc_locks.h
+--- mono-4.4.0.orig/libgc/include/private/gc_locks.h	2016-02-22 07:08:44.000000000 -0800
++++ mono-4.4.0/libgc/include/private/gc_locks.h	2016-10-23 17:38:56.510545484 -0700
+@@ -437,7 +437,7 @@
+ 						       GC_word new_val) 
+          {
+ 	   char result;
+-	   __asm__ __volatile__("lock; cmpxchgq %2, %0; setz %1"
++	   __asm__ __volatile__("lock; cmpxchg %2, %0; setz %1"
+ 	    	: "+m"(*(addr)), "=r"(result)
+ 		: "r" (new_val), "a"(old) : "memory");
+ 	   return (GC_bool) result;
+diff -urp mono-4.4.0.orig/libgc/os_dep.c mono-4.4.0/libgc/os_dep.c
+--- mono-4.4.0.orig/libgc/os_dep.c	2016-02-22 07:08:44.000000000 -0800
++++ mono-4.4.0/libgc/os_dep.c	2016-10-23 17:44:02.018207299 -0700
+@@ -41,7 +41,9 @@
+ #     else /* not 2 <= __GLIBC__ */
+         /* libc5 doesn't have <sigcontext.h>: go directly with the kernel   */
+         /* one.  Check LINUX_VERSION_CODE to see which we should reference. */
+-#       include <asm/sigcontext.h>
++#       if defined(__GLIBC__)
++#         include <asm/sigcontext.h>
++#       endif
+ #     endif /* 2 <= __GLIBC__ */
+ #   endif
+ # endif
+diff -urp mono-4.4.0.orig/mono/mini/mini-codegen.c mono-4.4.0/mono/mini/mini-codegen.c
+--- mono-4.4.0.orig/mono/mini/mini-codegen.c	2016-03-16 09:00:32.000000000 -0700
++++ mono-4.4.0/mono/mini/mini-codegen.c	2016-10-23 18:47:50.814885160 -0700
+@@ -166,12 +166,18 @@ mono_regstate_alloc_int (MonoRegState *r
+ 
+ #if defined(__x86_64__) && defined(__GNUC__)
+  {
++#if defined(__ILP32__)
++	int i;
++#define BSF_INSTR_SUFFIX "l"
++#else
+ 	guint64 i;
++#define BSF_INSTR_SUFFIX "q"
++#endif
+ 
+ 	if (mask == 0)
+ 		return -1;
+ 
+-	__asm__("bsfq %1,%0\n\t"
++	__asm__("bsf"BSF_INSTR_SUFFIX" %1,%0\n\t"
+ 			: "=r" (i) : "rm" (mask));
+ 
+ 	rs->ifree_mask &= ~ ((regmask_t)1 << i);
+diff -urp mono-4.4.0.orig/mono/utils/monobitset.c mono-4.4.0/mono/utils/monobitset.c
+--- mono-4.4.0.orig/mono/utils/monobitset.c	2016-02-22 07:08:49.000000000 -0800
++++ mono-4.4.0/mono/utils/monobitset.c	2016-10-23 18:08:36.778386663 -0700
+@@ -281,7 +281,7 @@ my_g_bit_nth_lsf (gsize mask, gint nth_b
+ #define USE_X86_32BIT_INSTRUCTIONS 1
+ #endif
+ 
+-#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
++#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS) || (defined(__x86_64) && defined(__ILP32__))
+  {
+ 	 int r;
+ 	 /* This depends on mask != 0 */
+@@ -311,7 +311,7 @@ static inline gint
+ my_g_bit_nth_lsf_nomask (gsize mask)
+ {
+ 	/* Mask is expected to be != 0 */
+-#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
++#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS) || (defined(__x86_64) && defined(__ILP32__))
+ 	int r;
+ 
+ 	__asm__("bsfl %1,%0\n\t"

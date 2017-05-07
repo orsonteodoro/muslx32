@@ -20,18 +20,21 @@ RDEPEND=">=sys-libs/ncurses-5.7-r7
 	selinux? ( sys-libs/libselinux )"
 DEPEND="${RDEPEND}
 	>=sys-devel/libtool-2.2.6b
-	nls? ( sys-devel/gettext )"
+	nls? ( sys-devel/gettext )
+	sys-devel/automake:1.14" #line added by muslx32 overlay
 
 DOCS="AUTHORS ChangeLog NEWS README"
 
 src_prepare() {
 	epatch "${FILESDIR}/${P}-fuser_typo_fix.patch"
 	epatch "${FILESDIR}/${P}-sysmacros.patch"
-	epatch_user
-	epatch "${FILESDIR}"/${PN}-22.21-r2-musl.patch
-	sed -i "s|AC_FUNC_MALLOC|#AC_FUNC_MALLOC|g" configure.ac
-	sed -i "s|AC_FUNC_REALLOC|#AC_FUNC_REALLOC|g" configure.ac
-	eautoreconf
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		epatch_user
+		epatch "${FILESDIR}"/${PN}-22.21-r2-musl.patch
+		sed -i "s|AC_FUNC_MALLOC|#AC_FUNC_MALLOC|g" configure.ac
+		sed -i "s|AC_FUNC_REALLOC|#AC_FUNC_REALLOC|g" configure.ac
+		eautoreconf
+	fi
 }
 
 src_configure() {

@@ -1,0 +1,14 @@
+Only in M2Crypto-0.24.0/SWIG: _m2crypto_wrap.c
+Only in M2Crypto-0.24.0: build
+diff -urp M2Crypto-0.24.0.orig/setup.py M2Crypto-0.24.0/setup.py
+--- M2Crypto-0.24.0.orig/setup.py	2016-03-20 22:34:07.000000000 +0000
++++ M2Crypto-0.24.0/setup.py	2017-05-07 20:27:45.534267619 +0000
+@@ -100,7 +100,7 @@ class _M2CryptoBuildExt(build_ext.build_
+                 arch = '__powerpc__'
+             else:
+                 arch = '__%s__' % mach
+-            self.swig_opts.append('-D%s' % arch)
++            self.swig_opts.append('-D__ILP32__ -D%s' % arch)
+ 
+         self.swig_opts.extend(['-I%s' % i for i in self.include_dirs])
+         self.swig_opts.append('-includeall')

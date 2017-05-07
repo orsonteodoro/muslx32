@@ -46,23 +46,26 @@ src_prepare() {
 	#Use -r1 for newer piepatchet that use DRIVER_SELF_SPECS for the hardened specs.
 	[[ ${CHOST} == ${CTARGET} ]] && epatch "${FILESDIR}"/gcc-spec-env-r1.patch
 
-	epatch "${FILESDIR}"/musl/4.9.3/aarch64.patch
-	epatch "${FILESDIR}"/musl/4.9.3/arm.patch
-	epatch "${FILESDIR}"/musl/4.9.3/gcc-autoconf-musl.patch
-	epatch "${FILESDIR}"/musl/4.9.3/gcc-config-musl.patch
-	epatch "${FILESDIR}"/musl/4.9.3/gcc-ssp.patch
-	epatch "${FILESDIR}"/musl/4.9.3/gomp-posix.patch
-	epatch "${FILESDIR}"/musl/4.9.3/gthread.patch
-	epatch "${FILESDIR}"/musl/4.9.3/kill-fixincludes.patch
-	epatch "${FILESDIR}"/musl/4.9.3/libstdc++-generic.patch
-	epatch "${FILESDIR}"/musl/4.9.3/microblaze-size_t.patch
-	epatch "${FILESDIR}"/musl/4.9.3/microblaze.patch
-	epatch "${FILESDIR}"/musl/4.9.3/mips.patch
-	epatch "${FILESDIR}"/musl/4.9.3/powerpc.patch
-	epatch "${FILESDIR}"/musl/4.9.3/sh.patch
-	epatch "${FILESDIR}"/musl/4.9.3/unwind-dliterate.patch
-	epatch "${FILESDIR}"/musl/4.9.3/x86.patch
-	epatch "${FILESDIR}"/musl/4.9.3/x86-Fix-posix_memalign-declaration-in-mm_malloc.h.patch #for dev-cpp/libcmis
-	epatch "${FILESDIR}"/${PN}-4.9.3-musl-res_state.patch
-	epatch "${FILESDIR}"/${PN}-4.9.3-x32-ms_abi.patch
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		epatch "${FILESDIR}"/musl/4.9.3/aarch64.patch
+		epatch "${FILESDIR}"/musl/4.9.3/arm.patch
+		epatch "${FILESDIR}"/musl/4.9.3/gcc-autoconf-musl.patch
+		epatch "${FILESDIR}"/musl/4.9.3/gcc-config-musl.patch
+		epatch "${FILESDIR}"/musl/4.9.3/gcc-ssp.patch
+		epatch "${FILESDIR}"/musl/4.9.3/gomp-posix.patch
+		epatch "${FILESDIR}"/musl/4.9.3/gthread.patch
+		epatch "${FILESDIR}"/musl/4.9.3/kill-fixincludes.patch
+		epatch "${FILESDIR}"/musl/4.9.3/libstdc++-generic.patch
+		epatch "${FILESDIR}"/musl/4.9.3/microblaze-size_t.patch
+		epatch "${FILESDIR}"/musl/4.9.3/microblaze.patch
+		epatch "${FILESDIR}"/musl/4.9.3/mips.patch
+		epatch "${FILESDIR}"/musl/4.9.3/powerpc.patch
+		epatch "${FILESDIR}"/musl/4.9.3/sh.patch
+		epatch "${FILESDIR}"/musl/4.9.3/unwind-dliterate.patch
+		#epatch "${FILESDIR}"/musl/4.9.3/vis_hide.diff
+		epatch "${FILESDIR}"/musl/4.9.3/x86.patch
+		epatch "${FILESDIR}"/musl/4.9.3/x86-Fix-posix_memalign-declaration-in-mm_malloc.h.patch #for dev-cpp/libcmis
+		epatch "${FILESDIR}"/${PN}-4.9.3-musl-res_state.patch
+		epatch "${FILESDIR}"/${PN}-4.9.3-x32-ms_abi.patch #for wine / testing
+	fi
 }

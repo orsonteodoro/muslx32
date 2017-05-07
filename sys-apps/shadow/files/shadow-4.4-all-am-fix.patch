@@ -1,0 +1,13 @@
+diff -urp shadow-4.4.orig/man/po/Makefile.in shadow-4.4/man/po/Makefile.in
+--- shadow-4.4.orig/man/po/Makefile.in	2016-09-18 23:18:21.000000000 +0000
++++ shadow-4.4/man/po/Makefile.in	2017-04-22 19:07:11.322221605 +0000
+@@ -54,7 +54,8 @@ remove-potcdate.sin: $(top_srcdir)/po/re
+ 	mv t-$@ $@
+ 
+ all: all-yes
+-
++all-am:
++install-am:
+ all-yes: stamp-po
+ all-no:
+ 

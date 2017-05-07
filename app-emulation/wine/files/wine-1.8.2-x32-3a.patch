@@ -1,0 +1,84 @@
+diff -urp wine-1.8.2.orig/include/msvcrt/crtdefs.h wine-1.8.2/include/msvcrt/crtdefs.h
+--- wine-1.8.2.orig/include/msvcrt/crtdefs.h	2016-10-22 21:20:06.607412743 -0700
++++ wine-1.8.2/include/msvcrt/crtdefs.h	2016-10-22 21:33:25.908882413 -0700
+@@ -59,7 +59,11 @@
+ #   error You need to define __stdcall for your compiler
+ #  endif
+ # elif defined(__x86_64__) && defined (__GNUC__)
+-#  define __stdcall __attribute__((ms_abi))
++#  if defined(__X32__)
++#    define __stdcall
++#  else
++#    define __stdcall __attribute__((ms_abi))
++#  endif
+ # else
+ #  define __stdcall
+ # endif
+@@ -73,14 +77,18 @@
+ #   define __cdecl __attribute__((__cdecl__))
+ #  endif
+ # elif defined(__x86_64__) && defined (__GNUC__)
+-#  define __cdecl __attribute__((ms_abi))
++#  if defined(__X32__)
++#    define __cdecl
++#  else
++#    define __cdecl __attribute__((ms_abi))
++#  endif
+ # elif !defined(_MSC_VER)
+ #  define __cdecl
+ # endif
+ #endif /* __cdecl */
+ 
+ #ifndef __ms_va_list
+-# if defined(__x86_64__) && defined (__GNUC__)
++# if (defined(__x86_64__) && !defined(__X32__)) && defined (__GNUC__)
+ #  define __ms_va_list __builtin_ms_va_list
+ #  define __ms_va_start(list,arg) __builtin_ms_va_start(list,arg)
+ #  define __ms_va_end(list) __builtin_ms_va_end(list)
+Only in wine-1.8.2/include/msvcrt: crtdefs.h.orig
+diff -urp wine-1.8.2.orig/include/windef.h wine-1.8.2/include/windef.h
+--- wine-1.8.2.orig/include/windef.h	2016-04-12 04:42:53.000000000 -0700
++++ wine-1.8.2/include/windef.h	2016-10-22 21:33:25.908882413 -0700
+@@ -37,7 +37,7 @@ extern "C" {
+ 
+ /* Calling conventions definitions */
+ 
+-#if (defined(__x86_64__) || defined(__powerpc64__) || defined(__sparc64__) || defined(__aarch64__)) && !defined(_WIN64)
++#if ((defined(__x86_64__) && !defined(__X32__)) || defined(__powerpc64__) || defined(__sparc64__) || defined(__aarch64__)) && !defined(_WIN64)
+ #define _WIN64
+ #endif
+ 
+@@ -64,7 +64,11 @@ extern "C" {
+ #   error You need to define __stdcall for your compiler
+ #  endif
+ # elif defined(__x86_64__) && defined (__GNUC__)
+-#  define __stdcall __attribute__((ms_abi))
++#  if defined(__X32__)
++#    define __stdcall
++#  else
++#    define __stdcall __attribute__((ms_abi))
++#  endif
+ # else  /* __i386__ */
+ #  define __stdcall
+ # endif  /* __i386__ */
+@@ -78,14 +82,18 @@ extern "C" {
+ #   define __cdecl __attribute__((__cdecl__))
+ #  endif
+ # elif defined(__x86_64__) && defined (__GNUC__)
+-#  define __cdecl __attribute__((ms_abi))
++#  if defined(__X32__)
++#    define __cdecl
++#  else
++#    define __cdecl __attribute__((ms_abi))
++#  endif
+ # elif !defined(_MSC_VER)
+ #  define __cdecl
+ # endif
+ #endif /* __cdecl */
+ 
+ #ifndef __ms_va_list
+-# if defined(__x86_64__) && defined (__GNUC__)
++# if (defined(__x86_64__) && !defined(__X32__)) && defined (__GNUC__)
+ #  define __ms_va_list __builtin_ms_va_list
+ #  define __ms_va_start(list,arg) __builtin_ms_va_start(list,arg)
+ #  define __ms_va_end(list) __builtin_ms_va_end(list)

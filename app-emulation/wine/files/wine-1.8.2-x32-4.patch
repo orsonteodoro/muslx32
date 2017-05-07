@@ -1,0 +1,132 @@
+diff -ur wine-1.8.2.orig/include/basetsd.h wine-1.8.2/include/basetsd.h
+--- wine-1.8.2.orig/include/basetsd.h	2016-08-29 15:22:35.328470547 -0700
++++ wine-1.8.2/include/basetsd.h	2016-08-29 19:37:07.467226070 -0700
+@@ -93,7 +93,8 @@
+ typedef unsigned __int64 ULONG64, *PULONG64;
+ typedef unsigned __int64 DWORD64, *PDWORD64;
+ #else
+-#if defined(__X32__)
++#if defined (__X32__)
++typedef signed __int64   DECLSPEC_ALIGN(4) INT64, *PINT64;
+ typedef signed __int64   DECLSPEC_ALIGN(4) INT64, *PINT64;
+ typedef unsigned __int64 DECLSPEC_ALIGN(4) UINT64, *PUINT64;
+ typedef signed __int64   DECLSPEC_ALIGN(4) LONG64, *PLONG64;
+diff -ur wine-1.8.2.orig/include/winbase.h wine-1.8.2/include/winbase.h
+--- wine-1.8.2.orig/include/winbase.h	2016-08-29 15:22:34.982470552 -0700
++++ wine-1.8.2/include/winbase.h	2016-08-29 16:35:11.695400810 -0700
+@@ -2876,7 +2876,11 @@
+ {
+     PVOID ret;
+ #ifdef __x86_64__
++#if defined(__X32__)
++    __asm__ __volatile__( "lock; xchgl %0,(%1)" : "=r" (ret) :"r" (dest), "0" (val) : "memory" );
++#else
+     __asm__ __volatile__( "lock; xchgq %0,(%1)" : "=r" (ret) :"r" (dest), "0" (val) : "memory" );
++#endif
+ #else
+     do ret = *dest; while (!__sync_bool_compare_and_swap( dest, ret, val ));
+ #endif
+@@ -2950,7 +2954,11 @@
+ {
+     HANDLE *pdb;
+ #ifdef __x86_64__
++#if defined(__X32__)
++    __asm__ __volatile__( ".byte 0x65\n\tmovl 0x60,%0" : "=r" (pdb) );
++#else
+     __asm__ __volatile__( ".byte 0x65\n\tmovq 0x60,%0" : "=r" (pdb) );
++#endif
+     return pdb[0x30 / sizeof(HANDLE)];  /* get dword at offset 0x30 in pdb */
+ #else
+     __asm__ __volatile__( ".byte 0x64\n\tmovl 0x30,%0" : "=r" (pdb) );
+diff -ur wine-1.8.2.orig/include/wine/port.h wine-1.8.2/include/wine/port.h
+--- wine-1.8.2.orig/include/wine/port.h	2016-04-12 04:42:53.000000000 -0700
++++ wine-1.8.2/include/wine/port.h	2016-08-29 22:39:36.134050804 -0700
+@@ -57,7 +57,7 @@
+  */
+ 
+ #if !defined(_MSC_VER) && !defined(__int64)
+-#  if defined(__x86_64__) || defined(__aarch64__) || defined(_WIN64)
++#  if (defined(__x86_64__) && !defined(__X32__)) || defined(__aarch64__) || defined(_WIN64)
+ #    define __int64 long
+ #  else
+ #    define __int64 long long
+@@ -378,7 +378,7 @@
+ static inline void *interlocked_cmpxchg_ptr( void **dest, void *xchg, void *compare )
+ {
+     void *ret;
+-#ifdef __x86_64__
++#if defined(__x86_64__) && !defined(__X32__)
+     __asm__ __volatile__( "lock; cmpxchgq %2,(%1)"
+                           : "=a" (ret) : "r" (dest), "r" (xchg), "0" (compare) : "memory" );
+ #else
+@@ -399,7 +399,7 @@
+ static inline void *interlocked_xchg_ptr( void **dest, void *val )
+ {
+     void *ret;
+-#ifdef __x86_64__
++#if defined(__x86_64__) && !defined(__X32__)
+     __asm__ __volatile__( "lock; xchgq %0,(%1)"
+                           : "=r" (ret) :"r" (dest), "0" (val) : "memory" );
+ #else
+diff -ur wine-1.8.2.orig/include/winnt.h wine-1.8.2/include/winnt.h
+--- wine-1.8.2.orig/include/winnt.h	2016-08-29 15:22:35.337470547 -0700
++++ wine-1.8.2/include/winnt.h	2016-08-29 19:53:02.826210777 -0700
+@@ -461,8 +461,8 @@
+ typedef unsigned __int64 ULONGLONG, *PULONGLONG;
+ # else
+ #if defined(__X32__)
+-typedef signed __int64   DECLSPEC_ALIGN(4) LONGLONG,   *PLONGLONG;
+-typedef unsigned __int64 DECLSPEC_ALIGN(4) ULONGLONG,  *PULONGLONG;
++typedef signed __int64   LONGLONG,   *PLONGLONG;
++typedef unsigned __int64 ULONGLONG,  *PULONGLONG;
+ #else
+ typedef signed __int64   DECLSPEC_ALIGN(8) LONGLONG,   *PLONGLONG;
+ typedef unsigned __int64 DECLSPEC_ALIGN(8) ULONGLONG,  *PULONGLONG;
+@@ -2337,7 +2337,11 @@
+ static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
+ {
+     struct _TEB *teb;
++#if defined(__X32__)
++    __asm__(".byte 0x65\n\tmovl (0x30),%0" : "=r" (teb));
++#else
+     __asm__(".byte 0x65\n\tmovq (0x30),%0" : "=r" (teb));
++#endif
+     return teb;
+ }
+ #elif defined(__x86_64__) && defined(_MSC_VER)
+diff -ur wine-1.8.2.orig/loader/preloader.c wine-1.8.2/loader/preloader.c
+--- wine-1.8.2.orig/loader/preloader.c	2016-04-12 04:42:53.000000000 -0700
++++ wine-1.8.2/loader/preloader.c	2016-08-29 16:40:18.253395902 -0700
+@@ -108,7 +108,7 @@
+ 
+ static struct wine_preload_info preload_info[] =
+ {
+-#ifdef __i386__
++#if defined(__i386__) || defined(__X32__)
+     { (void *)0x00000000, 0x00010000 },  /* low 64k */
+     { (void *)0x00010000, 0x00100000 },  /* DOS area */
+     { (void *)0x00110000, 0x67ef0000 },  /* low memory area */
+diff -ur wine-1.8.2.orig/tools/winebuild/main.c wine-1.8.2/tools/winebuild/main.c
+--- wine-1.8.2.orig/tools/winebuild/main.c	2016-08-29 15:22:35.306470547 -0700
++++ wine-1.8.2/tools/winebuild/main.c	2016-08-29 16:31:26.970404407 -0700
+@@ -545,10 +545,20 @@
+     switch (target_cpu)
+     {
+     case CPU_x86:
++#if defined(__X32__)
++        if (force_pointer_size == 4) target_cpu = CPU_x86_64;
++        if (force_pointer_size == 8) target_cpu = CPU_x86_64;
++#else
+         if (force_pointer_size == 8) target_cpu = CPU_x86_64;
++#endif
+         break;
+     case CPU_x86_64:
++#if defined(__X32__)
++        if (force_pointer_size == 4) target_cpu = CPU_x86_64;
++        if (force_pointer_size == 8) target_cpu = CPU_x86_64;
++#else
+         if (force_pointer_size == 4) target_cpu = CPU_x86;
++#endif
+         break;
+     default:
+         if (force_pointer_size == 8)

@@ -1,0 +1,138 @@
+X32 support patch for compiler-rt.  Applies against current trunk.
+Steven Newbury steve at snewbury.org.uk
+---
+--- llvm-3.5.0.src.orig/projects/compiler-rt/make/platform/clang_linux.mk	2014-07-09 17:53:20.000000000 -0700
++++ llvm-3.5.0.src/projects/compiler-rt/make/platform/clang_linux.mk	2016-10-18 11:26:47.154867098 -0700
+@@ -42,6 +42,23 @@ ifeq ($(CompilerTargetArch),i386)
+   endif
+ else
+   SupportedArches := x86_64
++  # x86-64 arch has two ABIs 64 bit x86-64 and 32 bit x32
++  ifeq ($(lastword $(subst -gnu, ,$(CompilerTargetTriple))),x32)
++    SupportedArches := x32
++    ifeq ($(call TryCompile,$(CC),$(test_source),-m64),0)
++      SupportedArches += x86_64
++    endif
++  else ifeq ($(lastword $(subst -musl, ,$(CompilerTargetTriple))),x32)
++    SupportedArches := x32
++    ifeq ($(call TryCompile,$(CC),$(test_source),-m64),0)
++      SupportedArches += x86_64
++    endif
++  else
++    SupportedArches := x86_64
++    ifeq ($(call TryCompile,$(CC),$(test_source),-mx32),0)
++      SupportedArches += x32
++    endif
++  endif
+   ifeq ($(call TryCompile,$(CC),$(test_source),-m32),0)
+     SupportedArches += i386
+   endif
+@@ -80,6 +92,22 @@ endif
+ 
+ endif
+ 
++# Build runtime libraries for x32.
++ifeq ($(call contains,$(SupportedArches),x32),true)
++Configs += builtins-x32 profile-x32 san-x32 asan-x32 tsan-x32 \
++           msan-x32 ubsan-x32 ubsan_cxx-x32 dfsan-x32 lsan-x32
++Arch.builtins-x32 := x32
++Arch.profile-x32 := x32
++Arch.san-x32 := x32
++Arch.asan-x32 := x32
++Arch.tsan-x32 := x32
++Arch.msan-x32 := x32
++Arch.ubsan-x32 := x32
++Arch.ubsan_cxx-x32 := x32
++Arch.dfsan-x32 := x32
++Arch.lsan-x32 := x32
++endif
++
+ ifneq ($(LLVM_ANDROID_TOOLCHAIN_DIR),)
+ Configs += asan-arm-android
+ Arch.asan-arm-android := arm-android
+@@ -94,22 +122,33 @@ SANITIZER_CFLAGS := -fPIE -fno-builtin -
+ 
+ CFLAGS.builtins-i386 := $(CFLAGS) -m32
+ CFLAGS.builtins-x86_64 := $(CFLAGS) -m64
++CFLAGS.builtins-x32 := $(CFLAGS) -mx32
+ CFLAGS.profile-i386 := $(CFLAGS) -m32
+ CFLAGS.profile-x86_64 := $(CFLAGS) -m64
++CFLAGS.profile-x32 := $(CFLAGS) -mx32
+ CFLAGS.san-i386 := $(CFLAGS) -m32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.san-x86_64 := $(CFLAGS) -m64 $(SANITIZER_CFLAGS) -fno-rtti
++CFLAGS.san-x32 := $(CFLAGS) -mx32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.asan-i386 := $(CFLAGS) -m32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.asan-x86_64 := $(CFLAGS) -m64 $(SANITIZER_CFLAGS) -fno-rtti
++CFLAGS.asan-x32 := $(CFLAGS) -mx32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.asan_cxx-i386 := $(CFLAGS) -m32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.asan_cxx-x86_64 := $(CFLAGS) -m64 $(SANITIZER_CFLAGS) -fno-rtti
++CFLAGS.asan_cxx-x32 := $(CFLAGS) -mx32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.tsan-x86_64 := $(CFLAGS) -m64 $(SANITIZER_CFLAGS) -fno-rtti
++CFLAGS.tsan-x32 := $(CFLAGS) -mx32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.msan-x86_64 := $(CFLAGS) -m64 $(SANITIZER_CFLAGS) -fno-rtti
++CFLAGS.msan-x32 := $(CFLAGS) -mx32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.ubsan-i386 := $(CFLAGS) -m32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.ubsan-x86_64 := $(CFLAGS) -m64 $(SANITIZER_CFLAGS) -fno-rtti
++CFLAGS.ubsan-x32 := $(CFLAGS) -mx32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.ubsan_cxx-i386 := $(CFLAGS) -m32 $(SANITIZER_CFLAGS)
+ CFLAGS.ubsan_cxx-x86_64 := $(CFLAGS) -m64 $(SANITIZER_CFLAGS)
++CFLAGS.ubsan_cxx-x32 := $(CFLAGS) -mx32 $(SANITIZER_CFLAGS)
+ CFLAGS.dfsan-x86_64 := $(CFLAGS) -m64 $(SANITIZER_CFLAGS) -fno-rtti
++CFLAGS.dfsan-x32 := $(CFLAGS) -mx32 $(SANITIZER_CFLAGS) -fno-rtti
+ CFLAGS.lsan-x86_64 := $(CFLAGS) -m64 $(SANITIZER_CFLAGS) -fno-rtti
++CFLAGS.lsan-x32 := $(CFLAGS) -mx32 $(SANITIZER_CFLAGS) -fno-rtti
+ 
+ SHARED_LIBRARY.asan-arm-android := 1
+ ANDROID_COMMON_FLAGS := -target arm-linux-androideabi \
+@@ -126,21 +165,28 @@ LDFLAGS.asan-arm-android := $(LDFLAGS) $
+ # enough support to build the sanitizers or profile runtimes.
+ CFLAGS.builtins-i386 += --sysroot=$(ProjSrcRoot)/SDKs/linux
+ CFLAGS.builtins-x86_64 += --sysroot=$(ProjSrcRoot)/SDKs/linux
++CFLAGS.builtins-x32 += --sysroot=$(ProjSrcRoot)/SDKs/linux
+ 
+ FUNCTIONS.builtins-i386 := $(CommonFunctions) $(ArchFunctions.i386)
+ FUNCTIONS.builtins-x86_64 := $(CommonFunctions) $(ArchFunctions.x86_64)
++FUNCTIONS.builtins-x32 := $(CommonFunctions) $(ArchFunctions.x32)
+ FUNCTIONS.profile-i386 := GCDAProfiling InstrProfiling InstrProfilingBuffer \
+                           InstrProfilingFile InstrProfilingPlatformOther \
+                           InstrProfilingRuntime
+ FUNCTIONS.profile-x86_64 := $(FUNCTIONS.profile-i386)
++FUNCTIONS.profile-x32 := $(FUNCTIONS.profile-x32)
+ FUNCTIONS.san-i386 := $(SanitizerCommonFunctions)
+ FUNCTIONS.san-x86_64 := $(SanitizerCommonFunctions)
++FUNCTIONS.san-x32 := $(SanitizerCommonFunctions)
+ FUNCTIONS.asan-i386 := $(AsanFunctions) $(InterceptionFunctions) \
+                                         $(SanitizerCommonFunctions)
+ FUNCTIONS.asan-x86_64 := $(AsanFunctions) $(InterceptionFunctions) \
+                          $(SanitizerCommonFunctions) $(LsanCommonFunctions)
++FUNCTIONS.asan-x32 := $(AsanFunctions) $(InterceptionFunctions) \
++                         $(SanitizerCommonFunctions) $(LsanCommonFunctions)
+ FUNCTIONS.asan_cxx-i386 := $(AsanCXXFunctions)
+ FUNCTIONS.asan_cxx-x86_64 := $(AsanCXXFunctions)
++FUNCTIONS.asan_cxx-x32 := $(AsanCXXFunctions)
+ FUNCTIONS.asan-arm-android := $(AsanFunctions) $(AsanCXXFunctions) \
+                               $(InterceptionFunctions) \
+                               $(SanitizerCommonFunctions)
+@@ -148,14 +194,22 @@ FUNCTIONS.tsan-x86_64 := $(TsanFunctions
+                                           $(SanitizerCommonFunctions)
+ FUNCTIONS.msan-x86_64 := $(MsanFunctions) $(InterceptionFunctions) \
+                                           $(SanitizerCommonFunctions)
++FUNCTIONS.msan-x32 := $(MsanFunctions) $(InterceptionFunctions) \
++                                          $(SanitizerCommonFunctions)
+ FUNCTIONS.ubsan-i386 := $(UbsanFunctions)
+ FUNCTIONS.ubsan-x86_64 := $(UbsanFunctions)
++FUNCTIONS.ubsan-x32 := $(UbsanFunctions)
+ FUNCTIONS.ubsan_cxx-i386 := $(UbsanCXXFunctions)
+ FUNCTIONS.ubsan_cxx-x86_64 := $(UbsanCXXFunctions)
++FUNCTIONS.ubsan_cxx-x32 := $(UbsanCXXFunctions)
+ FUNCTIONS.dfsan-x86_64 := $(DfsanFunctions) $(InterceptionFunctions) \
+                                             $(SanitizerCommonFunctions)
++FUNCTIONS.dfsan-x32 := $(DfsanFunctions) $(InterceptionFunctions) \
++                                            $(SanitizerCommonFunctions)
+ FUNCTIONS.lsan-x86_64 := $(LsanFunctions) $(InterceptionFunctions) \
+                                           $(SanitizerCommonFunctions)
++FUNCTIONS.lsan-x32 := $(LsanFunctions) $(InterceptionFunctions) \
++                                          $(SanitizerCommonFunctions)
+ 
+ # Always use optimized variants.
+ OPTIMIZED := 1

@@ -36,12 +36,17 @@ src_configure() {
 	# Disable automagic dependency over libsigsegv; see bug #312351.
 	export ac_cv_libsigsegv=no
 
+	local myconf
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		myconf=( --with-included-regex )
+	fi
+
 	econf \
-		--with-included-regex \
 		--with-packager="Gentoo" \
 		--with-packager-version="${PVR}" \
 		--with-packager-bug-reports="https://bugs.gentoo.org/" \
-		$(use_enable nls)
+		$(use_enable nls) \
+		${myconf[@]}
 }
 
 src_test() {

@@ -1,0 +1,183 @@
+diff -ur chromium-52.0.2743.116.orig/v8/src/compiler/x64/code-generator-x64.cc chromium-52.0.2743.116/v8/src/compiler/x64/code-generator-x64.cc
+--- chromium-52.0.2743.116.orig/v8/src/compiler/x64/code-generator-x64.cc	2016-08-14 03:54:35.106877755 -0700
++++ chromium-52.0.2743.116/v8/src/compiler/x64/code-generator-x64.cc	2016-08-16 20:22:08.882163033 -0700
+@@ -1021,7 +1021,7 @@
+       } else {
+         __ addl(i.OutputRegister(0), i.InputRegister(2));
+       }
+-      __ adc(i.InputRegister(1), Operand(i.InputRegister(3)));
++      __ adcl(i.InputRegister(1), Operand(i.InputRegister(3)));
+       if (i.OutputRegister(1).code() != i.InputRegister(1).code()) {
+         __ Move(i.OutputRegister(1), i.InputRegister(1));
+       }
+diff -ur chromium-52.0.2743.116.orig/v8/src/compiler/x64/instruction-scheduler-x64.cc chromium-52.0.2743.116/v8/src/compiler/x64/instruction-scheduler-x64.cc
+--- chromium-52.0.2743.116.orig/v8/src/compiler/x64/instruction-scheduler-x64.cc	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/compiler/x64/instruction-scheduler-x32.cc	2016-08-16 18:30:55.885269855 -0700
+@@ -58,6 +58,14 @@
+     case kX64Tzcnt32:
+     case kX64Popcnt:
+     case kX64Popcnt32:
++#if V8_TARGET_ARCH_32_BIT
++    case kX64AddPair:
++    case kX64SubPair:
++    case kX64MulPair:
++    case kX64ShlPair:
++    case kX64ShrPair:
++    case kX64SarPair:
++#endif
+     case kSSEFloat32Cmp:
+     case kSSEFloat32Add:
+     case kSSEFloat32Sub:
+diff -ur chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64.cc chromium-52.0.2743.116/v8/src/x64/assembler-x64.cc
+--- chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64.cc	2016-08-14 03:54:36.450877733 -0700
++++ chromium-52.0.2743.116/v8/src/x64/assembler-x64.cc	2016-08-17 02:16:41.594822499 -0700
+@@ -288,15 +288,6 @@
+   }
+ }
+ 
+-#if V8_TARGET_ARCH_64_BIT
+-#else //V8_TARGET_ARCH_32_BIT
+-bool Operand::is_reg(Register reg) const {
+-  return ((buf_[0] & 0xF8) == 0xC0)  // addressing mode is register only.
+-      && ((buf_[0] & 0x07) == reg.code());  // register codes match.
+-}
+-#endif
+-
+-
+ // -----------------------------------------------------------------------------
+ // Implementation of Assembler.
+ 
+@@ -505,27 +496,6 @@
+   }
+ }
+ 
+-#if V8_TARGET_ARCH_64_BIT
+-#else //V8_TARGET_ARCH_32_BIT
+-void Assembler::emit_arith(int sel, Operand dst, const Immediate& x) {
+-  DCHECK((0 <= sel) && (sel <= 7));
+-  Register ireg = { sel };
+-  if (x.is_int8()) {
+-    emit(0x83);  // using a sign-extended 8-bit immediate.
+-    emit_operand(ireg, dst);
+-    emit(x.x_ & 0xFF);
+-  } else if (dst.is_reg(rax)) {
+-    emit((sel << 3) | 0x05);  // short form if the destination is eax.
+-    emit(x);
+-  } else {
+-    emit(0x81);  // using a literal 32-bit immediate.
+-    emit_operand(ireg, dst);
+-    emit(x);
+-  }
+-}
+-#endif //V8_TARGET_ARCH_32_BIT
+-
+-
+ // Assembler Instruction implementations.
+ 
+ void Assembler::arithmetic_op(byte opcode,
+@@ -730,20 +700,6 @@
+   emit(src.value_);
+ }
+ 
+-#if V8_TARGET_ARCH_64_BIT
+-#else //V8_TARGET_ARCH_32_BIT
+-void Assembler::adc(Register dst, int32_t imm32) {
+-  EnsureSpace ensure_space(this);
+-  emit_arith(2, Operand(dst), Immediate(imm32));
+-}
+-
+-void Assembler::adc(Register dst, const Operand& src) {
+-  EnsureSpace ensure_space(this);
+-  emit(0x13);
+-  emit_operand(dst, src);
+-}
+-#endif //V8_TARGET_ARCH_32_BIT
+-
+ void Assembler::shift(Register dst,
+                       Immediate shift_amount,
+                       int subcode,
+@@ -2007,8 +1963,7 @@
+   EnsureSpace ensure_space(this);
+   emit(0x0F);
+   emit(0xA4);
+-  //emit_operand(src, Operand(dst));
+-  emit_rex_32(src, dst);
++  emit_operand(src, Operand(dst));
+   emit(shift);
+ }
+ 
+@@ -2034,8 +1989,7 @@
+   EnsureSpace ensure_space(this);
+   emit(0x0F);
+   emit(0xAC);
+-  //emit_operand(dst, Operand(src));
+-  emit_rex_32(dst, src);
++  emit_operand(dst, Operand(src));
+   emit(shift);
+ }
+ 
+diff -ur chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64.h chromium-52.0.2743.116/v8/src/x64/assembler-x64.h
+--- chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64.h	2016-08-14 03:54:36.451877733 -0700
++++ chromium-52.0.2743.116/v8/src/x64/assembler-x64.h	2016-08-17 02:16:54.792822288 -0700
+@@ -342,17 +342,8 @@
+     value_ = static_cast<int32_t>(reinterpret_cast<intptr_t>(value));
+   }
+ 
+-#if V8_TARGET_ARCH_32_BIT
+-  bool is_int8() const {
+-    return -128 <= x_ && x_ < 128 && RelocInfo::IsNone(rmode_);
+-  }
+-#endif
+-
+  private:
+   int32_t value_;
+-#if V8_TARGET_ARCH_32_BIT
+-  int x_;
+-#endif
+   RelocInfo::Mode rmode_ = RelocInfo::NONE32;
+ 
+   friend class Assembler;
+@@ -412,11 +403,6 @@
+   // instruction.
+   int operand_size() const { return len_; }
+ 
+-#if V8_TARGET_ARCH_32_BIT
+-  // Returns true if this Operand is a wrapper for the specified register.
+-  bool is_reg(Register reg) const;
+-#endif
+-
+  private:
+   byte rex_;
+   byte buf_[9];
+@@ -443,6 +429,7 @@
+ 
+ #define ASSEMBLER_INSTRUCTION_LIST(V) \
+   V(add)                              \
++  V(adc)                              \
+   V(and)                              \
+   V(cmp)                              \
+   V(dec)                              \
+@@ -810,12 +797,6 @@
+   void xchgb(Register reg, const Operand& op);
+   void xchgw(Register reg, const Operand& op);
+ 
+-#if V8_TARGET_ARCH_64_BIT
+-#else //V8_TARGET_ARCH_32_BIT
+-  void adc(Register dst, int32_t imm32);
+-  void adc(Register dst, const Operand& src);
+-#endif //V8_TARGET_ARCH_32_BIT
+-
+   // Sign-extends rax into rdx:rax.
+   void cqo();
+   // Sign-extends eax into edx:eax.
+@@ -1794,10 +1775,6 @@
+   // code emission
+   void GrowBuffer();
+ 
+-#if V8_TARGET_ARCH_32_BIT
+-  void emit_arith(int sel, Operand dst, const Immediate& x);
+-#endif
+-
+   void emit(byte x) { *pc_++ = x; }
+   inline void emitl(uint32_t x);
+   inline void emitp(void* x, RelocInfo::Mode rmode);

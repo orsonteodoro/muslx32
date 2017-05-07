@@ -1,0 +1,273 @@
+diff -urp musl-1.1.15.orig/src/thread/x32/syscall_cp_fixup.c musl-1.1.15/src/thread/x32/syscall_cp_fixup.c
+--- musl-1.1.15.orig/src/thread/x32/syscall_cp_fixup.c	2016-07-05 14:58:46.000000000 -0700
++++ musl-1.1.15/src/thread/x32/syscall_cp_fixup.c	2016-11-16 15:29:04.876122571 -0800
+@@ -6,33 +6,249 @@ long __syscall_cp_internal(volatile void
+ 
+ struct __timespec { long long tv_sec; long tv_nsec; };
+ struct __timespec_kernel { long long tv_sec; long long tv_nsec; };
++struct __itimerspec { struct __timespec it_interval; struct __timespec it_value; };
++struct __itimerspec_kernel { struct __timespec_kernel it_interval; struct __timespec_kernel it_value; };
++struct __timeval { long long tv_sec; long long tv_usec; };
++struct __stat {
++        unsigned long long st_dev;
++        unsigned long long st_ino;
++        unsigned long long st_nlink;
++
++        unsigned st_mode;
++        unsigned st_uid;
++        unsigned st_gid;
++        unsigned int    __pad0;
++        unsigned long long st_rdev;
++        long long st_size;
++        long st_blksize;
++        long long st_blocks;
++
++        struct __timespec st_atim;
++        struct __timespec st_mtim;
++        struct __timespec st_ctim;
++        long long __unused[3];
++};
++struct __stat_kernel {
++        unsigned long long st_dev;
++        unsigned long long st_ino;
++        unsigned long long st_nlink;
++
++        unsigned int st_mode;
++        unsigned int st_uid;
++        unsigned int st_gid;
++        unsigned int    __pad0;
++        unsigned long long st_rdev;
++        long long st_size;
++        long long st_blksize;
++        long long st_blocks;
++
++        struct __timespec_kernel st_atim;
++        struct __timespec_kernel st_mtim;
++        struct __timespec_kernel st_ctim;
++        long long __unused[3];
++};
++struct __timex {
++	unsigned modes;
++	long offset, freq, maxerror, esterror;
++	int status;
++	long constant, precision, tolerance;
++	struct __timeval time;
++	long tick, ppsfreq, jitter;
++	int shift;
++	long stabil, jitcnt, calcnt, errcnt, stbcnt;
++	int tai;
++	int __padding[11];
++};
++struct __timex_kernel {
++	unsigned modes;
++	long long offset, freq, maxerror, esterror;
++	int status;
++	long long constant, precision, tolerance;
++	struct __timeval time;
++	long long tick, ppsfreq, jitter;
++	int shift;
++	long long stabil, jitcnt, calcnt, errcnt, stbcnt;
++	int tai;
++	int __padding[11];
++};
+ #define __tsc(X) ((struct __timespec*)(unsigned long)(X))
+-#define __fixup(X) do { if(X) { \
+-	ts->tv_sec = __tsc(X)->tv_sec; \
+-	ts->tv_nsec = __tsc(X)->tv_nsec; \
+-	(X) = (unsigned long)ts; } } while(0)
++#define __itsc(X) ((struct __itimerspec*)(unsigned long)(X))
++#define __sc(X) ((struct __stat*)(unsigned long)(X))
++#define __txc(X) ((struct __timex*)(unsigned long)(X))
++#define __fixup_ts_in(X) do { if(X) { \
++	u.ts->tv_sec = __tsc(X)->tv_sec; \
++	u.ts->tv_nsec = __tsc(X)->tv_nsec; \
++	(X) = (unsigned long)u.ts; } } while(0)
++#define __fixup_ts_out(X) do { if(X) { \
++	__tsc(X)->tv_sec = u.ts->tv_sec; \
++	__tsc(X)->tv_nsec = u.ts->tv_nsec; \
++	} } while(0)
++#define __fixup_its_in(X) do { if(X) { \
++	u.its->it_interval.tv_sec = __itsc(X)->it_interval.tv_sec; \
++	u.its->it_interval.tv_nsec = __itsc(X)->it_interval.tv_nsec; \
++	u.its->it_value.tv_sec = __itsc(X)->it_value.tv_sec; \
++	u.its->it_value.tv_nsec = __itsc(X)->it_value.tv_nsec; \
++	(X) = (unsigned long)u.its; } } while(0)
++#define __fixup_its_out(X) do { if(X) { \
++	__itsc(X)->it_interval.tv_sec = u.its->it_interval.tv_sec; \
++	__itsc(X)->it_interval.tv_nsec = u.its->it_interval.tv_nsec; \
++	__itsc(X)->it_value.tv_sec = u.its->it_value.tv_sec; \
++	__itsc(X)->it_value.tv_nsec = u.its->it_value.tv_nsec; \
++	} } while(0)
++#define __fixup_s_in(X) do { if(X) { \
++	u.s->st_dev = __sc(X)->st_dev; \
++	u.s->st_ino = __sc(X)->st_ino; \
++	u.s->st_nlink = __sc(X)->st_nlink; \
++        \
++	u.s->st_mode = __sc(X)->st_mode; \
++	u.s->st_uid = __sc(X)->st_uid; \
++	u.s->st_gid = __sc(X)->st_gid; \
++        \
++	u.s->st_rdev = __sc(X)->st_rdev; \
++	u.s->st_size = __sc(X)->st_size; \
++	u.s->st_blksize = (long long)(long)__sc(X)->st_blksize; \
++	u.s->st_blocks = __sc(X)->st_blocks; \
++	u.s->st_atim.tv_sec = __sc(X)->st_atim.tv_sec; \
++	u.s->st_atim.tv_nsec = (long long)(long)__sc(X)->st_atim.tv_nsec; \
++	u.s->st_mtim.tv_sec = __sc(X)->st_mtim.tv_sec; \
++	u.s->st_mtim.tv_nsec = (long long)(long)__sc(X)->st_mtim.tv_nsec; \
++	u.s->st_ctim.tv_sec = __sc(X)->st_ctim.tv_sec; \
++	u.s->st_ctim.tv_nsec = (long long)(long)__sc(X)->st_ctim.tv_nsec; \
++	(X) = (unsigned long)u.s; } } while(0)
++#define __fixup_s_out(X) do { if(X) { \
++	__sc(X)->st_dev = u.s->st_dev; \
++	__sc(X)->st_ino = u.s->st_ino; \
++	__sc(X)->st_nlink = u.s->st_nlink; \
++        \
++	__sc(X)->st_mode = u.s->st_mode; \
++	__sc(X)->st_uid = u.s->st_uid; \
++	__sc(X)->st_gid = u.s->st_gid; \
++        \
++	__sc(X)->st_rdev = u.s->st_rdev; \
++	__sc(X)->st_size = u.s->st_size; \
++	__sc(X)->st_blksize = (long)(long long)u.s->st_blksize; \
++	__sc(X)->st_blocks = u.s->st_blocks; \
++	__sc(X)->st_atim.tv_sec = u.s->st_atim.tv_sec; \
++	__sc(X)->st_atim.tv_nsec = (long)(long long)u.s->st_atim.tv_nsec; \
++	__sc(X)->st_mtim.tv_sec = u.s->st_mtim.tv_sec; \
++	__sc(X)->st_mtim.tv_nsec = (long)(long long)u.s->st_mtim.tv_nsec; \
++	__sc(X)->st_ctim.tv_sec = u.s->st_ctim.tv_sec; \
++	__sc(X)->st_ctim.tv_nsec = (long)(long long)u.s->st_ctim.tv_nsec; \
++	} } while(0)
++#define __fixup_tx_in(X) do { if(X) { \
++	u.tx->modes = __txc(X)->modes; \
++	u.tx->offset = (long long)(long)__txc(X)->offset; \
++	u.tx->freq = (long long)(long)__txc(X)->freq; \
++	u.tx->maxerror = (long long)(long)__txc(X)->maxerror; \
++	u.tx->esterror = (long long)(long)__txc(X)->esterror; \
++	u.tx->status = __txc(X)->status; \
++	u.tx->constant = (long long)(long)__txc(X)->constant; \
++	u.tx->precision = (long long)(long)__txc(X)->precision; \
++	u.tx->tolerance = (long long)(long)__txc(X)->tolerance; \
++	u.tx->time.tv_sec = __txc(X)->time.tv_sec; \
++	u.tx->time.tv_usec = __txc(X)->time.tv_usec; \
++	u.tx->tick = (long long)(long)__txc(X)->tick; \
++	u.tx->ppsfreq = (long long)(long)__txc(X)->ppsfreq; \
++	u.tx->jitter = (long long)(long)__txc(X)->jitter; \
++	u.tx->shift = __txc(X)->shift; \
++	u.tx->stabil = (long long)(long)__txc(X)->stabil; \
++	u.tx->jitcnt = (long long)(long)__txc(X)->jitcnt; \
++	u.tx->calcnt = (long long)(long)__txc(X)->calcnt; \
++	u.tx->errcnt = (long long)(long)__txc(X)->errcnt; \
++	u.tx->stbcnt = (long long)(long)__txc(X)->stbcnt; \
++	u.tx->tai = __txc(X)->tai; \
++	(X) = (unsigned long)u.tx; } } while(0)
++#define __fixup_tx_out(X) do { if(X) { \
++	__txc(X)->modes = (long)(long long)u.tx->modes; \
++	__txc(X)->offset = (long)(long long)u.tx->offset; \
++	__txc(X)->freq = (long)(long long)u.tx->freq; \
++	__txc(X)->maxerror = (long)(long long)u.tx->maxerror; \
++	__txc(X)->esterror = (long)(long long)u.tx->esterror; \
++	__txc(X)->status = u.tx->status; \
++	__txc(X)->constant = (long)(long long)u.tx->constant; \
++	__txc(X)->precision = (long)(long long)u.tx->precision; \
++	__txc(X)->tolerance = (long)(long long)u.tx->tolerance; \
++	__txc(X)->time.tv_sec = u.tx->time.tv_sec; \
++	__txc(X)->time.tv_usec = u.tx->time.tv_usec; \
++	__txc(X)->tick = (long)(long long)u.tx->tick; \
++	__txc(X)->ppsfreq = (long)(long long)u.tx->ppsfreq; \
++	__txc(X)->jitter = (long)(long long)u.tx->jitter; \
++	__txc(X)->shift = u.tx->shift; \
++	__txc(X)->stabil = (long)(long long)u.tx->stabil; \
++	__txc(X)->jitcnt = (long)(long long)u.tx->jitcnt; \
++	__txc(X)->calcnt = (long)(long long)u.tx->calcnt; \
++	__txc(X)->errcnt = (long)(long long)u.tx->errcnt; \
++	__txc(X)->stbcnt = (long)(long long)u.tx->stbcnt; \
++	__txc(X)->tai = u.tx->tai; \
++	} } while(0)
++#define __fixup_case_1_in \
++	case SYS_adjtimex: \
++		__fixup_tx_in(a1); break;
++#define __fixup_case_1_out \
++	case SYS_gettimeofday: case SYS_adjtimex: \
++		__fixup_tx_out(a1); break;
++#define __fixup_case_2_in \
++	case SYS_nanosleep: \
++		__fixup_ts_in(a1); break; \
++	case SYS_clock_settime: \
++		__fixup_ts_in(a2); break;
++#define __fixup_case_2_out \
++	case SYS_stat: case SYS_lstat: case SYS_fstat: \
++		__fixup_s_out(a2); break; \
++	case SYS_timerfd_gettime: case SYS_timer_gettime: \
++		__fixup_its_out(a2); break; \
++	case SYS_clock_gettime: case SYS_nanosleep: case SYS_clock_getres: \
++		__fixup_ts_out(a2); break;
++#define __fixup_case_3_in \
++	case SYS_clock_nanosleep: case SYS_rt_sigtimedwait: case SYS_ppoll: \
++		__fixup_ts_in(a3); break; \
++	case SYS_utimensat: \
++		if(a3) { \
++			u.ts[0].tv_sec = __tsc(a3)[0].tv_sec; \
++			u.ts[0].tv_nsec = __tsc(a3)[0].tv_nsec; \
++			u.ts[1].tv_sec = __tsc(a3)[1].tv_sec; \
++			u.ts[1].tv_nsec = __tsc(a3)[1].tv_nsec; \
++			a3 = (unsigned long)u.ts; \
++		} break;
++#define __fixup_case_4_in \
++	case SYS_futex: \
++		if((a2 & (~128 /* FUTEX_PRIVATE_FLAG */)) == 0 /* FUTEX_WAIT */) __fixup_ts_in(a4); break; \
++	case SYS_timerfd_settime: case SYS_timer_settime: \
++		__fixup_its_in(a3); break;
++#define __fixup_case_4_out \
++	case SYS_timerfd_settime: case SYS_timer_settime: \
++		__fixup_its_out(a4); break; \
++	case SYS_newfstatat: \
++		__fixup_s_out(a3); break;
++#define __fixup_case_5_in \
++	case SYS_mq_timedsend: case SYS_mq_timedreceive: case SYS_pselect6: \
++		__fixup_ts_in(a5); break;
+ 
+ __attribute__((__visibility__("hidden")))
+ long __syscall_cp_asm (volatile void * foo, long long n, long long a1, long long a2, long long a3,
+ 	                     long long a4, long long a5, long long a6)
+ {
+-	struct __timespec_kernel ts[1];
++	unsigned long ret;
++	union {
++		struct __timespec_kernel ts[2];
++		struct __itimerspec_kernel its[2];
++		struct __stat_kernel s[2];
++		struct __timex_kernel tx[2];
++	} u;
+ 	switch (n) {
+-	case SYS_mq_timedsend: case SYS_mq_timedreceive: case SYS_pselect6:
+-		__fixup(a5);
+-		break;
+-	case SYS_futex:
+-		if((a2 & (~128 /* FUTEX_PRIVATE_FLAG */)) == 0 /* FUTEX_WAIT */)
+-			__fixup(a4);
+-		break;
+-	case SYS_clock_nanosleep:
+-	case SYS_rt_sigtimedwait: case SYS_ppoll:
+-		__fixup(a3);
+-		break;
+-	case SYS_nanosleep:
+-		__fixup(a1);
+-		break;
++		__fixup_case_1_in;
++		__fixup_case_2_in;
++		__fixup_case_3_in;
++		__fixup_case_4_in;
++		__fixup_case_5_in;
+ 	}
+-	return __syscall_cp_internal(foo, n, a1, a2, a3, a4, a5, a6);
++	ret = __syscall_cp_internal(foo, n, a1, a2, a3, a4, a5, a6);
++	switch (n) {
++		__fixup_case_1_out;
++		__fixup_case_2_out;
++		__fixup_case_4_out;
++	}
++
++	return ret;
+ }
+ 

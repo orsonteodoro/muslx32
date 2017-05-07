@@ -1,0 +1,35 @@
+diff -urp mono-4.4.0.orig/libgc/include/private/gcconfig.h mono-4.4.0/libgc/include/private/gcconfig.h
+--- mono-4.4.0.orig/libgc/include/private/gcconfig.h	2016-02-22 07:08:44.000000000 -0800
++++ mono-4.4.0/libgc/include/private/gcconfig.h	2016-10-24 12:57:37.615048006 -0700
+@@ -2074,8 +2074,13 @@
+ 
+ # ifdef X86_64
+ #   define MACH_TYPE "X86_64"
+-#   define ALIGNMENT 8
+-#   define CPP_WORDSZ 64
++#   ifdef __ILP32__
++#     define ALIGNMENT 4
++#     define CPP_WORDSZ 32
++#   else
++#     define ALIGNMENT 8
++#     define CPP_WORDSZ 64
++#   endif
+ #   ifndef HBLKSIZE
+ #     define HBLKSIZE 4096
+ #   endif
+diff -urp mono-4.4.0.orig/mono/metadata/mono-config.c mono-4.4.0/mono/metadata/mono-config.c
+--- mono-4.4.0.orig/mono/metadata/mono-config.c	2016-04-12 08:22:20.000000000 -0700
++++ mono-4.4.0/mono/metadata/mono-config.c	2016-10-24 13:07:35.188560689 -0700
+@@ -51,7 +51,11 @@
+ #define CONFIG_CPU "x86"
+ #define CONFIG_WORDSIZE "32"
+ #elif defined(__x86_64__) || defined(TARGET_AMD64)
+-#define CONFIG_CPU "x86-64"
++#ifdef __mono_ilp32__
++#   define CONFIG_CPU "x86-64ilp32"
++#else
++#   define CONFIG_CPU "x86-64"
++#endif
+ #define CONFIG_WORDSIZE "64"
+ #elif defined(sparc) || defined(__sparc__)
+ #define CONFIG_CPU "sparc"

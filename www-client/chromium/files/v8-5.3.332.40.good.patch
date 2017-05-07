@@ -1,0 +1,3062 @@
+Binary files v8.t5.3.332.40/.git/index and v8/.git/index differ
+diff -urp v8.t5.3.332.40/Makefile v8/Makefile
+--- v8.t5.3.332.40/Makefile	2016-11-07 14:10:50.398695108 -0800
++++ v8/Makefile	2016-11-07 12:41:23.319070279 -0800
+@@ -102,6 +102,10 @@ endif
+ ifeq ($(gdbjit), off)
+   GYPFLAGS += -Dv8_enable_gdbjit=0
+ endif
++# musl=on
++ifeq ($(musl), on)
++  GYPFLAGS += -Duse_musl_support=1
++endif
+ # vtunejit=on
+ ifeq ($(vtunejit), on)
+   GYPFLAGS += -Dv8_enable_vtunejit=1
+@@ -250,7 +254,7 @@ endif
+ 
+ # Architectures and modes to be compiled. Consider these to be internal
+ # variables, don't override them (use the targets instead).
+-ARCHES = ia32 x64 arm arm64 mips mipsel mips64 mips64el x87 ppc ppc64 s390 \
++ARCHES = ia32 x64 x32 arm arm64 mips mipsel mips64 mips64el x87 ppc ppc64 s390 \
+          s390x
+ ARCHES32 = ia32 arm mips mipsel x87 ppc s390
+ DEFAULT_ARCHES = ia32 x64 arm
+@@ -462,6 +466,7 @@ $(OUT_MAKEFILES): $(GYPFILES) $(ENVFILE)
+ 	              -Dtarget_arch=$(V8_TARGET_ARCH), \
+ 	                  $(if $(shell echo $(ARCHES32) | grep $(V8_TARGET_ARCH)), \
+ 	                  -Dtarget_arch=ia32,)) \
++                      -Dx86_64_abi=x32 \
+ 	              $(if $(findstring optdebug,$@),-Dv8_optimized_debug=1,) \
+ 	              -S$(suffix $(basename $@))$(suffix $@) $(GYPFLAGS)
+ 
+diff -urp v8.t5.3.332.40/gypfiles/detect_v8_host_arch.py v8/gypfiles/detect_v8_host_arch.py
+--- v8.t5.3.332.40/gypfiles/detect_v8_host_arch.py	2016-11-07 14:10:50.407695449 -0800
++++ v8/gypfiles/detect_v8_host_arch.py	2016-11-07 12:41:23.319070279 -0800
+@@ -69,7 +69,8 @@ def DoMain(_):
+   # Distinguish between different userland bitness by querying
+   # the python binary.
+   if host_arch == 'x64' and platform.architecture()[0] == '32bit':
+-    host_arch = 'ia32'
++  #  host_arch = 'ia32' #multilib
++    host_arch = 'x64' #x32 abi
+ 
+   return host_arch
+ 
+diff -urp v8.t5.3.332.40/gypfiles/standalone.gypi v8/gypfiles/standalone.gypi
+--- v8.t5.3.332.40/gypfiles/standalone.gypi	2016-11-07 14:10:50.408695487 -0800
++++ v8/gypfiles/standalone.gypi	2016-11-07 12:41:23.319070279 -0800
+@@ -159,7 +159,7 @@
+         }, {
+           'gomadir': '<!(/bin/echo -n ${HOME}/goma)',
+         }],
+-        ['host_arch!="ppc" and host_arch!="ppc64" and host_arch!="ppc64le" and host_arch!="s390" and host_arch!="s390x"', {
++        ['host_arch!="ppc" and host_arch!="ppc64" and host_arch!="ppc64le" and host_arch!="s390" and host_arch!="s390x" and host_arch!="x32"', {
+           'host_clang%': 1,
+         }, {
+           'host_clang%': 0,
+@@ -444,7 +444,7 @@
+           ['OS=="aix"', {
+             'cflags': [ '-g', '-Og', '-gxcoff' ],
+           }, {
+-            'cflags': [ '-g', '-O0' ],
++            'cflags': [ '-g3', '-O0' ],
+           }],
+         ],
+       },
+@@ -656,7 +656,7 @@
+               }],
+             ],
+           }],
+-          ['linux_use_bundled_gold==1 and not (clang==0 and use_lto==1)', {
++          ['linux_use_bundled_gold==1 and not (clang==0 and use_lto==1) and not (x86_64_abi=="x32")', {
+             # Put our binutils, which contains gold in the search path. We pass
+             # the path to gold to the compiler. gyp leaves unspecified what the
+             # cwd is when running the compiler, so the normal gyp path-munging
+@@ -749,6 +749,11 @@
+         ],
+         'ldflags': [ '-pthread', ],
+         'conditions': [
++          [ 'use_musl_support==1', {
++            'defines': [
++              'V8_LIBC_MUSL=1'
++            ],
++          }],
+           # Don't warn about TRACE_EVENT_* macros with zero arguments passed to
+           # ##__VA_ARGS__. C99 strict mode prohibits having zero variadic macro
+           # arguments in gcc.
+diff -urp v8.t5.3.332.40/gypfiles/toolchain.gypi v8/gypfiles/toolchain.gypi
+--- v8.t5.3.332.40/gypfiles/toolchain.gypi	2016-11-07 14:10:50.409695525 -0800
++++ v8/gypfiles/toolchain.gypi	2016-11-07 12:41:23.320070317 -0800
+@@ -40,6 +40,8 @@
+     'has_valgrind%': 0,
+     'coverage%': 0,
+     'v8_target_arch%': '<(target_arch)',
++    'x86_64_abi%': '<(x86_64_abi)',
++    'use_musl_support%': '<(use_musl_support)',
+     'v8_host_byteorder%': '<!(python -c "import sys; print sys.byteorder")',
+     # Native Client builds currently use the V8 ARM JIT and
+     # arm/simulator-arm.cc to defer the significant effort required
+@@ -95,12 +97,12 @@
+     'binutils_dir%': '',
+ 
+     'conditions': [
+-      ['OS=="linux" and host_arch=="x64"', {
+-        'binutils_dir%': 'third_party/binutils/Linux_x64/Release/bin',
+-      }],
+-      ['OS=="linux" and host_arch=="ia32"', {
+-        'binutils_dir%': 'third_party/binutils/Linux_ia32/Release/bin',
+-      }],
++      #['OS=="linux" and host_arch=="x64" and x86_64_abi!="x32"', {
++      #  'binutils_dir%': 'third_party/binutils/Linux_x64/Release/bin',
++      #}],
++      #['OS=="linux" and host_arch=="ia32"', {
++      #  'binutils_dir%': 'third_party/binutils/Linux_ia32/Release/bin',
++      #}],
+ 
+       # linux_use_bundled_gold: whether to use the gold linker binary checked
+       # into third_party/binutils.  Force this off via GYP_DEFINES when you
+diff -urp v8.t5.3.332.40/include/v8config.h v8/include/v8config.h
+--- v8.t5.3.332.40/include/v8config.h	2016-11-07 14:10:50.416695790 -0800
++++ v8/include/v8config.h	2016-11-07 12:41:23.320070317 -0800
+@@ -139,6 +139,8 @@
+ #elif defined(__BIONIC__)
+ # define V8_LIBC_BIONIC 1
+ # define V8_LIBC_BSD 1
++#elif defined(__MUSL__)
++# define V8_LIBC_MUSL 1
+ #elif defined(__UCLIBC__)
+ // Must test for UCLIBC before GLIBC, as UCLIBC pretends to be GLIBC.
+ # define V8_LIBC_UCLIBC 1
+@@ -148,7 +150,6 @@
+ # define V8_LIBC_BSD V8_OS_BSD
+ #endif
+ 
+-
+ // -----------------------------------------------------------------------------
+ // Compiler detection
+ //
+diff -urp v8.t5.3.332.40/src/api.cc v8/src/api.cc
+--- v8.t5.3.332.40/src/api.cc	2016-11-07 14:10:50.424696093 -0800
++++ v8/src/api.cc	2016-11-07 12:41:23.325070505 -0800
+@@ -436,7 +436,7 @@ Isolate* SnapshotCreator::GetIsolate() {
+ }
+ 
+ size_t SnapshotCreator::AddContext(Local<Context> context) {
+-  DCHECK(!context.IsEmpty());
++  //DCHECK(!context.IsEmpty());
+   SnapshotCreatorData* data = SnapshotCreatorData::cast(data_);
+   DCHECK(!data->created_);
+   Isolate* isolate = data->isolate_;
+diff -urp v8.t5.3.332.40/src/api.h v8/src/api.h
+--- v8.t5.3.332.40/src/api.h	2016-11-07 14:10:50.425696132 -0800
++++ v8/src/api.h	2016-11-07 12:41:23.326070543 -0800
+@@ -395,13 +395,13 @@ MAKE_TO_LOCAL(CallableToLocal, JSReceive
+   v8::internal::Handle<v8::internal::To> Utils::OpenHandle(                    \
+       const v8::From* that, bool allow_empty_handle) {                         \
+     DCHECK(allow_empty_handle || that != NULL);                                \
+-    DCHECK(that == NULL ||                                                     \
+-           (*reinterpret_cast<v8::internal::Object* const*>(that))->Is##To()); \
+     return v8::internal::Handle<v8::internal::To>(                             \
+         reinterpret_cast<v8::internal::To**>(const_cast<v8::From*>(that)));    \
+   }
+ 
+ OPEN_HANDLE_LIST(MAKE_OPEN_HANDLE)
++//    DCHECK(that == NULL ||                                                     
++//           (*reinterpret_cast<v8::internal::Object* const*>(that))->Is##To()); 
+ 
+ #undef MAKE_OPEN_HANDLE
+ #undef OPEN_HANDLE_LIST
+diff -urp v8.t5.3.332.40/src/assembler.h v8/src/assembler.h
+--- v8.t5.3.332.40/src/assembler.h	2016-11-07 14:10:50.460697458 -0800
++++ v8/src/assembler.h	2016-11-07 12:41:23.327070581 -0800
+@@ -273,7 +273,7 @@ class Label {
+   }
+ 
+   INLINE(~Label()) {
+-    DCHECK(!is_linked());
++//    DCHECK(!is_linked());//omt
+     DCHECK(!is_near_linked());
+   }
+ 
+diff -urp v8.t5.3.332.40/src/base/build_config.h v8/src/base/build_config.h
+--- v8.t5.3.332.40/src/base/build_config.h	2016-11-07 14:10:50.470697837 -0800
++++ v8/src/base/build_config.h	2016-11-07 12:41:23.328070618 -0800
+@@ -107,13 +107,13 @@
+ #if V8_TARGET_ARCH_IA32
+ #define V8_TARGET_ARCH_32_BIT 1
+ #elif V8_TARGET_ARCH_X64
+-#if !V8_TARGET_ARCH_32_BIT && !V8_TARGET_ARCH_64_BIT
++//#if !V8_TARGET_ARCH_32_BIT && !V8_TARGET_ARCH_64_BIT
+ #if defined(__x86_64__) && __SIZEOF_POINTER__ == 4  // Check for x32.
+ #define V8_TARGET_ARCH_32_BIT 1
+ #else
+ #define V8_TARGET_ARCH_64_BIT 1
+ #endif
+-#endif
++//#endif
+ #elif V8_TARGET_ARCH_ARM
+ #define V8_TARGET_ARCH_32_BIT 1
+ #elif V8_TARGET_ARCH_ARM64
+diff -urp v8.t5.3.332.40/src/builtins.cc v8/src/builtins.cc
+--- v8.t5.3.332.40/src/builtins.cc	2016-11-07 14:10:50.484698368 -0800
++++ v8/src/builtins.cc	2016-11-07 12:41:23.333070807 -0800
+@@ -340,6 +340,89 @@ void Builtins::Generate_ArrayIsArray(Cod
+       assembler->CallRuntime(Runtime::kArrayIsArray, context, object));
+ }
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++// ES6 19.1.3.2
++BUILTIN(ObjectHasOwnProperty) {
++
++
++  HandleScope scope(isolate);
++  Handle<Object> property = args.at<Object>(1);
++
++  Handle<Name> key;
++  uint32_t index;
++  bool key_is_array_index = property->ToArrayIndex(&index);
++
++  if (!key_is_array_index) {
++    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, key,
++                                       Object::ToName(isolate, property));
++    key_is_array_index = key->AsArrayIndex(&index);
++  }
++
++  Handle<Object> object = args.at<Object>(0);
++
++  if (object->IsJSObject()) {
++    Handle<JSObject> js_obj = Handle<JSObject>::cast(object);
++    // Fast case: either the key is a real named property or it is not
++    // an array index and there are no interceptors or hidden
++    // prototypes.
++    // TODO(jkummerow): Make JSReceiver::HasOwnProperty fast enough to
++    // handle all cases directly (without this custom fast path).
++    {
++      LookupIterator::Configuration c = LookupIterator::OWN_SKIP_INTERCEPTOR;
++      LookupIterator it =
++          key_is_array_index ? LookupIterator(isolate, js_obj, index, js_obj, c)
++                             : LookupIterator(js_obj, key, js_obj, c);
++      Maybe<bool> maybe = JSReceiver::HasProperty(&it);
++      if (maybe.IsNothing()) return isolate->heap()->exception();
++      DCHECK(!isolate->has_pending_exception());
++      if (maybe.FromJust()) return isolate->heap()->true_value();
++    }
++
++    Map* map = js_obj->map();
++    if (!map->has_hidden_prototype() &&
++        (key_is_array_index ? !map->has_indexed_interceptor()
++                            : !map->has_named_interceptor())) {
++      return isolate->heap()->false_value();
++    }
++
++    // Slow case.
++    LookupIterator::Configuration c = LookupIterator::OWN;
++    LookupIterator it = key_is_array_index
++                            ? LookupIterator(isolate, js_obj, index, js_obj, c)
++                            : LookupIterator(js_obj, key, js_obj, c);
++
++    Maybe<bool> maybe = JSReceiver::HasProperty(&it);
++    if (maybe.IsNothing()) return isolate->heap()->exception();
++    DCHECK(!isolate->has_pending_exception());
++    return isolate->heap()->ToBoolean(maybe.FromJust());
++
++  } else if (object->IsJSProxy()) {
++    if (key.is_null()) {
++      DCHECK(key_is_array_index);
++      key = isolate->factory()->Uint32ToString(index);
++    }
++
++    Maybe<bool> result =
++        JSReceiver::HasOwnProperty(Handle<JSProxy>::cast(object), key);
++    if (!result.IsJust()) return isolate->heap()->exception();
++    return isolate->heap()->ToBoolean(result.FromJust());
++
++  } else if (object->IsString()) {
++    return isolate->heap()->ToBoolean(
++        key_is_array_index
++            ? index < static_cast<uint32_t>(String::cast(*object)->length())
++            : key->Equals(isolate->heap()->length_string()));
++  } else if (object->IsNull(isolate) || object->IsUndefined(isolate)) {
++    THROW_NEW_ERROR_RETURN_FAILURE(
++        isolate, NewTypeError(MessageTemplate::kUndefinedOrNullToObject));
++  }
++
++  return isolate->heap()->false_value();
++}
++
++
++
++#else
+ void Builtins::Generate_ObjectHasOwnProperty(CodeStubAssembler* assembler) {
+   typedef compiler::Node Node;
+   typedef CodeStubAssembler::Label Label;
+@@ -385,6 +468,7 @@ void Builtins::Generate_ObjectHasOwnProp
+   assembler->Return(assembler->CallRuntime(Runtime::kObjectHasOwnProperty,
+                                            context, object, key));
+ }
++#endif
+ 
+ namespace {
+ 
+@@ -517,7 +601,11 @@ BUILTIN(ArraySlice) {
+                     !IsJSArrayFastElementMovingAllowed(isolate, array) ||
+                     !isolate->IsArraySpeciesLookupChainIntact() ||
+                     // If this is a subclass of Array, then call out to JS
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++                    !array->map()->new_target_is_base())) {
++#else
+                     !array->HasArrayPrototype(isolate))) {
++#endif
+       AllowHeapAllocation allow_allocation;
+       return CallJsIntrinsic(isolate, isolate->array_slice(), args);
+     }
+@@ -579,7 +667,11 @@ BUILTIN(ArraySplice) {
+   if (V8_UNLIKELY(
+           !EnsureJSArrayWithWritableFastElements(isolate, receiver, &args, 3) ||
+           // If this is a subclass of Array, then call out to JS.
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++          !JSArray::cast(*receiver)->map()->new_target_is_base() ||
++#else
+           !Handle<JSArray>::cast(receiver)->HasArrayPrototype(isolate) ||
++#endif
+           // If anything with @@species has been messed with, call out to JS.
+           !isolate->IsArraySpeciesLookupChainIntact())) {
+     return CallJsIntrinsic(isolate, isolate->array_splice(), args);
+@@ -1455,7 +1547,11 @@ BUILTIN(ArrayConcat) {
+ 
+   // Avoid a real species read to avoid extra lookups to the array constructor
+   if (V8_LIKELY(receiver->IsJSArray() &&
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++                JSArray::cast(*receiver)->map()->new_target_is_base() &&
++#else
+                 Handle<JSArray>::cast(receiver)->HasArrayPrototype(isolate) &&
++#endif
+                 isolate->IsArraySpeciesLookupChainIntact())) {
+     if (Fast_ArrayConcat(isolate, &args).ToHandle(&result_array)) {
+       return *result_array;
+@@ -5568,6 +5664,11 @@ BUILTIN(HandleApiCallAsConstructor) {
+ 
+ namespace {
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++void Generate_LoadIC_Miss(MacroAssembler* masm) {
++  LoadIC::GenerateMiss(masm);
++}
++#else
+ void Generate_LoadIC_Miss(CodeStubAssembler* assembler) {
+   typedef compiler::Node Node;
+ 
+@@ -5580,7 +5681,13 @@ void Generate_LoadIC_Miss(CodeStubAssemb
+   assembler->TailCallRuntime(Runtime::kLoadIC_Miss, context, receiver, name,
+                              slot, vector);
+ }
++#endif
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++void Generate_LoadGlobalIC_Miss(MacroAssembler* masm) {
++  LoadGlobalIC::GenerateMiss(masm);
++}
++#else
+ void Generate_LoadGlobalIC_Miss(CodeStubAssembler* assembler) {
+   typedef compiler::Node Node;
+ 
+@@ -5591,6 +5698,7 @@ void Generate_LoadGlobalIC_Miss(CodeStub
+   assembler->TailCallRuntime(Runtime::kLoadGlobalIC_Miss, context, slot,
+                              vector);
+ }
++#endif
+ 
+ void Generate_LoadIC_Normal(MacroAssembler* masm) {
+   LoadIC::GenerateNormal(masm);
+@@ -5600,6 +5708,11 @@ void Generate_LoadIC_Getter_ForDeopt(Mac
+   NamedLoadHandlerCompiler::GenerateLoadViaGetterForDeopt(masm);
+ }
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++void Generate_LoadIC_Slow(MacroAssembler* masm) {
++  LoadIC::GenerateRuntimeGetProperty(masm);
++}
++#else
+ void Generate_LoadIC_Slow(CodeStubAssembler* assembler) {
+   typedef compiler::Node Node;
+ 
+@@ -5611,7 +5724,13 @@ void Generate_LoadIC_Slow(CodeStubAssemb
+ 
+   assembler->TailCallRuntime(Runtime::kGetProperty, context, receiver, name);
+ }
++#endif
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++void Generate_LoadGlobalIC_Slow(MacroAssembler* masm) {
++  LoadGlobalIC::GenerateRuntimeGetProperty(masm);
++}
++#else
+ void Generate_LoadGlobalIC_Slow(CodeStubAssembler* assembler) {
+   typedef compiler::Node Node;
+ 
+@@ -5622,6 +5741,7 @@ void Generate_LoadGlobalIC_Slow(CodeStub
+   assembler->TailCallRuntime(Runtime::kLoadGlobalIC_Slow, context, slot,
+                              vector);
+ }
++#endif
+ 
+ void Generate_KeyedLoadIC_Slow(MacroAssembler* masm) {
+   KeyedLoadIC::GenerateRuntimeGetProperty(masm);
+@@ -5764,6 +5884,20 @@ Handle<Code> MacroAssemblerBuilder(Isola
+   return isolate->factory()->NewCode(desc, flags, masm.CodeObject());
+ }
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++Handle<Code> CodeStubAssemblerBuilder(Isolate* isolate,
++                                      BuiltinDesc const* builtin_desc) {
++  Zone zone(isolate->allocator());
++  CodeStubAssembler assembler(isolate, &zone, builtin_desc->argc,
++                              builtin_desc->flags, builtin_desc->s_name);
++
++  // Generate the code/adaptor.
++  typedef void (*Generator)(CodeStubAssembler*);
++  Generator g = FUNCTION_CAST<Generator>(builtin_desc->generator);
++  g(&assembler);
++  return assembler.GenerateCode();
++}
++#else
+ // Builder for builtins implemented in TurboFan with JS linkage.
+ Handle<Code> CodeStubAssemblerBuilderJS(Isolate* isolate,
+                                         BuiltinDesc const* builtin_desc) {
+@@ -5776,7 +5910,9 @@ Handle<Code> CodeStubAssemblerBuilderJS(
+   g(&assembler);
+   return assembler.GenerateCode();
+ }
++#endif
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ // Builder for builtins implemented in TurboFan with CallStub linkage.
+ Handle<Code> CodeStubAssemblerBuilderCS(Isolate* isolate,
+                                         BuiltinDesc const* builtin_desc) {
+@@ -5795,6 +5931,7 @@ Handle<Code> CodeStubAssemblerBuilderCS(
+   g(&assembler);
+   return assembler.GenerateCode();
+ }
++#endif
+ 
+ }  // namespace
+ 
+@@ -5832,8 +5969,10 @@ void Builtins::InitBuiltinFunctionTable(
+   functions->argc = 0;                                      \
+   ++functions;
+ 
++
++//  functions->builder = &CodeStubAssemblerBuilderJS;       
+ #define DEF_FUNCTION_PTR_T(aname, aargc)                  \
+-  functions->builder = &CodeStubAssemblerBuilderJS;       \
++  functions->builder = &CodeStubAssemblerBuilder;         \
+   functions->generator = FUNCTION_ADDR(Generate_##aname); \
+   functions->c_code = NULL;                               \
+   functions->s_name = #aname;                             \
+@@ -5865,14 +6004,18 @@ void Builtins::InitBuiltinFunctionTable(
+   BUILTIN_LIST_C(DEF_FUNCTION_PTR_C)
+   BUILTIN_LIST_A(DEF_FUNCTION_PTR_A)
+   BUILTIN_LIST_T(DEF_FUNCTION_PTR_T)
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+   BUILTIN_LIST_S(DEF_FUNCTION_PTR_S)
++#endif
+   BUILTIN_LIST_H(DEF_FUNCTION_PTR_H)
+   BUILTIN_LIST_DEBUG_A(DEF_FUNCTION_PTR_A)
+ 
+ #undef DEF_FUNCTION_PTR_C
+ #undef DEF_FUNCTION_PTR_A
+ #undef DEF_FUNCTION_PTR_T
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ #undef DEF_FUNCTION_PTR_S
++#endif
+ #undef DEF_FUNCTION_PTR_H
+ }
+ 
+@@ -5883,10 +6026,12 @@ void Builtins::SetUp(Isolate* isolate, b
+   // Create a scope for the handles in the builtins.
+   HandleScope scope(isolate);
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ #define INITIALIZE_CALL_DESCRIPTOR(name, kind, extra, interface_descriptor) \
+   { interface_descriptor##Descriptor descriptor(isolate); }
+   BUILTIN_LIST_S(INITIALIZE_CALL_DESCRIPTOR)
+ #undef INITIALIZE_CALL_DESCRIPTOR
++#endif
+ 
+   const BuiltinDesc* functions = builtin_function_table.functions();
+ 
+@@ -6221,13 +6366,17 @@ Handle<Code> Builtins::name() {
+ BUILTIN_LIST_C(DEFINE_BUILTIN_ACCESSOR_C)
+ BUILTIN_LIST_A(DEFINE_BUILTIN_ACCESSOR_A)
+ BUILTIN_LIST_T(DEFINE_BUILTIN_ACCESSOR_T)
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ BUILTIN_LIST_S(DEFINE_BUILTIN_ACCESSOR_S)
++#endif
+ BUILTIN_LIST_H(DEFINE_BUILTIN_ACCESSOR_H)
+ BUILTIN_LIST_DEBUG_A(DEFINE_BUILTIN_ACCESSOR_A)
+ #undef DEFINE_BUILTIN_ACCESSOR_C
+ #undef DEFINE_BUILTIN_ACCESSOR_A
+ #undef DEFINE_BUILTIN_ACCESSOR_T
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ #undef DEFINE_BUILTIN_ACCESSOR_S
++#endif
+ #undef DEFINE_BUILTIN_ACCESSOR_H
+ 
+ }  // namespace internal
+diff -urp v8.t5.3.332.40/src/builtins.h v8/src/builtins.h
+--- v8.t5.3.332.40/src/builtins.h	2016-11-07 14:10:50.485698406 -0800
++++ v8/src/builtins.h	2016-11-07 12:41:23.335070882 -0800
+@@ -135,6 +135,7 @@ class CodeStubAssembler;
+   V(ObjectGetOwnPropertyNames)            \
+   V(ObjectGetOwnPropertySymbols)          \
+   V(ObjectGetPrototypeOf)                 \
++  V(ObjectHasOwnProperty)                 \
+   V(ObjectIs)                             \
+   V(ObjectIsExtensible)                   \
+   V(ObjectIsFrozen)                       \
+@@ -242,6 +243,8 @@ class CodeStubAssembler;
+   V(InterpreterPushArgsAndConstruct, BUILTIN, kNoExtraICState)               \
+   V(InterpreterEnterBytecodeDispatch, BUILTIN, kNoExtraICState)              \
+                                                                              \
++  V(LoadGlobalIC_Miss, BUILTIN, kNoExtraICState)                             \
++  V(LoadIC_Miss, BUILTIN, kNoExtraICState)                                   \
+   V(KeyedLoadIC_Miss, BUILTIN, kNoExtraICState)                              \
+   V(StoreIC_Miss, BUILTIN, kNoExtraICState)                                  \
+   V(KeyedStoreIC_Miss, BUILTIN, kNoExtraICState)                             \
+@@ -325,7 +328,6 @@ class CodeStubAssembler;
+   V(MathTan, 2)                       \
+   V(MathSqrt, 2)                      \
+   V(MathTrunc, 2)                     \
+-  V(ObjectHasOwnProperty, 2)          \
+   V(ArrayIsArray, 2)                  \
+   V(StringFromCharCode, 2)            \
+   V(StringPrototypeCharAt, 2)         \
+@@ -337,14 +339,19 @@ class CodeStubAssembler;
+   V(AtomicsStore, 4)
+ 
+ // Define list of builtins implemented in TurboFan (with CallStub linkage).
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ #define BUILTIN_LIST_S(V)                                                   \
+   V(LoadGlobalIC_Miss, BUILTIN, kNoExtraICState, LoadGlobalWithVector)      \
+   V(LoadGlobalIC_Slow, HANDLER, Code::LOAD_GLOBAL_IC, LoadGlobalWithVector) \
+   V(LoadIC_Miss, BUILTIN, kNoExtraICState, LoadWithVector)                  \
+   V(LoadIC_Slow, HANDLER, Code::LOAD_IC, LoadWithVector)
++#else
++#endif
+ 
+ // Define list of builtin handlers implemented in assembly.
+ #define BUILTIN_LIST_H(V)                    \
++  V(LoadGlobalIC_Slow,       LOAD_GLOBAL_IC) \
++  V(LoadIC_Slow,             LOAD_IC)        \
+   V(KeyedLoadIC_Slow,        KEYED_LOAD_IC)  \
+   V(StoreIC_Slow,            STORE_IC)       \
+   V(KeyedStoreIC_Slow,       KEYED_STORE_IC) \
+@@ -383,8 +390,13 @@ class Builtins {
+ #define DEF_ENUM_S(name, kind, extra, interface_descriptor) k##name,
+ #define DEF_ENUM_H(name, kind) k##name,
+     BUILTIN_LIST_C(DEF_ENUM_C) BUILTIN_LIST_A(DEF_ENUM_A)
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++        BUILTIN_LIST_T(DEF_ENUM_T) BUILTIN_LIST_H(DEF_ENUM_H)
++            BUILTIN_LIST_DEBUG_A(DEF_ENUM_A)
++#else
+         BUILTIN_LIST_T(DEF_ENUM_T) BUILTIN_LIST_S(DEF_ENUM_S)
+             BUILTIN_LIST_H(DEF_ENUM_H) BUILTIN_LIST_DEBUG_A(DEF_ENUM_A)
++#endif
+ #undef DEF_ENUM_C
+ #undef DEF_ENUM_A
+ #undef DEF_ENUM_T
+@@ -403,13 +415,17 @@ class Builtins {
+ #define DECLARE_BUILTIN_ACCESSOR_C(name) Handle<Code> name();
+ #define DECLARE_BUILTIN_ACCESSOR_A(name, kind, extra) Handle<Code> name();
+ #define DECLARE_BUILTIN_ACCESSOR_T(name, argc) Handle<Code> name();
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ #define DECLARE_BUILTIN_ACCESSOR_S(name, kind, extra, interface_descriptor) \
+   Handle<Code> name();
++#endif
+ #define DECLARE_BUILTIN_ACCESSOR_H(name, kind) Handle<Code> name();
+   BUILTIN_LIST_C(DECLARE_BUILTIN_ACCESSOR_C)
+   BUILTIN_LIST_A(DECLARE_BUILTIN_ACCESSOR_A)
+   BUILTIN_LIST_T(DECLARE_BUILTIN_ACCESSOR_T)
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+   BUILTIN_LIST_S(DECLARE_BUILTIN_ACCESSOR_S)
++#endif
+   BUILTIN_LIST_H(DECLARE_BUILTIN_ACCESSOR_H)
+   BUILTIN_LIST_DEBUG_A(DECLARE_BUILTIN_ACCESSOR_A)
+ #undef DECLARE_BUILTIN_ACCESSOR_C
+diff -urp v8.t5.3.332.40/src/code-stub-assembler.cc v8/src/code-stub-assembler.cc
+--- v8.t5.3.332.40/src/code-stub-assembler.cc	2016-11-07 14:10:50.488698520 -0800
++++ v8/src/code-stub-assembler.cc	2016-11-07 12:41:23.337070958 -0800
+@@ -891,6 +891,10 @@ Node* CodeStubAssembler::AllocateJSArray
+       }
+     }
+   } else {
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++    // TODO(danno): Add a loop for initialization
++    UNIMPLEMENTED();
++#else
+     Variable current(this, MachineRepresentation::kTagged);
+     Label test(this);
+     Label decrement(this, &current);
+@@ -934,6 +938,7 @@ Node* CodeStubAssembler::AllocateJSArray
+     Branch(compare, &decrement, &done);
+ 
+     Bind(&done);
++#endif
+   }
+ 
+   return array;
+diff -urp v8.t5.3.332.40/src/code-stubs-hydrogen.cc v8/src/code-stubs-hydrogen.cc
+--- v8.t5.3.332.40/src/code-stubs-hydrogen.cc	2016-11-07 14:10:50.489698557 -0800
++++ v8/src/code-stubs-hydrogen.cc	2016-11-07 12:41:23.340071071 -0800
+@@ -81,14 +81,47 @@ class CodeStubGraphBuilderBase : public
+   HValue* BuildPushElement(HValue* object, HValue* argc,
+                            HValue* argument_elements, ElementsKind kind);
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++  enum ArgumentClass {
++    NONE,
++    SINGLE,
++    MULTIPLE
++  };
++#endif
++
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
++  HValue* BuildArrayConstructor(ElementsKind kind,
++                                AllocationSiteOverrideMode override_mode);
++  HValue* BuildInternalArrayConstructor(ElementsKind kind);
++#else
++  HValue* BuildArrayConstructor(ElementsKind kind,
++                                AllocationSiteOverrideMode override_mode,
++                                ArgumentClass argument_class);
++  HValue* BuildInternalArrayConstructor(ElementsKind kind,
++                                        ArgumentClass argument_class);
++#endif
++
+   HValue* UnmappedCase(HValue* elements, HValue* key, HValue* value);
+   HValue* EmitKeyedSloppyArguments(HValue* receiver, HValue* key,
+                                    HValue* value);
+ 
++  HValue* BuildArrayConstructor(ElementsKind kind,
++                                AllocationSiteOverrideMode override_mode);
++  HValue* BuildInternalArrayConstructor(ElementsKind kind);
++
+   HValue* BuildToString(HValue* input, bool convert);
+   HValue* BuildToPrimitive(HValue* input, HValue* input_map);
+ 
+  private:
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++  HValue* BuildArraySingleArgumentConstructor(JSArrayBuilder* builder);
++  HValue* BuildArrayNArgumentsConstructor(JSArrayBuilder* builder,
++                                          ElementsKind kind);
++#endif
++//  HValue* BuildArraySingleArgumentConstructor(JSArrayBuilder* builder);
++//  HValue* BuildArrayNArgumentsConstructor(JSArrayBuilder* builder,
++//                                          ElementsKind kind);
++//
+   base::SmartArrayPointer<HParameter*> parameters_;
+   HValue* arguments_length_;
+   CompilationInfo* info_;
+@@ -98,6 +131,133 @@ class CodeStubGraphBuilderBase : public
+ };
+ 
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
++HValue* CodeStubGraphBuilderBase::BuildArrayConstructor(
++    ElementsKind kind, AllocationSiteOverrideMode override_mode) {
++  HValue* constructor = GetParameter(ArrayConstructorStubBase::kConstructor);
++  HValue* alloc_site = GetParameter(ArrayConstructorStubBase::kAllocationSite);
++  JSArrayBuilder array_builder(this, kind, alloc_site, constructor,
++                               override_mode);
++  return BuildArrayNArgumentsConstructor(&array_builder, kind);
++}
++#else
++HValue* CodeStubGraphBuilderBase::BuildArrayConstructor(
++    ElementsKind kind,
++    AllocationSiteOverrideMode override_mode,
++    ArgumentClass argument_class) {
++  HValue* constructor = GetParameter(ArrayConstructorStubBase::kConstructor);
++  HValue* alloc_site = GetParameter(ArrayConstructorStubBase::kAllocationSite);
++  JSArrayBuilder array_builder(this, kind, alloc_site, constructor,
++                               override_mode);
++  HValue* result = NULL;
++  switch (argument_class) {
++    case NONE:
++      // This stub is very performance sensitive, the generated code must be
++      // tuned so that it doesn't build and eager frame.
++      info()->MarkMustNotHaveEagerFrame();
++      result = array_builder.AllocateEmptyArray();
++      break;
++    case SINGLE:
++      result = BuildArraySingleArgumentConstructor(&array_builder);
++      break;
++    case MULTIPLE:
++      result = BuildArrayNArgumentsConstructor(&array_builder, kind);
++      break;
++  }
++
++  return result;
++}
++
++HValue* CodeStubGraphBuilderBase::BuildArraySingleArgumentConstructor(
++    JSArrayBuilder* array_builder) {
++  // Smi check and range check on the input arg.
++  HValue* constant_one = graph()->GetConstant1();
++  HValue* constant_zero = graph()->GetConstant0();
++  HInstruction* elements = Add<HArgumentsElements>(false);
++  HInstruction* argument = Add<HAccessArgumentsAt>(
++      elements, constant_one, constant_zero);
++  return BuildAllocateArrayFromLength(array_builder, argument);
++}
++
++HValue* CodeStubGraphBuilderBase::BuildArrayNArgumentsConstructor(
++    JSArrayBuilder* array_builder, ElementsKind kind) {
++  // Insert a bounds check because the number of arguments might exceed
++  // the kInitialMaxFastElementArray limit. This cannot happen for code
++  // that was parsed, but calling via Array.apply(thisArg, [...]) might
++  // trigger it.
++  HValue* length = GetArgumentsLength();
++  HConstant* max_alloc_length =
++      Add<HConstant>(JSArray::kInitialMaxFastElementArray);
++  HValue* checked_length = Add<HBoundsCheck>(length, max_alloc_length);
++  // We need to fill with the hole if it's a smi array in the multi-argument
++  // case because we might have to bail out while copying arguments into
++  // the array because they aren't compatible with a smi array.
++  // If it's a double array, no problem, and if it's fast then no
++  // problem either because doubles are boxed.
++  //
++  // TODO(mvstanton): consider an instruction to memset fill the array
++  // with zero in this case instead.
++  JSArrayBuilder::FillMode fill_mode = IsFastSmiElementsKind(kind)
++      ? JSArrayBuilder::FILL_WITH_HOLE
++      : JSArrayBuilder::DONT_FILL_WITH_HOLE;
++//                                                    max_alloc_length,
++  HValue* new_object = array_builder->AllocateArray(checked_length,
++                                                    checked_length,
++                                                    fill_mode);
++  HValue* elements = array_builder->GetElementsLocation();
++  DCHECK(elements != NULL);
++  // Now populate the elements correctly.
++  LoopBuilder builder(this,
++                      context(),
++                      LoopBuilder::kPostIncrement);
++  HValue* start = graph()->GetConstant0();
++  HValue* key = builder.BeginBody(start, checked_length, Token::LT);
++  HInstruction* argument_elements = Add<HArgumentsElements>(false);
++  HInstruction* argument = Add<HAccessArgumentsAt>(
++      argument_elements, checked_length, key);
++  Add<HStoreKeyed>(elements, key, argument, nullptr, kind);
++  builder.EndBody();
++  return new_object;
++}
++
++#endif
++
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
++HValue* CodeStubGraphBuilderBase::BuildInternalArrayConstructor(
++    ElementsKind kind) {
++    ElementsKind kind, ArgumentClass argument_class) {
++  HValue* constructor = GetParameter(
++      InternalArrayConstructorStubBase::kConstructor);
++  JSArrayBuilder array_builder(this, kind, constructor);
++  return BuildArrayNArgumentsConstructor(&array_builder, kind);
++}
++
++#else
++HValue* CodeStubGraphBuilderBase::BuildInternalArrayConstructor(
++    ElementsKind kind, ArgumentClass argument_class) {
++  HValue* constructor = GetParameter(
++      InternalArrayConstructorStubBase::kConstructor);
++  JSArrayBuilder array_builder(this, kind, constructor);
++
++  HValue* result = NULL;
++  switch (argument_class) {
++    case NONE:
++      // This stub is very performance sensitive, the generated code must be
++      // tuned so that it doesn't build and eager frame.
++      info()->MarkMustNotHaveEagerFrame();
++      result = array_builder.AllocateEmptyArray();
++      break;
++    case SINGLE:
++      result = BuildArraySingleArgumentConstructor(&array_builder);
++      break;
++    case MULTIPLE:
++      result = BuildArrayNArgumentsConstructor(&array_builder, kind);
++      break;
++  }
++  return result;
++}
++#endif
++
+ bool CodeStubGraphBuilderBase::BuildGraph() {
+   // Update the static counter each time a new code stub is generated.
+   isolate()->counters()->code_stubs()->Increment();
+@@ -294,6 +454,85 @@ Handle<Code> NumberToStringStub::Generat
+   return DoGenerateCode(this);
+ }
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
++template <>
++HValue* CodeStubGraphBuilder<ArrayNArgumentsConstructorStub>::BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  AllocationSiteOverrideMode override_mode = casted_stub()->override_mode();
++  return BuildArrayConstructor(kind, override_mode);
++}
++
++template <>
++HValue* CodeStubGraphBuilder<InternalArrayNArgumentsConstructorStub>::
++    BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  return BuildInternalArrayConstructor(kind);
++}
++
++template <>
++HValue* CodeStubGraphBuilder<ArrayNArgumentsConstructorStub>::BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  AllocationSiteOverrideMode override_mode = casted_stub()->override_mode();
++  return BuildArrayConstructor(kind, override_mode, MULTIPLE);
++}
++
++template <>
++HValue* CodeStubGraphBuilder<InternalArrayNArgumentsConstructorStub>::
++    BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  return BuildInternalArrayConstructor(kind, MULTIPLE);
++}
++
++#else
++template <>
++HValue* CodeStubGraphBuilder<ArrayNoArgumentConstructorStub>::BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  AllocationSiteOverrideMode override_mode = casted_stub()->override_mode();
++  return BuildArrayConstructor(kind, override_mode, NONE);
++}
++
++Handle<Code> ArrayNoArgumentConstructorStub::GenerateCode() {
++  return DoGenerateCode(this);
++}
++
++template <>
++HValue* CodeStubGraphBuilder<InternalArrayNoArgumentConstructorStub>::
++    BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  return BuildInternalArrayConstructor(kind, NONE);
++}
++
++Handle<Code> InternalArrayNoArgumentConstructorStub::GenerateCode() {
++  return DoGenerateCode(this);
++}
++
++template <>
++HValue* CodeStubGraphBuilder<ArraySingleArgumentConstructorStub>::
++    BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  AllocationSiteOverrideMode override_mode = casted_stub()->override_mode();
++  return BuildArrayConstructor(kind, override_mode, SINGLE);
++}
++
++Handle<Code> ArraySingleArgumentConstructorStub::GenerateCode() {
++  return DoGenerateCode(this);
++}
++
++template <>
++HValue* CodeStubGraphBuilder<InternalArraySingleArgumentConstructorStub>::
++    BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  return BuildInternalArrayConstructor(kind, SINGLE);
++}
++
++
++Handle<Code> InternalArraySingleArgumentConstructorStub::GenerateCode() {
++  return DoGenerateCode(this);
++}
++
++#endif
++
++
+ 
+ // Returns the type string of a value; see ECMA-262, 11.4.3 (p 47).
+ template <>
+@@ -1511,6 +1750,115 @@ Handle<Code> TransitionElementsKindStub:
+   return DoGenerateCode(this);
+ }
+ 
++#if 1
++HValue* CodeStubGraphBuilderBase::BuildArrayConstructor(
++    ElementsKind kind, AllocationSiteOverrideMode override_mode) {
++  HValue* constructor = GetParameter(ArrayConstructorStubBase::kConstructor);
++  HValue* alloc_site = GetParameter(ArrayConstructorStubBase::kAllocationSite);
++  JSArrayBuilder array_builder(this, kind, alloc_site, constructor,
++                               override_mode);
++  return BuildArrayNArgumentsConstructor(&array_builder, kind);
++}
++#endif
++
++#if 1
++HValue* CodeStubGraphBuilderBase::BuildInternalArrayConstructor(
++    ElementsKind kind) {
++  HValue* constructor = GetParameter(
++      InternalArrayConstructorStubBase::kConstructor);
++  JSArrayBuilder array_builder(this, kind, constructor);
++  return BuildArrayNArgumentsConstructor(&array_builder, kind);
++}
++#endif
++
++#if 0
++HValue* CodeStubGraphBuilderBase::BuildArraySingleArgumentConstructor(
++    JSArrayBuilder* array_builder) {
++  // Smi check and range check on the input arg.
++  HValue* constant_one = graph()->GetConstant1();
++  HValue* constant_zero = graph()->GetConstant0();
++
++  HInstruction* elements = Add<HArgumentsElements>(false);
++  HInstruction* argument = Add<HAccessArgumentsAt>(
++      elements, constant_one, constant_zero);
++
++  return BuildAllocateArrayFromLength(array_builder, argument);
++}
++#endif
++
++#if 0
++HValue* CodeStubGraphBuilderBase::BuildArrayNArgumentsConstructor(
++    JSArrayBuilder* array_builder, ElementsKind kind) {
++  // Insert a bounds check because the number of arguments might exceed
++  // the kInitialMaxFastElementArray limit. This cannot happen for code
++  // that was parsed, but calling via Array.apply(thisArg, [...]) might
++  // trigger it.
++  HValue* length = GetArgumentsLength();
++  HConstant* max_alloc_length =
++      Add<HConstant>(JSArray::kInitialMaxFastElementArray);
++  HValue* checked_length = Add<HBoundsCheck>(length, max_alloc_length);
++
++  // We need to fill with the hole if it's a smi array in the multi-argument
++  // case because we might have to bail out while copying arguments into
++  // the array because they aren't compatible with a smi array.
++  // If it's a double array, no problem, and if it's fast then no
++  // problem either because doubles are boxed.
++  //
++  // TODO(mvstanton): consider an instruction to memset fill the array
++  // with zero in this case instead.
++  JSArrayBuilder::FillMode fill_mode = IsFastSmiElementsKind(kind)
++      ? JSArrayBuilder::FILL_WITH_HOLE
++      : JSArrayBuilder::DONT_FILL_WITH_HOLE;
++  HValue* new_object = array_builder->AllocateArray(checked_length,
++                                                    checked_length,
++                                                    fill_mode);
++  HValue* elements = array_builder->GetElementsLocation();
++  DCHECK(elements != NULL);
++
++  // Now populate the elements correctly.
++  LoopBuilder builder(this,
++                      context(),
++                      LoopBuilder::kPostIncrement);
++  HValue* start = graph()->GetConstant0();
++  HValue* key = builder.BeginBody(start, checked_length, Token::LT);
++  HInstruction* argument_elements = Add<HArgumentsElements>(false);
++  HInstruction* argument = Add<HAccessArgumentsAt>(
++      argument_elements, checked_length, key);
++
++  Add<HStoreKeyed>(elements, key, argument, nullptr, kind);
++  builder.EndBody();
++  return new_object;
++}
++#endif
++
++#if 1
++template <>
++HValue* CodeStubGraphBuilder<ArrayNArgumentsConstructorStub>::BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  AllocationSiteOverrideMode override_mode = casted_stub()->override_mode();
++  return BuildArrayConstructor(kind, override_mode);
++}
++
++Handle<Code> ArrayNArgumentsConstructorStub::GenerateCode() {
++  return DoGenerateCode(this);
++}
++#endif
++
++#if 1
++template <>
++HValue* CodeStubGraphBuilder<InternalArrayNArgumentsConstructorStub>::
++    BuildCodeStub() {
++  ElementsKind kind = casted_stub()->elements_kind();
++  return BuildInternalArrayConstructor(kind);
++}
++
++
++Handle<Code> InternalArrayNArgumentsConstructorStub::GenerateCode() {
++  return DoGenerateCode(this);
++}
++#endif
++
++
+ template <>
+ HValue* CodeStubGraphBuilder<BinaryOpICStub>::BuildCodeInitializedStub() {
+   BinaryOpICState state = casted_stub()->state();
+@@ -1587,7 +1935,6 @@ Handle<Code> BinaryOpICStub::GenerateCod
+   return DoGenerateCode(this);
+ }
+ 
+-
+ template <>
+ HValue* CodeStubGraphBuilder<BinaryOpWithAllocationSiteStub>::BuildCodeStub() {
+   BinaryOpICState state = casted_stub()->state();
+diff -urp v8.t5.3.332.40/src/code-stubs.cc v8/src/code-stubs.cc
+--- v8.t5.3.332.40/src/code-stubs.cc	2016-11-07 14:10:50.491698633 -0800
++++ v8/src/code-stubs.cc	2016-11-07 12:41:23.341071108 -0800
+@@ -4478,6 +4478,16 @@ void ArrayConstructorStub::PrintName(std
+ }
+ 
+ 
++std::ostream& ArrayConstructorStubBase::BasePrintName(
++    std::ostream& os,  // NOLINT
++    const char* name) const {
++  os << name << "_" << ElementsKindToString(elements_kind());
++  if (override_mode() == DISABLE_ALLOCATION_SITES) {
++    os << "_DISABLE_ALLOCATION_SITES";
++  }
++  return os;
++}
++
+ bool ToBooleanICStub::UpdateStatus(Handle<Object> object) {
+   Types new_types = types();
+   Types old_types = new_types;
+@@ -4571,6 +4581,7 @@ void ProfileEntryHookStub::EntryHookTram
+   entry_hook(function, stack_pointer);
+ }
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ void ArrayNoArgumentConstructorStub::GenerateAssembly(
+     CodeStubAssembler* assembler) const {
+   typedef compiler::Node Node;
+@@ -4608,13 +4619,16 @@ void InternalArrayNoArgumentConstructorS
+       assembler->IntPtrConstant(0), nullptr);
+   assembler->Return(array);
+ }
++#endif
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ namespace {
+ 
+ void SingleArgumentConstructorCommon(CodeStubAssembler* assembler,
+                                      ElementsKind elements_kind,
+                                      compiler::Node* array_map,
+                                      compiler::Node* allocation_site,
++                                     Runtime::FunctionId runtime_fallback,
+                                      AllocationSiteMode mode) {
+   typedef compiler::Node Node;
+   typedef CodeStubAssembler::Label Label;
+@@ -4653,18 +4667,27 @@ void SingleArgumentConstructorCommon(Cod
+   {
+     Node* context = assembler->Parameter(
+         ArraySingleArgumentConstructorDescriptor::kContextIndex);
+-    Node* function = assembler->Parameter(
++    Node* constructor = assembler->Parameter(
+         ArraySingleArgumentConstructorDescriptor::kFunctionIndex);
+-    Node* array_size = assembler->Parameter(
+-        ArraySingleArgumentConstructorDescriptor::kArraySizeSmiParameterIndex);
+-    Node* allocation_site = assembler->Parameter(
+-        ArraySingleArgumentConstructorDescriptor::kAllocationSiteIndex);
+-    assembler->TailCallRuntime(Runtime::kNewArray, context, function,
+-                               array_size, function, allocation_site);
++    Node* argument_count = assembler->Parameter(
++        ArraySingleArgumentConstructorDescriptor::kArgumentsCountIndex);
++    Node* argument_base_offset = assembler->IntPtrAdd(
++        assembler->IntPtrConstant(CommonFrameConstants::kFixedFrameSizeAboveFp -
++                                  kPointerSize),
++        assembler->Word32Shl(argument_count,
++                             assembler->IntPtrConstant(kPointerSizeLog2)));
++    Node* argument_base = assembler->IntPtrAdd(assembler->LoadFramePointer(),
++                                               argument_base_offset);
++    Node* array = assembler->CallRuntime(
++        runtime_fallback, context, constructor, argument_base,
++        assembler->SmiTag(argument_count), allocation_site);
++    assembler->Return(array);
+   }
+ }
+ }  // namespace
++#endif
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ void ArraySingleArgumentConstructorStub::GenerateAssembly(
+     CodeStubAssembler* assembler) const {
+   typedef compiler::Node Node;
+@@ -4679,10 +4702,13 @@ void ArraySingleArgumentConstructorStub:
+                                 : AllocationSite::GetMode(elements_kind());
+   Node* allocation_site = assembler->Parameter(
+       ArrayNoArgumentConstructorDescriptor::kAllocationSiteIndex);
+-  SingleArgumentConstructorCommon(assembler, elements_kind(), array_map,
+-                                  allocation_site, mode);
++  SingleArgumentConstructorCommon(
++      assembler, elements_kind(), array_map, allocation_site,
++      Runtime::kArraySingleArgumentConstructor, mode);
+ }
++#endif
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ void InternalArraySingleArgumentConstructorStub::GenerateAssembly(
+     CodeStubAssembler* assembler) const {
+   typedef compiler::Node Node;
+@@ -4690,14 +4716,16 @@ void InternalArraySingleArgumentConstruc
+       ArraySingleArgumentConstructorDescriptor::kFunctionIndex);
+   Node* array_map = assembler->LoadObjectField(
+       function, JSFunction::kPrototypeOrInitialMapOffset);
+-  SingleArgumentConstructorCommon(assembler, elements_kind(), array_map,
+-                                  assembler->UndefinedConstant(),
+-                                  DONT_TRACK_ALLOCATION_SITE);
++  SingleArgumentConstructorCommon(
++      assembler, elements_kind(), array_map, assembler->UndefinedConstant(),
++      Runtime::kArraySingleArgumentConstructor, DONT_TRACK_ALLOCATION_SITE);
+ }
++#endif
+ 
+ ArrayConstructorStub::ArrayConstructorStub(Isolate* isolate)
+     : PlatformCodeStub(isolate) {
+   minor_key_ = ArgumentCountBits::encode(ANY);
++  ArrayConstructorStubBase::GenerateStubsAheadOfTime(isolate);
+ }
+ 
+ 
+@@ -4713,10 +4741,15 @@ ArrayConstructorStub::ArrayConstructorSt
+   } else {
+     UNREACHABLE();
+   }
++  ArrayConstructorStubBase::GenerateStubsAheadOfTime(isolate);
++}
++
++
++InternalArrayConstructorStub::InternalArrayConstructorStub(
++    Isolate* isolate) : PlatformCodeStub(isolate) {
++  InternalArrayConstructorStubBase::GenerateStubsAheadOfTime(isolate);
+ }
+ 
+-InternalArrayConstructorStub::InternalArrayConstructorStub(Isolate* isolate)
+-    : PlatformCodeStub(isolate) {}
+ 
+ Representation RepresentationFromType(Type* type) {
+   if (type->Is(Type::UntaggedIntegral())) {
+diff -urp v8.t5.3.332.40/src/code-stubs.h v8/src/code-stubs.h
+--- v8.t5.3.332.40/src/code-stubs.h	2016-11-07 14:10:50.492698671 -0800
++++ v8/src/code-stubs.h	2016-11-07 12:41:23.343071184 -0800
+@@ -18,6 +18,7 @@
+ namespace v8 {
+ namespace internal {
+ 
++
+ // List of code stubs used on all platforms.
+ #define CODE_STUB_LIST_ALL_PLATFORMS(V)     \
+   /* PlatformCodeStubs */                   \
+@@ -54,6 +55,8 @@ namespace internal {
+   V(VectorStoreIC)                          \
+   V(VectorKeyedStoreIC)                     \
+   /* HydrogenCodeStubs */                   \
++  V(ArraySingleArgumentConstructor)         \
++  V(ArrayNoArgumentConstructor)             \
+   V(BinaryOpIC)                             \
+   V(BinaryOpWithAllocationSite)             \
+   V(CreateAllocationSite)                   \
+@@ -70,6 +73,8 @@ namespace internal {
+   V(FastNewSloppyArguments)                 \
+   V(FastNewStrictArguments)                 \
+   V(GrowArrayElements)                      \
++  V(InternalArrayNoArgumentConstructor)     \
++  V(InternalArraySingleArgumentConstructor) \
+   V(KeyedLoadGeneric)                       \
+   V(LoadScriptContextField)                 \
+   V(LoadDictionaryElement)                  \
+@@ -98,9 +103,6 @@ namespace internal {
+   V(AllocateInt8x16)                        \
+   V(AllocateUint8x16)                       \
+   V(AllocateBool8x16)                       \
+-  V(ArrayNoArgumentConstructor)             \
+-  V(ArraySingleArgumentConstructor)         \
+-  V(ArrayNArgumentsConstructor)             \
+   V(StringLength)                           \
+   V(Add)                                    \
+   V(Subtract)                               \
+@@ -114,8 +116,6 @@ namespace internal {
+   V(BitwiseOr)                              \
+   V(BitwiseXor)                             \
+   V(Inc)                                    \
+-  V(InternalArrayNoArgumentConstructor)     \
+-  V(InternalArraySingleArgumentConstructor) \
+   V(Dec)                                    \
+   V(FastCloneShallowObject)                 \
+   V(InstanceOf)                             \
+@@ -150,7 +150,12 @@ namespace internal {
+   V(StoreField)                             \
+   V(StoreGlobal)                            \
+   V(StoreInterceptor)                       \
+-  V(StoreTransition)
++  V(StoreTransition) \
++  V(InternalArrayNArgumentsConstructor) \
++  V(ArrayNArgumentsConstructor)
++
++//  V(ArrayNArgumentsConstructor)             
++//  V(ArraySingleArgumentConstructor)         
+ 
+ // List of code stubs only used on ARM 32 bits platforms.
+ #if V8_TARGET_ARCH_ARM
+@@ -1307,7 +1312,7 @@ class ArrayConstructorStub: public Platf
+ 
+   class ArgumentCountBits : public BitField<ArgumentCountKey, 0, 2> {};
+ 
+-  DEFINE_CALL_INTERFACE_DESCRIPTOR(ArrayNArgumentsConstructor);
++  DEFINE_CALL_INTERFACE_DESCRIPTOR(ArrayConstructor);
+   DEFINE_PLATFORM_CODE_STUB(ArrayConstructor, PlatformCodeStub);
+ };
+ 
+@@ -1319,7 +1324,7 @@ class InternalArrayConstructorStub: publ
+  private:
+   void GenerateCase(MacroAssembler* masm, ElementsKind kind);
+ 
+-  DEFINE_CALL_INTERFACE_DESCRIPTOR(ArrayNArgumentsConstructor);
++  DEFINE_CALL_INTERFACE_DESCRIPTOR(InternalArrayConstructor);
+   DEFINE_PLATFORM_CODE_STUB(InternalArrayConstructor, PlatformCodeStub);
+ };
+ 
+@@ -2759,6 +2764,52 @@ class AllocateHeapNumberStub : public Tu
+ SIMD128_TYPES(SIMD128_ALLOC_STUB)
+ #undef SIMD128_ALLOC_STUB
+ 
++#if 0
++class ArrayConstructorStubBase : public HydrogenCodeStub {
++ public:
++  ArrayConstructorStubBase(Isolate* isolate,
++                           ElementsKind kind,
++                           AllocationSiteOverrideMode override_mode)
++      : HydrogenCodeStub(isolate) {
++    // It only makes sense to override local allocation site behavior
++    // if there is a difference between the global allocation site policy
++    // for an ElementsKind and the desired usage of the stub.
++    DCHECK(override_mode != DISABLE_ALLOCATION_SITES ||
++           AllocationSite::GetMode(kind) == TRACK_ALLOCATION_SITE);
++    set_sub_minor_key(ElementsKindBits::encode(kind) |
++                      AllocationSiteOverrideModeBits::encode(override_mode));
++  }
++
++  ElementsKind elements_kind() const {
++    return ElementsKindBits::decode(sub_minor_key());
++  }
++
++  AllocationSiteOverrideMode override_mode() const {
++    return AllocationSiteOverrideModeBits::decode(sub_minor_key());
++  }
++
++  static void GenerateStubsAheadOfTime(Isolate* isolate);
++
++  // Parameters accessed via CodeStubGraphBuilder::GetParameter()
++  static const int kConstructor = 0;
++  static const int kAllocationSite = 1;
++
++ protected:
++  std::ostream& BasePrintName(std::ostream& os,
++                              const char* name) const;  // NOLINT
++
++ private:
++  // Ensure data fits within available bits.
++  STATIC_ASSERT(LAST_ALLOCATION_SITE_OVERRIDE_MODE == 1);
++
++  class ElementsKindBits: public BitField<ElementsKind, 0, 8> {};
++  class AllocationSiteOverrideModeBits: public
++      BitField<AllocationSiteOverrideMode, 8, 1> {};  // NOLINT
++
++  DEFINE_CODE_STUB_BASE(ArrayConstructorStubBase, HydrogenCodeStub);
++};
++#endif
++
+ class CommonArrayConstructorStub : public TurboFanCodeStub {
+  protected:
+   CommonArrayConstructorStub(Isolate* isolate, ElementsKind kind,
+@@ -2789,8 +2840,6 @@ class CommonArrayConstructorStub : publi
+     return AllocationSiteOverrideModeBits::decode(sub_minor_key());
+   }
+ 
+-  static void GenerateStubsAheadOfTime(Isolate* isolate);
+-
+  private:
+   // Ensure data fits within available bits.
+   STATIC_ASSERT(LAST_ALLOCATION_SITE_OVERRIDE_MODE == 1);
+@@ -2800,6 +2849,98 @@ class CommonArrayConstructorStub : publi
+       : public BitField<AllocationSiteOverrideMode, 8, 1> {};  // NOLINT
+ };
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++class ArrayConstructorStubBase : public HydrogenCodeStub {
++ public:
++  ArrayConstructorStubBase(Isolate* isolate,
++                           ElementsKind kind,
++                           AllocationSiteOverrideMode override_mode)
++      : HydrogenCodeStub(isolate) {
++    // It only makes sense to override local allocation site behavior
++    // if there is a difference between the global allocation site policy
++    // for an ElementsKind and the desired usage of the stub.
++    DCHECK(override_mode != DISABLE_ALLOCATION_SITES ||
++           AllocationSite::GetMode(kind) == TRACK_ALLOCATION_SITE);
++    set_sub_minor_key(ElementsKindBits::encode(kind) |
++                      AllocationSiteOverrideModeBits::encode(override_mode));
++  }
++  ElementsKind elements_kind() const {
++    return ElementsKindBits::decode(sub_minor_key());
++  }
++  AllocationSiteOverrideMode override_mode() const {
++    return AllocationSiteOverrideModeBits::decode(sub_minor_key());
++  }
++  static void GenerateStubsAheadOfTime(Isolate* isolate);
++  // Parameters accessed via CodeStubGraphBuilder::GetParameter()
++  static const int kConstructor = 0;
++  static const int kAllocationSite = 1;
++ protected:
++  std::ostream& BasePrintName(std::ostream& os,
++                              const char* name) const;  // NOLINT
++ private:
++  // Ensure data fits within available bits.
++  STATIC_ASSERT(LAST_ALLOCATION_SITE_OVERRIDE_MODE == 1);
++  class ElementsKindBits: public BitField<ElementsKind, 0, 8> {};
++  class AllocationSiteOverrideModeBits: public
++      BitField<AllocationSiteOverrideMode, 8, 1> {};  // NOLINT
++  DEFINE_CODE_STUB_BASE(ArrayConstructorStubBase, HydrogenCodeStub);
++};
++
++class ArrayNoArgumentConstructorStub : public ArrayConstructorStubBase {
++ public:
++  ArrayNoArgumentConstructorStub(
++      Isolate* isolate,
++      ElementsKind kind,
++      AllocationSiteOverrideMode override_mode = DONT_OVERRIDE)
++      : ArrayConstructorStubBase(isolate, kind, override_mode) {
++  }
++
++ private:
++  void PrintName(std::ostream& os) const override {  // NOLINT
++    os << "ArrayNoArgumentConstructorStub";
++  }
++
++  DEFINE_CALL_INTERFACE_DESCRIPTOR(ArrayConstructorConstantArgCount);
++  DEFINE_HYDROGEN_CODE_STUB(ArrayNoArgumentConstructor,
++                            ArrayConstructorStubBase);
++};
++
++
++class InternalArrayConstructorStubBase : public HydrogenCodeStub {
++ public:
++  InternalArrayConstructorStubBase(Isolate* isolate, ElementsKind kind)
++      : HydrogenCodeStub(isolate) {
++    set_sub_minor_key(ElementsKindBits::encode(kind));
++  }
++
++  static void GenerateStubsAheadOfTime(Isolate* isolate);
++
++  // Parameters accessed via CodeStubGraphBuilder::GetParameter()
++  static const int kConstructor = 0;
++
++  ElementsKind elements_kind() const {
++    return ElementsKindBits::decode(sub_minor_key());
++  }
++
++ private:
++  class ElementsKindBits : public BitField<ElementsKind, 0, 8> {};
++
++  DEFINE_CODE_STUB_BASE(InternalArrayConstructorStubBase, HydrogenCodeStub);
++};
++
++class InternalArrayNoArgumentConstructorStub : public
++    InternalArrayConstructorStubBase {
++ public:
++  InternalArrayNoArgumentConstructorStub(Isolate* isolate,
++                                         ElementsKind kind)
++      : InternalArrayConstructorStubBase(isolate, kind) { }
++
++  DEFINE_CALL_INTERFACE_DESCRIPTOR(InternalArrayConstructorConstantArgCount);
++  DEFINE_HYDROGEN_CODE_STUB(InternalArrayNoArgumentConstructor,
++                            InternalArrayConstructorStubBase);
++};
++
++#else
+ class ArrayNoArgumentConstructorStub : public CommonArrayConstructorStub {
+  public:
+   ArrayNoArgumentConstructorStub(
+@@ -2832,7 +2973,40 @@ class InternalArrayNoArgumentConstructor
+   DEFINE_TURBOFAN_CODE_STUB(InternalArrayNoArgumentConstructor,
+                             CommonArrayConstructorStub);
+ };
++#endif
++
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++class ArraySingleArgumentConstructorStub : public ArrayConstructorStubBase {
++ public:
++  ArraySingleArgumentConstructorStub(
++      Isolate* isolate, ElementsKind kind,
++      AllocationSiteOverrideMode override_mode = DONT_OVERRIDE)
++      : ArrayConstructorStubBase(isolate, kind, override_mode) {
++  }
++
++  DEFINE_CALL_INTERFACE_DESCRIPTOR(ArrayConstructor);
++  DEFINE_HYDROGEN_CODE_STUB(ArraySingleArgumentConstructor,
++                            ArrayConstructorStubBase);
++};
++
++class InternalArraySingleArgumentConstructorStub : public
++    InternalArrayConstructorStubBase {
++ public:
++  InternalArraySingleArgumentConstructorStub(Isolate* isolate,
++                                             ElementsKind kind)
++      : InternalArrayConstructorStubBase(isolate, kind) { }
+ 
++ private:
++  void PrintName(std::ostream& os) const override {  // NOLINT
++    os << "InternalArraySingleArgumentConstructorStub";
++  }
++
++  DEFINE_CALL_INTERFACE_DESCRIPTOR(InternalArrayConstructor);
++  DEFINE_HYDROGEN_CODE_STUB(InternalArraySingleArgumentConstructor,
++                            InternalArrayConstructorStubBase);
++};
++
++#else
+ class ArraySingleArgumentConstructorStub : public CommonArrayConstructorStub {
+  public:
+   ArraySingleArgumentConstructorStub(
+@@ -2866,19 +3040,63 @@ class InternalArraySingleArgumentConstru
+   DEFINE_TURBOFAN_CODE_STUB(InternalArraySingleArgumentConstructor,
+                             CommonArrayConstructorStub);
+ };
++#endif
+ 
+-class ArrayNArgumentsConstructorStub : public PlatformCodeStub {
++class ArrayNArgumentsConstructorStub : public ArrayConstructorStubBase {
+  public:
+-  explicit ArrayNArgumentsConstructorStub(Isolate* isolate)
+-      : PlatformCodeStub(isolate) {}
++  ArrayNArgumentsConstructorStub(
++      Isolate* isolate,
++      ElementsKind kind,
++      AllocationSiteOverrideMode override_mode = DONT_OVERRIDE)
++      : ArrayConstructorStubBase(isolate, kind, override_mode) {
++  }
+ 
+-  CallInterfaceDescriptor GetCallInterfaceDescriptor() const override {
+-    return ArrayNArgumentsConstructorDescriptor(isolate());
++ private:
++  void PrintName(std::ostream& os) const override {  // NOLINT
++    BasePrintName(os, "ArrayNArgumentsConstructorStub");
++  }
++
++  DEFINE_CALL_INTERFACE_DESCRIPTOR(ArrayConstructor);
++  DEFINE_HYDROGEN_CODE_STUB(ArrayNArgumentsConstructor,
++                            ArrayConstructorStubBase);
++};
++
++#if 0
++class InternalArrayConstructorStubBase : public HydrogenCodeStub {
++ public:
++  InternalArrayConstructorStubBase(Isolate* isolate, ElementsKind kind)
++      : HydrogenCodeStub(isolate) {
++    set_sub_minor_key(ElementsKindBits::encode(kind));
++  }
++
++  static void GenerateStubsAheadOfTime(Isolate* isolate);
++
++  // Parameters accessed via CodeStubGraphBuilder::GetParameter()
++  static const int kConstructor = 0;
++
++  ElementsKind elements_kind() const {
++    return ElementsKindBits::decode(sub_minor_key());
+   }
+ 
+  private:
+-  DEFINE_PLATFORM_CODE_STUB(ArrayNArgumentsConstructor, PlatformCodeStub);
++  class ElementsKindBits : public BitField<ElementsKind, 0, 8> {};
++
++  DEFINE_CODE_STUB_BASE(InternalArrayConstructorStubBase, HydrogenCodeStub);
+ };
++#endif
++
++
++class InternalArrayNArgumentsConstructorStub : public
++    InternalArrayConstructorStubBase {
++ public:
++  InternalArrayNArgumentsConstructorStub(Isolate* isolate, ElementsKind kind)
++      : InternalArrayConstructorStubBase(isolate, kind) { }
++
++  DEFINE_CALL_INTERFACE_DESCRIPTOR(InternalArrayConstructor);
++  DEFINE_HYDROGEN_CODE_STUB(InternalArrayNArgumentsConstructor,
++                            InternalArrayConstructorStubBase);
++};
++
+ 
+ class StoreElementStub : public PlatformCodeStub {
+  public:
+@@ -3010,7 +3228,6 @@ class ElementsTransitionAndStoreStub : p
+   DEFINE_HYDROGEN_CODE_STUB(ElementsTransitionAndStore, HydrogenCodeStub);
+ };
+ 
+-
+ class StubFailureTrampolineStub : public PlatformCodeStub {
+  public:
+   StubFailureTrampolineStub(Isolate* isolate, StubFunctionMode function_mode)
+diff -urp v8.t5.3.332.40/src/compiler/instruction-selector.cc v8/src/compiler/instruction-selector.cc
+--- v8.t5.3.332.40/src/compiler/instruction-selector.cc	2016-11-07 14:10:50.526699960 -0800
++++ v8/src/compiler/instruction-selector.cc	2016-11-07 12:41:23.344071221 -0800
+@@ -1366,7 +1366,7 @@ void InstructionSelector::VisitBitcastWo
+ }
+ 
+ // 32 bit targets do not implement the following instructions.
+-#if V8_TARGET_ARCH_32_BIT
++#if V8_TARGET_ARCH_32_BIT && !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ 
+ void InstructionSelector::VisitWord64And(Node* node) { UNIMPLEMENTED(); }
+ 
+@@ -1520,7 +1520,7 @@ void InstructionSelector::VisitBitcastIn
+ #endif  // V8_TARGET_ARCH_32_BIT
+ 
+ // 64 bit targets do not implement the following instructions.
+-#if V8_TARGET_ARCH_64_BIT
++#if V8_TARGET_ARCH_64_BIT || (defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+ void InstructionSelector::VisitInt32PairAdd(Node* node) { UNIMPLEMENTED(); }
+ 
+ void InstructionSelector::VisitInt32PairSub(Node* node) { UNIMPLEMENTED(); }
+diff -urp v8.t5.3.332.40/src/compiler/js-generic-lowering.cc v8/src/compiler/js-generic-lowering.cc
+--- v8.t5.3.332.40/src/compiler/js-generic-lowering.cc	2016-11-07 14:10:50.530700112 -0800
++++ v8/src/compiler/js-generic-lowering.cc	2016-11-07 12:41:23.344071221 -0800
+@@ -436,7 +436,8 @@ void JSGenericLowering::LowerJSCreateArr
+       node->InsertInput(graph()->zone(), 4, jsgraph()->UndefinedConstant());
+       NodeProperties::ChangeOp(node, common()->Call(desc));
+     } else {
+-      ArrayNArgumentsConstructorStub stub(isolate());
++      ArrayNArgumentsConstructorStub stub(isolate(), elements_kind,
++                                          override_mode);
+       CallDescriptor* desc = Linkage::GetStubCallDescriptor(
+           isolate(), graph()->zone(), stub.GetCallInterfaceDescriptor(),
+           arity + 1, CallDescriptor::kNeedsFrameState);
+diff -urp v8.t5.3.332.40/src/compiler/schedule.cc v8/src/compiler/schedule.cc
+--- v8.t5.3.332.40/src/compiler/schedule.cc	2016-11-07 14:10:50.554701022 -0800
++++ v8/src/compiler/schedule.cc	2016-11-07 12:41:23.345071259 -0800
+@@ -344,7 +344,7 @@ void Schedule::EnsureSplitEdgeForm(Basic
+       split_edge_block->set_control(BasicBlock::kGoto);
+       split_edge_block->successors().push_back(block);
+       split_edge_block->predecessors().push_back(pred);
+-      split_edge_block->set_deferred(pred->deferred());
++      split_edge_block->set_deferred(block->deferred());
+       *current_pred = split_edge_block;
+       // Find a corresponding successor in the previous block, replace it
+       // with the split edge block... but only do it once, since we only
+diff -urp v8.t5.3.332.40/src/crankshaft/x64/lithium-codegen-x64.cc v8/src/crankshaft/x64/lithium-codegen-x64.cc
+--- v8.t5.3.332.40/src/crankshaft/x64/lithium-codegen-x64.cc	2016-11-07 14:10:50.627703789 -0800
++++ v8/src/crankshaft/x64/lithium-codegen-x64.cc	2016-11-07 12:41:23.346071297 -0800
+@@ -278,10 +278,18 @@ void LCodeGen::GenerateBodyInstructionPo
+ 
+ 
+ bool LCodeGen::GenerateJumpTable() {
++#if __SIZEOF_POINTER__ != 4
+   if (jump_table_.length() == 0) return !is_aborted();
++#endif
+ 
+   Label needs_frame;
++#if __SIZEOF_POINTER__ == 4
++  if (jump_table_.length() > 0) {
++    Comment(";;; -------------------- Jump table --------------------");
++  }
++#else
+   Comment(";;; -------------------- Jump table --------------------");
++#endif
+   for (int i = 0; i < jump_table_.length(); i++) {
+     Deoptimizer::JumpTableEntry* table_entry = &jump_table_[i];
+     __ bind(&table_entry->label);
+@@ -290,7 +298,27 @@ bool LCodeGen::GenerateJumpTable() {
+     if (table_entry->needs_frame) {
+       DCHECK(!info()->saves_caller_doubles());
+       __ Move(kScratchRegister, ExternalReference::ForDeoptEntry(entry));
++#if __SIZEOF_POINTER__ == 4
++      if (needs_frame.is_bound()) {
++        __ jmp(&needs_frame);
++      } else {
++        __ bind(&needs_frame);
++        __ movp(rsi, MemOperand(rbp, StandardFrameConstants::kContextOffset));
++        __ pushq(rbp);
++        __ movp(rbp, rsp);
++        __ Push(rsi);
++        // This variant of deopt can only be used with stubs. Since we don't
++        // have a function pointer to install in the stack frame that we're
++        // building, install a special marker there instead.
++        DCHECK(info()->IsStub());
++        __ Move(rsi, Smi::FromInt(StackFrame::STUB));
++        __ Push(rsi);
++        __ movp(rsi, MemOperand(rsp, kPointerSize));
++        __ call(kScratchRegister);
++      }
++#else
+       __ call(&needs_frame);
++#endif
+     } else {
+       if (info()->saves_caller_doubles()) {
+         DCHECK(info()->IsStub());
+@@ -300,6 +328,7 @@ bool LCodeGen::GenerateJumpTable() {
+     }
+   }
+ 
++#if __SIZEOF_POINTER__ != 4
+   if (needs_frame.is_linked()) {
+     __ bind(&needs_frame);
+     /* stack layout
+@@ -339,6 +368,7 @@ bool LCodeGen::GenerateJumpTable() {
+     */
+     __ ret(0);
+   }
++#endif
+ 
+   return !is_aborted();
+ }
+@@ -2947,7 +2977,15 @@ Operand LCodeGen::BuildFastArrayOperand(
+                    (constant_value << shift_size) + offset);
+   } else {
+     // Guaranteed by ArrayInstructionInterface::KeyedAccessIndexRequirement().
++#if __SIZEOF_POINTER__ != 4
+     DCHECK(key_representation.IsInteger32());
++#else
++    // Take the tag bit into account while computing the shift size.
++    if (key_representation.IsSmi() && (shift_size >= 1)) {
++      DCHECK(SmiValuesAre31Bits());
++      shift_size -= kSmiTagSize;
++    }
++#endif
+ 
+     ScaleFactor scale_factor = static_cast<ScaleFactor>(shift_size);
+     return Operand(elements_pointer_reg,
+@@ -3713,7 +3751,14 @@ void LCodeGen::DoCallNewArray(LCallNewAr
+   DCHECK(ToRegister(instr->result()).is(rax));
+ 
+   __ Set(rax, instr->arity());
+-  __ Move(rbx, instr->hydrogen()->site());
++  if (instr->arity() == 1) {
++    // We only need the allocation site for the case we have a length argument.
++    // The case may bail out to the runtime, which will determine the correct
++    // elements kind with the site.
++    __ Move(rbx, instr->hydrogen()->site());
++  } else {
++    __ LoadRoot(rbx, Heap::kUndefinedValueRootIndex);
++  }
+ 
+   ElementsKind kind = instr->hydrogen()->elements_kind();
+   AllocationSiteOverrideMode override_mode =
+@@ -3747,7 +3792,7 @@ void LCodeGen::DoCallNewArray(LCallNewAr
+     CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
+     __ bind(&done);
+   } else {
+-    ArrayNArgumentsConstructorStub stub(isolate());
++    ArrayNArgumentsConstructorStub stub(isolate(), kind, override_mode);
+     CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
+   }
+ }
+diff -urp v8.t5.3.332.40/src/flag-definitions.h v8/src/flag-definitions.h
+--- v8.t5.3.332.40/src/flag-definitions.h	2016-11-07 14:10:50.662705116 -0800
++++ v8/src/flag-definitions.h	2016-11-07 12:41:23.347071335 -0800
+@@ -768,7 +768,11 @@ DEFINE_BOOL(use_idle_notification, true,
+ // ic.cc
+ DEFINE_BOOL(use_ic, true, "use inline caching")
+ DEFINE_BOOL(trace_ic, false, "trace inline cache state transitions")
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++DEFINE_BOOL(tf_load_ic_stub, false, "use TF LoadIC stub")
++#else
+ DEFINE_BOOL(tf_load_ic_stub, true, "use TF LoadIC stub")
++#endif
+ 
+ // macro-assembler-ia32.cc
+ DEFINE_BOOL(native_code_counters, false,
+diff -urp v8.t5.3.332.40/src/ic/ic.cc v8/src/ic/ic.cc
+--- v8.t5.3.332.40/src/ic/ic.cc	2016-11-07 14:10:50.718707239 -0800
++++ v8/src/ic/ic.cc	2016-11-07 12:41:23.349071410 -0800
+@@ -1097,12 +1097,14 @@ Handle<Code> LoadIC::GetMapIndependentHa
+           // Ruled out by IsCompatibleReceiver() above.
+           DCHECK(AccessorInfo::IsCompatibleReceiverMap(isolate(), info, map));
+           if (!holder->HasFastProperties()) return slow_stub();
++#if !(__SIZEOF_POINTER__ == 4)
+           if (receiver_is_holder) {
+             TRACE_HANDLER_STATS(isolate(), LoadIC_LoadApiGetterStub);
+             int index = lookup->GetAccessorIndex();
+             LoadApiGetterStub stub(isolate(), true, index);
+             return stub.GetCode();
+           }
++#endif
+           if (info->is_sloppy() && !receiver->IsJSReceiver()) {
+             TRACE_HANDLER_STATS(isolate(), LoadIC_SlowStub);
+             return slow_stub();
+@@ -1239,7 +1241,7 @@ Handle<Code> LoadIC::CompileHandler(Look
+         DCHECK(v8::ToCData<Address>(info->getter()) != nullptr);
+         DCHECK(AccessorInfo::IsCompatibleReceiverMap(isolate(), info, map));
+         DCHECK(holder->HasFastProperties());
+-        DCHECK(!receiver_is_holder);
++//        DCHECK(!receiver_is_holder);
+         DCHECK(!info->is_sloppy() || receiver->IsJSReceiver());
+         TRACE_HANDLER_STATS(isolate(), LoadIC_LoadCallback);
+         NamedLoadHandlerCompiler compiler(isolate(), map, holder, cache_holder);
+diff -urp v8.t5.3.332.40/src/ic/ic.h v8/src/ic/ic.h
+--- v8.t5.3.332.40/src/ic/ic.h	2016-11-07 14:10:50.718707239 -0800
++++ v8/src/ic/ic.h	2016-11-07 12:41:23.349071410 -0800
+@@ -326,6 +326,10 @@ class LoadGlobalIC : public LoadIC {
+ 
+   static void Clear(Isolate* isolate, Code* host, LoadGlobalICNexus* nexus);
+ 
++  // Code generators for stub routines. Only called once at startup.
++  static void GenerateSlow(MacroAssembler* masm);
++  static void GenerateMiss(MacroAssembler* masm);
++
+  protected:
+   Handle<Code> slow_stub() const override {
+     return isolate()->builtins()->LoadGlobalIC_Slow();
+diff -urp v8.t5.3.332.40/src/ic/x64/ic-x64.cc v8/src/ic/x64/ic-x64.cc
+--- v8.t5.3.332.40/src/ic/x64/ic-x64.cc	2016-11-07 14:10:50.727707580 -0800
++++ v8/src/ic/x64/ic-x64.cc	2016-11-07 12:41:23.350071448 -0800
+@@ -653,6 +653,21 @@ static void LoadIC_PushArgs(MacroAssembl
+   __ PushReturnAddressFrom(rdi);
+ }
+ 
++static void LoadGlobalIC_PushArgs(MacroAssembler* masm) {
++  Register receiver = LoadDescriptor::ReceiverRegister();
++  Register name = LoadDescriptor::NameRegister();
++  Register slot = LoadDescriptor::SlotRegister();
++  Register vector = LoadWithVectorDescriptor::VectorRegister();
++  DCHECK(!rdi.is(receiver) && !rdi.is(name) && !rdi.is(slot) &&
++         !rdi.is(vector));
++
++  __ PopReturnAddressTo(rdi);
++  __ Push(receiver);
++  __ Push(name);
++  __ Push(slot);
++  __ Push(vector);
++  __ PushReturnAddressFrom(rdi);
++}
+ 
+ void LoadIC::GenerateMiss(MacroAssembler* masm) {
+   // The return address is on the stack.
+@@ -666,6 +681,18 @@ void LoadIC::GenerateMiss(MacroAssembler
+   __ TailCallRuntime(Runtime::kLoadIC_Miss);
+ }
+ 
++void LoadGlobalIC::GenerateMiss(MacroAssembler* masm) {
++  // The return address is on the stack.
++
++  Counters* counters = masm->isolate()->counters();
++  __ IncrementCounter(counters->ic_load_miss(), 1);
++
++  LoadGlobalIC_PushArgs(masm);
++
++  // Perform tail call to the entry.
++  __ TailCallRuntime(Runtime::kLoadGlobalIC_Miss);
++}
++
+ void LoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm) {
+   // The return address is on the stack.
+   Register receiver = LoadDescriptor::ReceiverRegister();
+diff -urp v8.t5.3.332.40/src/interface-descriptors.cc v8/src/interface-descriptors.cc
+--- v8.t5.3.332.40/src/interface-descriptors.cc	2016-11-07 14:10:50.731707731 -0800
++++ v8/src/interface-descriptors.cc	2016-11-07 12:41:23.350071448 -0800
+@@ -494,31 +494,32 @@ ArrayNoArgumentConstructorDescriptor::Bu
+   return function;
+ }
+ 
+-FunctionType* ArraySingleArgumentConstructorDescriptor::
+-    BuildCallInterfaceDescriptorFunctionType(Isolate* isolate,
+-                                             int paramater_count) {
++#if 0
++FunctionType*
++ArrayConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
++    Isolate* isolate, int paramater_count) {
+   Zone* zone = isolate->interface_descriptor_zone();
+   FunctionType* function =
+-      Type::Function(AnyTagged(zone), Type::Undefined(), 5, zone)->AsFunction();
++      Type::Function(AnyTagged(zone), Type::Undefined(), 3, zone)->AsFunction();
+   function->InitParameter(0, Type::Receiver());  // JSFunction
+   function->InitParameter(1, AnyTagged(zone));
+   function->InitParameter(2, UntaggedIntegral32(zone));
+-  function->InitParameter(3, AnyTagged(zone));
+-  function->InitParameter(4, AnyTagged(zone));
+   return function;
+ }
++#endif
+ 
++#if 0
+ FunctionType*
+-ArrayNArgumentsConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
++InternalArrayConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
+     Isolate* isolate, int paramater_count) {
+   Zone* zone = isolate->interface_descriptor_zone();
+   FunctionType* function =
+-      Type::Function(AnyTagged(zone), Type::Undefined(), 3, zone)->AsFunction();
++      Type::Function(AnyTagged(zone), Type::Undefined(), 2, zone)->AsFunction();
+   function->InitParameter(0, Type::Receiver());  // JSFunction
+-  function->InitParameter(1, AnyTagged(zone));   // Allocation site or undefined
+-  function->InitParameter(2, UntaggedIntegral32(zone));  //  Arg count
++  function->InitParameter(1, UntaggedIntegral32(zone));
+   return function;
+ }
++#endif
+ 
+ FunctionType*
+ ArgumentAdaptorDescriptor::BuildCallInterfaceDescriptorFunctionType(
+@@ -588,5 +589,32 @@ InterpreterDispatchDescriptor::BuildCall
+   return function;
+ }
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++FunctionType*
++ArrayConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
++    Isolate* isolate, int paramater_count) {
++  Zone* zone = isolate->interface_descriptor_zone();
++  FunctionType* function =
++      Type::Function(AnyTagged(zone), Type::Undefined(), 3, zone)->AsFunction();
++  function->InitParameter(0, Type::Receiver());  // JSFunction
++  function->InitParameter(1, AnyTagged(zone));
++  function->InitParameter(2, UntaggedIntegral32(zone));
++  return function;
++}
++
++FunctionType*
++InternalArrayConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
++    Isolate* isolate, int paramater_count) {
++  Zone* zone = isolate->interface_descriptor_zone();
++  FunctionType* function =
++      Type::Function(AnyTagged(zone), Type::Undefined(), 2, zone)->AsFunction();
++  function->InitParameter(0, Type::Receiver());  // JSFunction
++  function->InitParameter(1, UntaggedIntegral32(zone));
++  return function;
++}
++
++
++#endif
++
+ }  // namespace internal
+ }  // namespace v8
+diff -urp v8.t5.3.332.40/src/interface-descriptors.h v8/src/interface-descriptors.h
+--- v8.t5.3.332.40/src/interface-descriptors.h	2016-11-07 14:10:50.731707731 -0800
++++ v8/src/interface-descriptors.h	2016-11-07 12:41:23.351071485 -0800
+@@ -67,8 +67,6 @@ class PlatformInterfaceDescriptor;
+   V(AllocateUint8x16)                  \
+   V(AllocateBool8x16)                  \
+   V(ArrayNoArgumentConstructor)        \
+-  V(ArraySingleArgumentConstructor)    \
+-  V(ArrayNArgumentsConstructor)        \
+   V(Compare)                           \
+   V(BinaryOp)                          \
+   V(BinaryOpWithAllocationSite)        \
+@@ -97,7 +95,15 @@ class PlatformInterfaceDescriptor;
+   V(InterpreterPushArgsAndCall)        \
+   V(InterpreterPushArgsAndConstruct)   \
+   V(InterpreterCEntry)                 \
+-  V(ResumeGenerator)
++  V(ResumeGenerator)                   \
++  V(ArrayConstructorConstantArgCount)  \
++  V(InternalArrayConstructorConstantArgCount) \
++  V(InternalArrayConstructor)          \
++  V(ArraySingleArgumentConstructor)    \
++  V(ArrayConstructor)                  
++
++//  V(ArrayNArgumentsConstructor)        
++
+ 
+ class CallInterfaceDescriptorData {
+  public:
+@@ -682,11 +688,14 @@ class ArrayNoArgumentConstructorDescript
+     kFunctionIndex,
+     kAllocationSiteIndex,
+     kArgumentCountIndex,
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+     kFunctionParameterIndex,
++#endif
+     kContextIndex
+   };
+ };
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
+ class ArraySingleArgumentConstructorDescriptor
+     : public CallInterfaceDescriptor {
+  public:
+@@ -695,24 +704,62 @@ class ArraySingleArgumentConstructorDesc
+   enum ParameterIndices {
+     kFunctionIndex,
+     kAllocationSiteIndex,
+-    kArgumentCountIndex,
++    kArgumentsCountIndex,
+     kFunctionParameterIndex,
+     kArraySizeSmiParameterIndex,
+     kContextIndex
+   };
+ };
++#else
++class ArrayConstructorConstantArgCountDescriptor
++     : public CallInterfaceDescriptor {
++  public:
++  DECLARE_DESCRIPTOR(ArrayConstructorConstantArgCountDescriptor,
++                     CallInterfaceDescriptor)
++};
++#endif
+ 
+-class ArrayNArgumentsConstructorDescriptor : public CallInterfaceDescriptor {
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++class ArrayConstructorDescriptor : public CallInterfaceDescriptor {
++ public:
++  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(ArrayConstructorDescriptor,
++                                               CallInterfaceDescriptor)
++};
++
++#if 0
++void ArrayConstructorDescriptor::InitializePlatformSpecific(
++    CallInterfaceDescriptorData* data) {
++  // stack param count needs (constructor pointer, and single argument)
++  Register registers[] = {rdi, rbx, rax};
++  data->InitializePlatformSpecific(arraysize(registers), registers);
++}
++#endif
++#endif
++
++#if 0
++class ArrayConstructorDescriptor : public CallInterfaceDescriptor {
++ public:
++  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(ArrayConstructorDescriptor,
++                                               CallInterfaceDescriptor)
++};
++#endif
++
++#if 0
++class InternalArrayConstructorDescriptor : public CallInterfaceDescriptor {
+  public:
+   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+-      ArrayNArgumentsConstructorDescriptor, CallInterfaceDescriptor)
+-  enum ParameterIndices {
+-    kFunctionIndex,
+-    kAllocationSiteIndex,
+-    kArgumentCountIndex,
+-    kContextIndex
+-  };
++      InternalArrayConstructorDescriptor, CallInterfaceDescriptor)
+ };
++#endif
++
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
++class InternalArrayConstructorConstantArgCountDescriptor
++    : public CallInterfaceDescriptor {
++ public:
++  DECLARE_DESCRIPTOR(InternalArrayConstructorConstantArgCountDescriptor,
++                     CallInterfaceDescriptor)
++};
++#endif
+ 
+ 
+ class CompareDescriptor : public CallInterfaceDescriptor {
+@@ -720,6 +767,24 @@ class CompareDescriptor : public CallInt
+   DECLARE_DESCRIPTOR(CompareDescriptor, CallInterfaceDescriptor)
+ };
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++class InternalArrayConstructorDescriptor : public CallInterfaceDescriptor {
++ public:
++  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
++      InternalArrayConstructorDescriptor, CallInterfaceDescriptor)
++};
++
++class ArrayConstructorConstantArgCountDescriptor : public CallInterfaceDescriptor {
++ public:
++  DECLARE_DESCRIPTOR(ArrayConstructorConstantArgCountDescriptor, CallInterfaceDescriptor)
++};
++
++class InternalArrayConstructorConstantArgCountDescriptor : public CallInterfaceDescriptor {
++ public:
++  DECLARE_DESCRIPTOR(InternalArrayConstructorConstantArgCountDescriptor, CallInterfaceDescriptor)
++};
++#endif
++
+ 
+ class BinaryOpDescriptor : public CallInterfaceDescriptor {
+  public:
+diff -urp v8.t5.3.332.40/src/js/array.js v8/src/js/array.js
+--- v8.t5.3.332.40/src/js/array.js	2016-11-07 14:10:50.742708149 -0800
++++ v8/src/js/array.js	2016-11-07 12:41:23.352071523 -0800
+@@ -49,13 +49,14 @@ function KeySortCompare(a, b) {
+ }
+ 
+ function GetSortedArrayKeys(array, indices) {
++  var is_array = IS_ARRAY(array);
+   if (IS_NUMBER(indices)) {
+     var keys = new InternalArray();
+     // It's an interval
+     var limit = indices;
+     for (var i = 0; i < limit; ++i) {
+       var e = array[i];
+-      if (!IS_UNDEFINED(e) || i in array) {
++      if (!IS_UNDEFINED(e) || HAS_INDEX(array, i, is_array)) {
+         keys.push(i);
+       }
+     }
+@@ -228,13 +229,14 @@ function ConvertToLocaleString(e) {
+ // This function implements the optimized splice implementation that can use
+ // special array operations to handle sparse arrays in a sensible fashion.
+ function SparseSlice(array, start_i, del_count, len, deleted_elements) {
++  var is_array = IS_ARRAY(array);
+   // Move deleted elements to a new array (the return value from splice).
+   var indices = %GetArrayKeys(array, start_i + del_count);
+   if (IS_NUMBER(indices)) {
+     var limit = indices;
+     for (var i = start_i; i < limit; ++i) {
+       var current = array[i];
+-      if (!IS_UNDEFINED(current) || i in array) {
++      if (!IS_UNDEFINED(current) || HAS_INDEX(array, i, is_array)) {
+         %CreateDataProperty(deleted_elements, i - start_i, current);
+       }
+     }
+@@ -244,7 +246,7 @@ function SparseSlice(array, start_i, del
+       var key = indices[k];
+       if (key >= start_i) {
+         var current = array[key];
+-        if (!IS_UNDEFINED(current) || key in array) {
++        if (!IS_UNDEFINED(current) || HAS_INDEX(array, key, is_array)) {
+           %CreateDataProperty(deleted_elements, key - start_i, current);
+         }
+       }
+@@ -256,6 +258,7 @@ function SparseSlice(array, start_i, del
+ // This function implements the optimized splice implementation that can use
+ // special array operations to handle sparse arrays in a sensible fashion.
+ function SparseMove(array, start_i, del_count, len, num_additional_args) {
++  var is_array = IS_ARRAY(array);
+   // Bail out if no moving is necessary.
+   if (num_additional_args === del_count) return;
+   // Move data to new array.
+@@ -268,13 +271,13 @@ function SparseMove(array, start_i, del_
+     var limit = indices;
+     for (var i = 0; i < start_i && i < limit; ++i) {
+       var current = array[i];
+-      if (!IS_UNDEFINED(current) || i in array) {
++      if (!IS_UNDEFINED(current) || HAS_INDEX(array, i, is_array)) {
+         new_array[i] = current;
+       }
+     }
+     for (var i = start_i + del_count; i < limit; ++i) {
+       var current = array[i];
+-      if (!IS_UNDEFINED(current) || i in array) {
++      if (!IS_UNDEFINED(current) || HAS_INDEX(array, i, is_array)) {
+         new_array[i - del_count + num_additional_args] = current;
+       }
+     }
+@@ -284,12 +287,12 @@ function SparseMove(array, start_i, del_
+       var key = indices[k];
+       if (key < start_i) {
+         var current = array[key];
+-        if (!IS_UNDEFINED(current) || key in array) {
++        if (!IS_UNDEFINED(current) || HAS_INDEX(array, key, is_array)) {
+           new_array[key] = current;
+         }
+       } else if (key >= start_i + del_count) {
+         var current = array[key];
+-        if (!IS_UNDEFINED(current) || key in array) {
++        if (!IS_UNDEFINED(current) || HAS_INDEX(array, key, is_array)) {
+           var new_key = key - del_count + num_additional_args;
+           new_array[new_key] = current;
+           if (new_key > 0xfffffffe) {
+@@ -317,9 +320,10 @@ function SparseMove(array, start_i, del_
+ // because the receiver is not an array (so we have no choice) or because we
+ // know we are not deleting or moving a lot of elements.
+ function SimpleSlice(array, start_i, del_count, len, deleted_elements) {
++  var is_array = IS_ARRAY(array);
+   for (var i = 0; i < del_count; i++) {
+     var index = start_i + i;
+-    if (index in array) {
++    if (HAS_INDEX(array, index, is_array)) {
+       var current = array[index];
+       %CreateDataProperty(deleted_elements, i, current);
+     }
+@@ -328,6 +332,7 @@ function SimpleSlice(array, start_i, del
+ 
+ 
+ function SimpleMove(array, start_i, del_count, len, num_additional_args) {
++  var is_array = IS_ARRAY(array);
+   if (num_additional_args !== del_count) {
+     // Move the existing elements after the elements to be deleted
+     // to the right position in the resulting array.
+@@ -335,7 +340,7 @@ function SimpleMove(array, start_i, del_
+       for (var i = len - del_count; i > start_i; i--) {
+         var from_index = i + del_count - 1;
+         var to_index = i + num_additional_args - 1;
+-        if (from_index in array) {
++        if (HAS_INDEX(array, from_index, is_array)) {
+           array[to_index] = array[from_index];
+         } else {
+           delete array[to_index];
+@@ -345,7 +350,7 @@ function SimpleMove(array, start_i, del_
+       for (var i = start_i; i < len - del_count; i++) {
+         var from_index = i + del_count;
+         var to_index = i + num_additional_args;
+-        if (from_index in array) {
++        if (HAS_INDEX(array, from_index, is_array)) {
+           array[to_index] = array[from_index];
+         } else {
+           delete array[to_index];
+@@ -470,6 +475,7 @@ function ArrayPush() {
+ 
+ // For implementing reverse() on large, sparse arrays.
+ function SparseReverse(array, len) {
++  var is_array = IS_ARRAY(array);
+   var keys = GetSortedArrayKeys(array, %GetArrayKeys(array, len));
+   var high_counter = keys.length - 1;
+   var low_counter = 0;
+@@ -492,9 +498,9 @@ function SparseReverse(array, len) {
+     }
+ 
+     var current_i = array[low];
+-    if (!IS_UNDEFINED(current_i) || low in array) {
++    if (!IS_UNDEFINED(current_i) || HAS_INDEX(array, low, is_array)) {
+       var current_j = array[high];
+-      if (!IS_UNDEFINED(current_j) || high in array) {
++      if (!IS_UNDEFINED(current_j) || HAS_INDEX(array, high, is_array)) {
+         array[low] = current_j;
+         array[high] = current_i;
+       } else {
+@@ -503,7 +509,7 @@ function SparseReverse(array, len) {
+       }
+     } else {
+       var current_j = array[high];
+-      if (!IS_UNDEFINED(current_j) || high in array) {
++      if (!IS_UNDEFINED(current_j) || HAS_INDEX(array, high, is_array)) {
+         array[low] = current_j;
+         delete array[high];
+       }
+@@ -524,11 +530,12 @@ function PackedArrayReverse(array, len)
+ 
+ 
+ function GenericArrayReverse(array, len) {
++  var is_array = IS_ARRAY(array);
+   var j = len - 1;
+   for (var i = 0; i < j; i++, j--) {
+-    if (i in array) {
++    if (HAS_INDEX(array, i, is_array)) {
+       var current_i = array[i];
+-      if (j in array) {
++      if (HAS_INDEX(array, j, is_array)) {
+         var current_j = array[j];
+         array[i] = current_j;
+         array[j] = current_i;
+@@ -537,7 +544,7 @@ function GenericArrayReverse(array, len)
+         delete array[i];
+       }
+     } else {
+-      if (j in array) {
++      if (HAS_INDEX(array, j, is_array)) {
+         var current_j = array[j];
+         array[i] = current_j;
+         delete array[j];
+@@ -1042,8 +1049,9 @@ function ArraySort(comparefn) {
+ // or delete elements from the array.
+ function InnerArrayFilter(f, receiver, array, length, result) {
+   var result_length = 0;
++  var is_array = IS_ARRAY(array);
+   for (var i = 0; i < length; i++) {
+-    if (i in array) {
++    if (HAS_INDEX(array, i, is_array)) {
+       var element = array[i];
+       if (%_Call(f, receiver, element, i, array)) {
+         %CreateDataProperty(result, result_length, element);
+@@ -1070,18 +1078,19 @@ function ArrayFilter(f, receiver) {
+ 
+ 
+ function InnerArrayForEach(f, receiver, array, length) {
++  var is_array = IS_ARRAY(array);
+   if (!IS_CALLABLE(f)) throw MakeTypeError(kCalledNonCallable, f);
+ 
+   if (IS_UNDEFINED(receiver)) {
+     for (var i = 0; i < length; i++) {
+-      if (i in array) {
++      if (HAS_INDEX(array, i, is_array)) {
+         var element = array[i];
+         f(element, i, array);
+       }
+     }
+   } else {
+     for (var i = 0; i < length; i++) {
+-      if (i in array) {
++      if (HAS_INDEX(array, i, is_array)) {
+         var element = array[i];
+         %_Call(f, receiver, element, i, array);
+       }
+@@ -1102,10 +1111,11 @@ function ArrayForEach(f, receiver) {
+ 
+ 
+ function InnerArraySome(f, receiver, array, length) {
++  var is_array = IS_ARRAY(array);
+   if (!IS_CALLABLE(f)) throw MakeTypeError(kCalledNonCallable, f);
+ 
+   for (var i = 0; i < length; i++) {
+-    if (i in array) {
++    if (HAS_INDEX(array, i, is_array)) {
+       var element = array[i];
+       if (%_Call(f, receiver, element, i, array)) return true;
+     }
+@@ -1128,10 +1138,11 @@ function ArraySome(f, receiver) {
+ 
+ 
+ function InnerArrayEvery(f, receiver, array, length) {
++  var is_array = IS_ARRAY(array);
+   if (!IS_CALLABLE(f)) throw MakeTypeError(kCalledNonCallable, f);
+ 
+   for (var i = 0; i < length; i++) {
+-    if (i in array) {
++    if (HAS_INDEX(array, i, is_array)) {
+       var element = array[i];
+       if (!%_Call(f, receiver, element, i, array)) return false;
+     }
+@@ -1159,8 +1170,9 @@ function ArrayMap(f, receiver) {
+   var length = TO_LENGTH(array.length);
+   if (!IS_CALLABLE(f)) throw MakeTypeError(kCalledNonCallable, f);
+   var result = ArraySpeciesCreate(array, length);
++  var is_array = IS_ARRAY(array);
+   for (var i = 0; i < length; i++) {
+-    if (i in array) {
++    if (HAS_INDEX(array, i, is_array)) {
+       var element = array[i];
+       %CreateDataProperty(result, i, %_Call(f, receiver, element, i, array));
+     }
+@@ -1174,6 +1186,7 @@ function ArrayMap(f, receiver) {
+ // .lastIndexOf, we need to pass it, since the behavior for passing
+ // undefined is 0 but for not including the argument is length-1.
+ function InnerArrayIndexOf(array, element, index, length) {
++  var is_array = IS_ARRAY(array);
+   if (length == 0) return -1;
+   if (IS_UNDEFINED(index)) {
+     index = 0;
+@@ -1219,7 +1232,7 @@ function InnerArrayIndexOf(array, elemen
+   }
+   // Lookup through the array.
+   for (var i = min; i < max; i++) {
+-    if (IS_UNDEFINED(array[i]) && i in array) {
++    if (IS_UNDEFINED(array[i]) && HAS_INDEX(array, i, is_array)) {
+       return i;
+     }
+   }
+@@ -1236,6 +1249,7 @@ function ArrayIndexOf(element, index) {
+ 
+ 
+ function InnerArrayLastIndexOf(array, element, index, length, argumentsLength) {
++  var is_array = IS_ARRAY(array);
+   if (length == 0) return -1;
+   if (argumentsLength < 2) {
+     index = length - 1;
+@@ -1277,7 +1291,7 @@ function InnerArrayLastIndexOf(array, el
+     return -1;
+   }
+   for (var i = max; i >= min; i--) {
+-    if (IS_UNDEFINED(array[i]) && i in array) {
++    if (IS_UNDEFINED(array[i]) && HAS_INDEX(array, i, is_array)) {
+       return i;
+     }
+   }
+@@ -1299,10 +1313,11 @@ function InnerArrayReduce(callback, curr
+     throw MakeTypeError(kCalledNonCallable, callback);
+   }
+ 
++  var is_array = IS_ARRAY(array);
+   var i = 0;
+   find_initial: if (argumentsLength < 2) {
+     for (; i < length; i++) {
+-      if (i in array) {
++      if (HAS_INDEX(array, i, is_array)) {
+         current = array[i++];
+         break find_initial;
+       }
+@@ -1311,7 +1326,7 @@ function InnerArrayReduce(callback, curr
+   }
+ 
+   for (; i < length; i++) {
+-    if (i in array) {
++    if (HAS_INDEX(array, i, is_array)) {
+       var element = array[i];
+       current = callback(current, element, i, array);
+     }
+@@ -1338,10 +1353,11 @@ function InnerArrayReduceRight(callback,
+     throw MakeTypeError(kCalledNonCallable, callback);
+   }
+ 
++  var is_array = IS_ARRAY(array);
+   var i = length - 1;
+   find_initial: if (argumentsLength < 2) {
+     for (; i >= 0; i--) {
+-      if (i in array) {
++      if (HAS_INDEX(array, i, is_array)) {
+         current = array[i--];
+         break find_initial;
+       }
+@@ -1350,7 +1366,7 @@ function InnerArrayReduceRight(callback,
+   }
+ 
+   for (; i >= 0; i--) {
+-    if (i in array) {
++    if (HAS_INDEX(array, i, is_array)) {
+       var element = array[i];
+       current = callback(current, element, i, array);
+     }
+@@ -1372,6 +1388,7 @@ function ArrayReduceRight(callback, curr
+ 
+ 
+ function InnerArrayCopyWithin(target, start, end, array, length) {
++  var is_array = IS_ARRAY(array);
+   target = TO_INTEGER(target);
+   var to;
+   if (target < 0) {
+@@ -1405,7 +1422,7 @@ function InnerArrayCopyWithin(target, st
+   }
+ 
+   while (count > 0) {
+-    if (from in array) {
++    if (HAS_INDEX(array, from, is_array)) {
+       array[to] = array[from];
+     } else {
+       delete array[to];
+diff -urp v8.t5.3.332.40/src/js/macros.py v8/src/js/macros.py
+--- v8.t5.3.332.40/src/js/macros.py	2016-11-07 14:10:50.751708490 -0800
++++ v8/src/js/macros.py	2016-11-07 12:41:23.352071523 -0800
+@@ -123,6 +123,7 @@ macro TO_PRIMITIVE_STRING(arg) = (%_ToPr
+ macro TO_NAME(arg) = (%_ToName(arg));
+ macro JSON_NUMBER_TO_STRING(arg) = ((%_IsSmi(%IS_VAR(arg)) || arg - arg == 0) ? %_NumberToString(arg) : "null");
+ macro HAS_OWN_PROPERTY(obj, key) = (%_Call(ObjectHasOwnProperty, obj, key));
++macro HAS_INDEX(array, index, is_array) = ((is_array && %_HasFastPackedElements(%IS_VAR(array)) && (index < array.length)) ||  (index in array));
+ 
+ # Private names.
+ macro IS_PRIVATE(sym) = (%SymbolIsPrivate(sym));
+diff -urp v8.t5.3.332.40/src/objects-inl.h v8/src/objects-inl.h
+--- v8.t5.3.332.40/src/objects-inl.h	2016-11-07 14:10:50.792710044 -0800
++++ v8/src/objects-inl.h	2016-11-07 12:41:23.354071598 -0800
+@@ -2277,6 +2277,7 @@ void Struct::InitializeBody(int object_s
+   }
+ }
+ 
++
+ bool Object::ToArrayLength(uint32_t* index) { return Object::ToUint32(index); }
+ 
+ 
+@@ -7729,11 +7730,6 @@ void JSArray::SetContent(Handle<JSArray>
+ }
+ 
+ 
+-bool JSArray::HasArrayPrototype(Isolate* isolate) {
+-  return map()->prototype() == *isolate->initial_array_prototype();
+-}
+-
+-
+ int TypeFeedbackInfo::ic_total_count() {
+   int current = Smi::cast(READ_FIELD(this, kStorage1Offset))->value();
+   return ICTotalCountField::decode(current);
+diff -urp v8.t5.3.332.40/src/objects.cc v8/src/objects.cc
+--- v8.t5.3.332.40/src/objects.cc	2016-11-07 14:10:50.804710499 -0800
++++ v8/src/objects.cc	2016-11-07 12:41:23.361071862 -0800
+@@ -1822,7 +1822,11 @@ MaybeHandle<Object> Object::ArraySpecies
+     Isolate* isolate, Handle<Object> original_array) {
+   Handle<Object> default_species = isolate->array_function();
+   if (original_array->IsJSArray() &&
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++      Handle<JSReceiver>::cast(original_array)->map()->new_target_is_base() &&
++#else
+       Handle<JSArray>::cast(original_array)->HasArrayPrototype(isolate) &&
++#endif
+       isolate->IsArraySpeciesLookupChainIntact()) {
+     return default_species;
+   }
+@@ -14917,6 +14921,18 @@ Maybe<bool> JSObject::SetPrototype(Handl
+                                    ShouldThrow should_throw) {
+   Isolate* isolate = object->GetIsolate();
+ 
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++  // Setting the prototype of an Array instance invalidates the species
++  // protector
++  // because it could change the constructor property of the instance, which
++  // could change the @@species constructor.
++  if (object->IsJSArray() && isolate->IsArraySpeciesLookupChainIntact()) {
++    isolate->CountUsage(
++        v8::Isolate::UseCounterFeature::kArrayInstanceProtoModified);
++    isolate->InvalidateArraySpeciesProtector();
++  }
++#endif
++
+ #ifdef DEBUG
+   int size = object->Size();
+ #endif
+diff -urp v8.t5.3.332.40/src/objects.h v8/src/objects.h
+--- v8.t5.3.332.40/src/objects.h	2016-11-07 14:10:50.812710802 -0800
++++ v8/src/objects.h	2016-11-07 12:41:23.365072013 -0800
+@@ -10276,11 +10276,13 @@ class JSArray: public JSObject {
+                                                     PropertyDescriptor* desc,
+                                                     ShouldThrow should_throw);
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
+   // Checks whether the Array has the current realm's Array.prototype as its
+   // prototype. This function is best-effort and only gives a conservative
+   // approximation, erring on the side of false, in particular with respect
+   // to Proxies and objects with a hidden prototype.
+   inline bool HasArrayPrototype(Isolate* isolate);
++#endif
+ 
+   DECLARE_CAST(JSArray)
+ 
+diff -urp v8.t5.3.332.40/src/runtime/runtime-array.cc v8/src/runtime/runtime-array.cc
+--- v8.t5.3.332.40/src/runtime/runtime-array.cc	2016-11-07 14:10:50.864712773 -0800
++++ v8/src/runtime/runtime-array.cc	2016-11-07 12:41:23.366072051 -0800
+@@ -320,6 +320,7 @@ Object* ArrayConstructorCommon(Isolate*
+ 
+ }  // namespace
+ 
++
+ RUNTIME_FUNCTION(Runtime_NewArray) {
+   HandleScope scope(isolate);
+   DCHECK_LE(3, args.length());
+@@ -336,6 +337,72 @@ RUNTIME_FUNCTION(Runtime_NewArray) {
+   return ArrayConstructorCommon(isolate, constructor, new_target, site, &argv);
+ }
+ 
++
++RUNTIME_FUNCTION(Runtime_ArrayConstructor) {
++  HandleScope scope(isolate);
++  // If we get 2 arguments then they are the stub parameters (constructor, type
++  // info).  If we get 4, then the first one is a pointer to the arguments
++  // passed by the caller, and the last one is the length of the arguments
++  // passed to the caller (redundant, but useful to check on the deoptimizer
++  // with an assert).
++  Arguments empty_args(0, NULL);
++  bool no_caller_args = args.length() == 2;
++  DCHECK(no_caller_args || args.length() == 4);
++  int parameters_start = no_caller_args ? 0 : 1;
++  Arguments* caller_args =
++      no_caller_args ? &empty_args : reinterpret_cast<Arguments*>(args[0]);
++  CONVERT_ARG_HANDLE_CHECKED(JSFunction, constructor, parameters_start);
++  CONVERT_ARG_HANDLE_CHECKED(Object, type_info, parameters_start + 1);
++#ifdef DEBUG
++  if (!no_caller_args) {
++    CONVERT_SMI_ARG_CHECKED(arg_count, parameters_start + 2);
++    DCHECK(arg_count == caller_args->length());
++  }
++#endif
++
++  Handle<AllocationSite> site;
++  if (!type_info.is_null() && !type_info->IsUndefined(isolate)) {
++    site = Handle<AllocationSite>::cast(type_info);
++    DCHECK(!site->SitePointsToLiteral());
++  }
++
++  return ArrayConstructorCommon(isolate, constructor, constructor, site,
++                                caller_args);
++}
++
++RUNTIME_FUNCTION(Runtime_InternalArrayConstructor) {
++  HandleScope scope(isolate);
++  Arguments empty_args(0, NULL);
++  bool no_caller_args = args.length() == 1;
++  DCHECK(no_caller_args || args.length() == 3);
++  int parameters_start = no_caller_args ? 0 : 1;
++  Arguments* caller_args =
++      no_caller_args ? &empty_args : reinterpret_cast<Arguments*>(args[0]);
++  CONVERT_ARG_HANDLE_CHECKED(JSFunction, constructor, parameters_start);
++#ifdef DEBUG
++  if (!no_caller_args) {
++    CONVERT_SMI_ARG_CHECKED(arg_count, parameters_start + 1);
++    DCHECK(arg_count == caller_args->length());
++  }
++#endif
++  return ArrayConstructorCommon(isolate, constructor, constructor,
++                                Handle<AllocationSite>::null(), caller_args);
++}
++
++RUNTIME_FUNCTION(Runtime_ArraySingleArgumentConstructor) {
++  HandleScope scope(isolate);
++  CONVERT_ARG_HANDLE_CHECKED(JSFunction, constructor, 0);
++  Object** argument_base = reinterpret_cast<Object**>(args[1]);
++  CONVERT_SMI_ARG_CHECKED(argument_count, 2);
++  CONVERT_ARG_HANDLE_CHECKED(Object, raw_site, 3);
++  Handle<AllocationSite> casted_site =
++      raw_site->IsUndefined(isolate) ? Handle<AllocationSite>::null()
++                                     : Handle<AllocationSite>::cast(raw_site);
++  Arguments constructor_args(argument_count, argument_base);
++  return ArrayConstructorCommon(isolate, constructor, constructor, casted_site,
++                                &constructor_args);
++}
++
+ RUNTIME_FUNCTION(Runtime_NormalizeElements) {
+   HandleScope scope(isolate);
+   DCHECK(args.length() == 1);
+diff -urp v8.t5.3.332.40/src/runtime/runtime-test.cc v8/src/runtime/runtime-test.cc
+--- v8.t5.3.332.40/src/runtime/runtime-test.cc	2016-11-07 14:10:50.872713077 -0800
++++ v8/src/runtime/runtime-test.cc	2016-11-07 12:41:23.367072088 -0800
+@@ -553,6 +553,13 @@ ELEMENTS_KIND_CHECK_RUNTIME_FUNCTION(Fas
+ 
+ #undef ELEMENTS_KIND_CHECK_RUNTIME_FUNCTION
+ 
++#if !(defined(__x86_64__) && __SIZEOF_POINTER__ == 4)
++RUNTIME_FUNCTION(Runtime_SpeciesProtector) {
++  SealHandleScope shs(isolate);
++  DCHECK_EQ(0, args.length());
++  return isolate->heap()->ToBoolean(isolate->IsArraySpeciesLookupChainIntact());
++}
++#endif
+ 
+ #define FIXED_TYPED_ARRAYS_CHECK_RUNTIME_FUNCTION(Type, type, TYPE, ctype, s) \
+   RUNTIME_FUNCTION(Runtime_HasFixed##Type##Elements) {                        \
+@@ -563,14 +570,5 @@ ELEMENTS_KIND_CHECK_RUNTIME_FUNCTION(Fas
+ TYPED_ARRAYS(FIXED_TYPED_ARRAYS_CHECK_RUNTIME_FUNCTION)
+ 
+ #undef FIXED_TYPED_ARRAYS_CHECK_RUNTIME_FUNCTION
+-
+-
+-RUNTIME_FUNCTION(Runtime_SpeciesProtector) {
+-  SealHandleScope shs(isolate);
+-  DCHECK_EQ(0, args.length());
+-  return isolate->heap()->ToBoolean(isolate->IsArraySpeciesLookupChainIntact());
+-}
+-
+-
+ }  // namespace internal
+ }  // namespace v8
+diff -urp v8.t5.3.332.40/src/runtime/runtime.h v8/src/runtime/runtime.h
+--- v8.t5.3.332.40/src/runtime/runtime.h	2016-11-07 14:10:50.873713115 -0800
++++ v8/src/runtime/runtime.h	2016-11-07 12:41:23.367072088 -0800
+@@ -31,28 +31,33 @@ namespace internal {
+ 
+ // Entries have the form F(name, number of arguments, number of values):
+ 
+-#define FOR_EACH_INTRINSIC_ARRAY(F)  \
+-  F(FinishArrayPrototypeSetup, 1, 1) \
+-  F(SpecialArrayFunctions, 0, 1)     \
+-  F(TransitionElementsKind, 2, 1)    \
+-  F(RemoveArrayHoles, 2, 1)          \
+-  F(MoveArrayContents, 2, 1)         \
+-  F(EstimateNumberOfElements, 1, 1)  \
+-  F(GetArrayKeys, 2, 1)              \
+-  F(NewArray, -1 /* >= 3 */, 1)      \
+-  F(ArrayPush, -1, 1)                \
+-  F(FunctionBind, -1, 1)             \
+-  F(NormalizeElements, 1, 1)         \
+-  F(GrowArrayElements, 2, 1)         \
+-  F(HasComplexElements, 1, 1)        \
+-  F(IsArray, 1, 1)                   \
+-  F(ArrayIsArray, 1, 1)              \
+-  F(HasCachedArrayIndex, 1, 1)       \
+-  F(GetCachedArrayIndex, 1, 1)       \
+-  F(FixedArrayGet, 2, 1)             \
+-  F(FixedArraySet, 3, 1)             \
++#define FOR_EACH_INTRINSIC_ARRAY(F)        \
++  F(FinishArrayPrototypeSetup, 1, 1)       \
++  F(SpecialArrayFunctions, 0, 1)           \
++  F(TransitionElementsKind, 2, 1)          \
++  F(RemoveArrayHoles, 2, 1)                \
++  F(MoveArrayContents, 2, 1)               \
++  F(EstimateNumberOfElements, 1, 1)        \
++  F(GetArrayKeys, 2, 1)                    \
++  F(ArrayConstructor, -1, 1)               \
++  F(NewArray, -1 /* >= 3 */, 1)            \
++  F(InternalArrayConstructor, -1, 1)       \
++  F(ArraySingleArgumentConstructor, -1, 1) \
++  F(ArrayPush, -1, 1)                      \
++  F(FunctionBind, -1, 1)                   \
++  F(NormalizeElements, 1, 1)               \
++  F(GrowArrayElements, 2, 1)               \
++  F(HasComplexElements, 1, 1)              \
++  F(IsArray, 1, 1)                         \
++  F(ArrayIsArray, 1, 1)                    \
++  F(HasCachedArrayIndex, 1, 1)             \
++  F(GetCachedArrayIndex, 1, 1)             \
++  F(FixedArrayGet, 2, 1)                   \
++  F(FixedArraySet, 3, 1)                   \
+   F(ArraySpeciesConstructor, 1, 1)
+ 
++//  F(ArraySingleArgumentConstructor, -1, 1) 
++
+ #define FOR_EACH_INTRINSIC_ATOMICS(F)           \
+   F(ThrowNotIntegerSharedTypedArrayError, 1, 1) \
+   F(ThrowNotInt32SharedTypedArrayError, 1, 1)   \
+@@ -894,8 +899,7 @@ namespace internal {
+   F(HasFixedInt32Elements, 1, 1)              \
+   F(HasFixedFloat32Elements, 1, 1)            \
+   F(HasFixedFloat64Elements, 1, 1)            \
+-  F(HasFixedUint8ClampedElements, 1, 1)       \
+-  F(SpeciesProtector, 0, 1)
++  F(HasFixedUint8ClampedElements, 1, 1)
+ 
+ #define FOR_EACH_INTRINSIC_TYPEDARRAY(F)     \
+   F(ArrayBufferGetByteLength, 1, 1)          \
+diff -urp v8.t5.3.332.40/src/v8.gyp v8/src/v8.gyp
+--- v8.t5.3.332.40/src/v8.gyp	2016-11-07 14:10:50.923715010 -0800
++++ v8/src/v8.gyp	2016-11-07 12:41:23.368072126 -0800
+@@ -1500,7 +1500,7 @@
+             'regexp/x64/regexp-macro-assembler-x64.h',
+           ],
+         }],
+-        ['v8_target_arch=="x64"', {
++        ['v8_target_arch=="x64" or v8_target_arch=="x32"', {
+           'sources': [
+             'compiler/x64/code-generator-x64.cc',
+             'compiler/x64/instruction-codes-x64.h',
+diff -urp v8.t5.3.332.40/src/x64/builtins-x64.cc v8/src/x64/builtins-x64.cc
+--- v8.t5.3.332.40/src/x64/builtins-x64.cc	2016-11-07 14:10:50.945715844 -0800
++++ v8/src/x64/builtins-x64.cc	2016-11-07 12:41:23.369072164 -0800
+@@ -547,8 +547,8 @@ void Builtins::Generate_ResumeGeneratorT
+     // the generator was suspended.
+     FrameScope scope(masm, StackFrame::MANUAL);
+     __ PushReturnAddressFrom(rax);  // Return address.
+-    __ Push(rbp);                   // Caller's frame pointer.
+-    __ Move(rbp, rsp);
++    __ pushq(rbp);                  // Caller's frame pointer. // Don't change to Push( for x32 ABI
++    __ movp(rbp, rsp);                                         // Don't change to Move( for x32 ABI
+     __ Push(rsi);  // Callee's context.
+     __ Push(rdi);  // Callee's JS Function.
+ 
+@@ -654,8 +654,8 @@ void Builtins::Generate_InterpreterEntry
+   // MANUAL indicates that the scope shouldn't actually generate code to set up
+   // the frame (that is done below).
+   FrameScope frame_scope(masm, StackFrame::MANUAL);
+-  __ pushq(rbp);  // Caller's frame pointer.
+-  __ movp(rbp, rsp);
++  __ pushq(rbp);  // Caller's frame pointer. // Don't change to Push( for x32 ABI
++  __ movp(rbp, rsp);                         // Don't change to Move( for x32 ABI
+   __ Push(rsi);  // Callee's context.
+   __ Push(rdi);  // Callee's JS function.
+   __ Push(rdx);  // Callee's new target.
+@@ -1129,8 +1129,8 @@ void Builtins::Generate_MarkCodeAsExecut
+ 
+   // Perform prologue operations usually performed by the young code stub.
+   __ PopReturnAddressTo(kScratchRegister);
+-  __ pushq(rbp);  // Caller's frame pointer.
+-  __ movp(rbp, rsp);
++  __ pushq(rbp);  // Caller's frame pointer.  // Don't change to Push( for x32 ABI
++  __ movp(rbp, rsp);                          // Don't change to Move( for x32 ABI
+   __ Push(rsi);  // Callee's context.
+   __ Push(rdi);  // Callee's JS Function.
+   __ PushReturnAddressFrom(kScratchRegister);
+@@ -1279,8 +1279,8 @@ void Builtins::Generate_DatePrototype_Ge
+   __ bind(&receiver_not_date);
+   {
+     FrameScope scope(masm, StackFrame::MANUAL);
+-    __ Push(rbp);
+-    __ Move(rbp, rsp);
++    __ pushq(rbp);
++    __ movp(rbp, rsp);
+     __ Push(rsi);
+     __ Push(rdi);
+     __ Push(Immediate(0));
+@@ -1672,8 +1672,8 @@ void Builtins::Generate_MathMaxMin(Macro
+     {
+       // Parameter is not a Number, use the ToNumber builtin to convert it.
+       FrameScope scope(masm, StackFrame::MANUAL);
+-      __ Push(rbp);
+-      __ Move(rbp, rsp);
++      __ pushq(rbp);
++      __ movp(rbp, rsp);
+       __ Push(rsi);
+       __ Push(rdi);
+       __ Integer32ToSmi(rax, rax);
+@@ -2574,11 +2574,19 @@ void Builtins::Generate_CallFunction(Mac
+ 
+   __ LoadSharedFunctionInfoSpecialField(
+       rbx, rdx, SharedFunctionInfo::kFormalParameterCountOffset);
++#if __SIZEOF_POINTER__ == 4
++  __ movp(r8, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
++#endif
+   ParameterCount actual(rax);
+   ParameterCount expected(rbx);
+ 
++#if __SIZEOF_POINTER__ == 4
++  __ InvokeFunctionCode(r8, no_reg, expected, actual, JUMP_FUNCTION,
++                        NullCallWrapper());
++#else
+   __ InvokeFunctionCode(rdi, no_reg, expected, actual, JUMP_FUNCTION,
+                         CheckDebugStepCallWrapper());
++#endif
+ 
+   // The function is a "classConstructor", need to raise an exception.
+   __ bind(&class_constructor);
+diff -urp v8.t5.3.332.40/src/x64/code-stubs-x64.cc v8/src/x64/code-stubs-x64.cc
+--- v8.t5.3.332.40/src/x64/code-stubs-x64.cc	2016-11-07 14:10:50.947715920 -0800
++++ v8/src/x64/code-stubs-x64.cc	2016-11-07 12:41:23.371072239 -0800
+@@ -20,18 +20,94 @@
+ namespace v8 {
+ namespace internal {
+ 
+-#define __ ACCESS_MASM(masm)
++#if 0
++static void InitializeArrayConstructorDescriptor(
++    Isolate* isolate, CodeStubDescriptor* descriptor,
++    int constant_stack_parameter_count) {
++  Address deopt_handler = Runtime::FunctionForId(
++      Runtime::kArrayConstructor)->entry;
++
++  if (constant_stack_parameter_count == 0) {
++    descriptor->Initialize(deopt_handler, constant_stack_parameter_count,
++                           JS_FUNCTION_STUB_MODE);
++  } else {
++    descriptor->Initialize(rax, deopt_handler, constant_stack_parameter_count,
++                           JS_FUNCTION_STUB_MODE);
++  }
++}
++#endif
++
++#if 0
++static void InitializeInternalArrayConstructorDescriptor(
++    Isolate* isolate, CodeStubDescriptor* descriptor,
++    int constant_stack_parameter_count) {
++  Address deopt_handler = Runtime::FunctionForId(
++      Runtime::kInternalArrayConstructor)->entry;
++
++  if (constant_stack_parameter_count == 0) {
++    descriptor->Initialize(deopt_handler, constant_stack_parameter_count,
++                           JS_FUNCTION_STUB_MODE);
++  } else {
++    descriptor->Initialize(rax, deopt_handler, constant_stack_parameter_count,
++                           JS_FUNCTION_STUB_MODE);
++  }
++}
++#endif
++
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++static void InitializeArrayConstructorDescriptor(
++    Isolate* isolate, CodeStubDescriptor* descriptor,
++    int constant_stack_parameter_count) {
++  Address deopt_handler = Runtime::FunctionForId(Runtime::kArrayPush)->entry;
++
++  if (constant_stack_parameter_count == 0) {
++    descriptor->Initialize(deopt_handler, constant_stack_parameter_count,
++                           JS_FUNCTION_STUB_MODE);
++  } else {
++    descriptor->Initialize(rax, deopt_handler, constant_stack_parameter_count,
++                           JS_FUNCTION_STUB_MODE);
++  }
++}
++
++static void InitializeInternalArrayConstructorDescriptor(
++    Isolate* isolate, CodeStubDescriptor* descriptor,
++    int constant_stack_parameter_count) {
++  Address deopt_handler = Runtime::FunctionForId(Runtime::kArrayPush)->entry;
++
++  if (constant_stack_parameter_count == 0) {
++    descriptor->Initialize(deopt_handler, constant_stack_parameter_count,
++                           JS_FUNCTION_STUB_MODE);
++  } else {
++    descriptor->Initialize(rax, deopt_handler, constant_stack_parameter_count,
++                           JS_FUNCTION_STUB_MODE);
++  }
++}
++
++void ArrayNoArgumentConstructorStub::InitializeDescriptor(
++    CodeStubDescriptor* descriptor) {
++  InitializeArrayConstructorDescriptor(isolate(), descriptor, 0);
++}
++
++void InternalArrayNoArgumentConstructorStub::InitializeDescriptor(
++    CodeStubDescriptor* descriptor) {
++  InitializeInternalArrayConstructorDescriptor(isolate(), descriptor, 0);
++}
++#endif
++
++#if defined(__x86_64__) && __SIZEOF_POINTER__ == 4
++void InternalArraySingleArgumentConstructorStub::InitializeDescriptor(
++    CodeStubDescriptor* descriptor) {
++  InitializeInternalArrayConstructorDescriptor(isolate(), descriptor, 1);
++}
++#endif
+ 
+-void ArrayNArgumentsConstructorStub::Generate(MacroAssembler* masm) {
+-  __ popq(rcx);
+-  __ movq(MemOperand(rsp, rax, times_8, 0), rdi);
+-  __ pushq(rdi);
+-  __ pushq(rbx);
+-  __ pushq(rcx);
+-  __ addq(rax, Immediate(3));
+-  __ TailCallRuntime(Runtime::kNewArray);
++
++void ArrayNArgumentsConstructorStub::InitializeDescriptor(
++    CodeStubDescriptor* descriptor) {
++  InitializeArrayConstructorDescriptor(isolate(), descriptor, -1);
+ }
+ 
++
+ void FastArrayPushStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
+   Address deopt_handler = Runtime::FunctionForId(Runtime::kArrayPush)->entry;
+   descriptor->Initialize(rax, deopt_handler, -1, JS_FUNCTION_STUB_MODE);
+@@ -43,6 +119,15 @@ void FastFunctionBindStub::InitializeDes
+   descriptor->Initialize(rax, deopt_handler, -1, JS_FUNCTION_STUB_MODE);
+ }
+ 
++void InternalArrayNArgumentsConstructorStub::InitializeDescriptor(
++    CodeStubDescriptor* descriptor) {
++  InitializeInternalArrayConstructorDescriptor(isolate(), descriptor, -1);
++}
++
++
++#define __ ACCESS_MASM(masm)
++
++
+ void HydrogenCodeStub::GenerateLightweightMiss(MacroAssembler* masm,
+                                                ExternalReference miss) {
+   // Update the static counter each time a new code stub is generated.
+@@ -470,6 +555,12 @@ void MathPowStub::Generate(MacroAssemble
+ }
+ 
+ 
++void ArraySingleArgumentConstructorStub::InitializeDescriptor(
++    CodeStubDescriptor* descriptor) {
++  InitializeArrayConstructorDescriptor(isolate(), descriptor, 1);
++}
++
++
+ void FunctionPrototypeStub::Generate(MacroAssembler* masm) {
+   Label miss;
+   Register receiver = LoadDescriptor::ReceiverRegister();
+@@ -1625,7 +1716,7 @@ void CodeStub::GenerateStubsAheadOfTime(
+   StoreBufferOverflowStub::GenerateFixedRegStubsAheadOfTime(isolate);
+   StubFailureTrampolineStub::GenerateAheadOfTime(isolate);
+   // It is important that the store buffer overflow stubs are generated first.
+-  CommonArrayConstructorStub::GenerateStubsAheadOfTime(isolate);
++  ArrayConstructorStubBase::GenerateStubsAheadOfTime(isolate);
+   CreateAllocationSiteStub::GenerateAheadOfTime(isolate);
+   CreateWeakCellStub::GenerateAheadOfTime(isolate);
+   BinaryOpICStub::GenerateAheadOfTime(isolate);
+@@ -3956,14 +4047,19 @@ static void ArrayConstructorStubAheadOfT
+   }
+ }
+ 
+-void CommonArrayConstructorStub::GenerateStubsAheadOfTime(Isolate* isolate) {
++
++void ArrayConstructorStubBase::GenerateStubsAheadOfTime(Isolate* isolate) {
+   ArrayConstructorStubAheadOfTimeHelper<ArrayNoArgumentConstructorStub>(
+       isolate);
+   ArrayConstructorStubAheadOfTimeHelper<ArraySingleArgumentConstructorStub>(
+       isolate);
+-  ArrayNArgumentsConstructorStub stub(isolate);
+-  stub.GetCode();
++  ArrayConstructorStubAheadOfTimeHelper<ArrayNArgumentsConstructorStub>(
++      isolate);
++}
++
+ 
++void InternalArrayConstructorStubBase::GenerateStubsAheadOfTime(
++    Isolate* isolate) {
+   ElementsKind kinds[2] = { FAST_ELEMENTS, FAST_HOLEY_ELEMENTS };
+   for (int i = 0; i < 2; i++) {
+     // For internal arrays we only need a few things
+@@ -3971,6 +4067,8 @@ void CommonArrayConstructorStub::Generat
+     stubh1.GetCode();
+     InternalArraySingleArgumentConstructorStub stubh2(isolate, kinds[i]);
+     stubh2.GetCode();
++    InternalArrayNArgumentsConstructorStub stubh3(isolate, kinds[i]);
++    stubh3.GetCode();
+   }
+ }
+ 
+@@ -3990,15 +4088,13 @@ void ArrayConstructorStub::GenerateDispa
+     CreateArrayDispatchOneArgument(masm, mode);
+ 
+     __ bind(&not_one_case);
+-    ArrayNArgumentsConstructorStub stub(masm->isolate());
+-    __ TailCallStub(&stub);
++    CreateArrayDispatch<ArrayNArgumentsConstructorStub>(masm, mode);
+   } else if (argument_count() == NONE) {
+     CreateArrayDispatch<ArrayNoArgumentConstructorStub>(masm, mode);
+   } else if (argument_count() == ONE) {
+     CreateArrayDispatchOneArgument(masm, mode);
+   } else if (argument_count() == MORE_THAN_ONE) {
+-    ArrayNArgumentsConstructorStub stub(masm->isolate());
+-    __ TailCallStub(&stub);
++    CreateArrayDispatch<ArrayNArgumentsConstructorStub>(masm, mode);
+   } else {
+     UNREACHABLE();
+   }
+@@ -4117,7 +4213,7 @@ void InternalArrayConstructorStub::Gener
+   __ TailCallStub(&stub1);
+ 
+   __ bind(&not_one_case);
+-  ArrayNArgumentsConstructorStub stubN(isolate());
++  InternalArrayNArgumentsConstructorStub stubN(isolate(), kind);
+   __ TailCallStub(&stubN);
+ }
+ 
+@@ -5299,18 +5395,38 @@ void CallApiGetterStub::Generate(MacroAs
+   const int kArgStackSpace = 1;
+ 
+   // Load address of v8::PropertyAccessorInfo::args_ array.
++#if __SIZEOF_POINTER__ == 4
++  __ leap(name_arg, Operand(rsp, kPCOnStackSize));
++#else
+   __ leap(scratch, Operand(rsp, 2 * kPointerSize));
++#endif
+ 
+   PrepareCallApiFunction(masm, kArgStackSpace);
++#if __SIZEOF_POINTER__ == 4
++  __ leap(scratch, Operand(name_arg, 1 * kPointerSize));
++#else
+   // Create v8::PropertyCallbackInfo object on the stack and initialize
+   // it's args_ field.
+   Operand info_object = StackSpaceOperand(0);
+   __ movp(info_object, scratch);
++#endif
++
++#if __SIZEOF_POINTER__ == 4
++  // v8::PropertyAccessorInfo::args_.
++  __ movp(StackSpaceOperand(0), scratch);
++#endif
+ 
++#if __SIZEOF_POINTER__ == 4
++#else
+   __ leap(name_arg, Operand(scratch, -kPointerSize));
++#endif
+   // The context register (rsi) has been saved in PrepareCallApiFunction and
+   // could be used to pass arguments.
++#if __SIZEOF_POINTER__ == 4
++  __ leap(accessor_info_arg, StackSpaceOperand(0));
++#else
+   __ leap(accessor_info_arg, info_object);
++#endif
+ 
+   ExternalReference thunk_ref =
+       ExternalReference::invoke_accessor_getter_callback(isolate());
+diff -urp v8.t5.3.332.40/src/x64/interface-descriptors-x64.cc v8/src/x64/interface-descriptors-x64.cc
+--- v8.t5.3.332.40/src/x64/interface-descriptors-x64.cc	2016-11-07 14:10:50.949715996 -0800
++++ v8/src/x64/interface-descriptors-x64.cc	2016-11-07 12:41:23.372072277 -0800
+@@ -243,27 +243,44 @@ void AllocateHeapNumberDescriptor::Initi
+ SIMD128_TYPES(SIMD128_ALLOC_DESC)
+ #undef SIMD128_ALLOC_DESC
+ 
+-void ArrayNoArgumentConstructorDescriptor::InitializePlatformSpecific(
++#if __SIZEOF_POINTER__ == 4
++void ArrayConstructorDescriptor::InitializePlatformSpecific(
++    CallInterfaceDescriptorData* data) {
++  // stack param count needs (constructor pointer, and single argument)
++  Register registers[] = {rdi, rbx, rax};
++  data->InitializePlatformSpecific(arraysize(registers), registers);
++}
++
++void ArrayConstructorConstantArgCountDescriptor::InitializePlatformSpecific(
+     CallInterfaceDescriptorData* data) {
+   // register state
+   // rax -- number of arguments
+   // rdi -- function
+   // rbx -- allocation site with elements kind
+-  Register registers[] = {rdi, rbx, rax};
++  Register registers[] = {rdi, rbx};
+   data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
+ }
+ 
+-void ArraySingleArgumentConstructorDescriptor::InitializePlatformSpecific(
+-    CallInterfaceDescriptorData* data) {
++void InternalArrayConstructorConstantArgCountDescriptor::
++    InitializePlatformSpecific(CallInterfaceDescriptorData* data) {
+   // register state
+   // rax -- number of arguments
+-  // rdi -- function
+-  // rbx -- allocation site with elements kind
+-  Register registers[] = {rdi, rbx, rax};
++  // rdi -- constructor function
++  Register registers[] = {rdi};
+   data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
+ }
+ 
+-void ArrayNArgumentsConstructorDescriptor::InitializePlatformSpecific(
++void InternalArrayConstructorDescriptor::InitializePlatformSpecific(
++    CallInterfaceDescriptorData* data) {
++  // stack param count needs (constructor pointer, and single argument)
++  Register registers[] = {rdi, rax};
++  data->InitializePlatformSpecific(arraysize(registers), registers);
++}
++
++
++#endif
++
++void ArrayNoArgumentConstructorDescriptor::InitializePlatformSpecific(
+     CallInterfaceDescriptorData* data) {
+   // register state
+   // rax -- number of arguments
+@@ -273,6 +290,24 @@ void ArrayNArgumentsConstructorDescripto
+   data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
+ }
+ 
++#if 0
++void ArrayConstructorDescriptor::InitializePlatformSpecific(
++    CallInterfaceDescriptorData* data) {
++  // stack param count needs (constructor pointer, and single argument)
++  Register registers[] = {rdi, rbx, rax};
++  data->InitializePlatformSpecific(arraysize(registers), registers);
++}
++#endif
++
++#if 0
++void InternalArrayConstructorDescriptor::InitializePlatformSpecific(
++    CallInterfaceDescriptorData* data) {
++  // stack param count needs (constructor pointer, and single argument)
++  Register registers[] = {rdi, rax};
++  data->InitializePlatformSpecific(arraysize(registers), registers);
++}
++#endif
++
+ void VarArgFunctionDescriptor::InitializePlatformSpecific(
+     CallInterfaceDescriptorData* data) {
+   // stack param count needs (arg count)
+@@ -286,7 +321,16 @@ void CompareDescriptor::InitializePlatfo
+   data->InitializePlatformSpecific(arraysize(registers), registers);
+ }
+ 
+-
++#if !(__SIZEOF_POINTER__ == 4)
++void InternalArrayConstructorConstantArgCountDescriptor::
++    InitializePlatformSpecific(CallInterfaceDescriptorData* data) {
++  // register state
++  // rax -- number of arguments
++  // rdi -- constructor function
++  Register registers[] = {rdi};
++  data->InitializePlatformSpecific(arraysize(registers), registers);
++}
++#endif
+ void BinaryOpDescriptor::InitializePlatformSpecific(
+     CallInterfaceDescriptorData* data) {
+   Register registers[] = {rdx, rax};
+diff -urp v8.t5.3.332.40/src/x64/macro-assembler-x64.cc v8/src/x64/macro-assembler-x64.cc
+--- v8.t5.3.332.40/src/x64/macro-assembler-x64.cc	2016-11-07 14:10:50.952716109 -0800
++++ v8/src/x64/macro-assembler-x64.cc	2016-11-07 12:41:23.373072315 -0800
+@@ -4218,23 +4218,38 @@ void MacroAssembler::InvokeFunction(Regi
+                                     const CallWrapper& call_wrapper) {
+   DCHECK(function.is(rdi));
+   movp(rsi, FieldOperand(function, JSFunction::kContextOffset));
++#if __SIZEOF_POINTER__ == 4
++  movp(r8, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
++  InvokeFunctionCode(r8, new_target, expected, actual, flag, call_wrapper);
++#else
+   InvokeFunctionCode(rdi, new_target, expected, actual, flag, call_wrapper);
++#endif
+ }
+ 
+ 
++#if __SIZEOF_POINTER__ == 4
++void MacroAssembler::InvokeFunctionCode(Register code, Register new_target,
++#else
+ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
++#endif
+                                         const ParameterCount& expected,
+                                         const ParameterCount& actual,
+                                         InvokeFlag flag,
+                                         const CallWrapper& call_wrapper) {
+   // You can't call a function without a valid frame.
+   DCHECK(flag == JUMP_FUNCTION || has_frame());
++#if __SIZEOF_POINTER__ == 4
++#else
+   DCHECK(function.is(rdi));
++#endif
+   DCHECK_IMPLIES(new_target.is_valid(), new_target.is(rdx));
+ 
++#if __SIZEOF_POINTER__ == 4
++#else
+   if (call_wrapper.NeedsDebugStepCheck()) {
+     FloodFunctionIfStepping(function, new_target, expected, actual);
+   }
++#endif
+ 
+   // Clear the new.target register if not given.
+   if (!new_target.is_valid()) {
+@@ -4254,7 +4269,10 @@ void MacroAssembler::InvokeFunctionCode(
+     // We call indirectly through the code field in the function to
+     // allow recompilation to take effect without changing any of the
+     // call sites.
++#if __SIZEOF_POINTER__ == 4
++#else
+     Operand code = FieldOperand(function, JSFunction::kCodeEntryOffset);
++#endif
+     if (flag == CALL_FUNCTION) {
+       call_wrapper.BeforeCall(CallSize(code));
+       call(code);

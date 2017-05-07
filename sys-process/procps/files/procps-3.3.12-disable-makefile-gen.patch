@@ -1,0 +1,35 @@
+diff -urp procps-ng-3.3.12.orig/Makefile.in procps-ng-3.3.12/Makefile.in
+--- procps-ng-3.3.12.orig/Makefile.in	2017-05-04 01:44:28.836790809 +0000
++++ procps-ng-3.3.12/Makefile.in	2017-05-04 01:47:28.466571896 +0000
+@@ -950,30 +950,6 @@ all: $(BUILT_SOURCES) config.h
+ 
+ .SUFFIXES:
+ .SUFFIXES: .c .lo .log .o .obj .test .test$(EXEEXT) .trs
+-am--refresh: Makefile
+-	@:
+-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
+-	@for dep in $?; do \
+-	  case '$(am__configure_deps)' in \
+-	    *$$dep*) \
+-	      echo ' cd $(srcdir) && $(AUTOMAKE) --foreign'; \
+-	      $(am__cd) $(srcdir) && $(AUTOMAKE) --foreign \
+-		&& exit 0; \
+-	      exit 1;; \
+-	  esac; \
+-	done; \
+-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign Makefile'; \
+-	$(am__cd) $(top_srcdir) && \
+-	  $(AUTOMAKE) --foreign Makefile
+-Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+-	@case '$?' in \
+-	  *config.status*) \
+-	    echo ' $(SHELL) ./config.status'; \
+-	    $(SHELL) ./config.status;; \
+-	  *) \
+-	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe)'; \
+-	    cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe);; \
+-	esac;
+ 
+ $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
+ 	$(SHELL) ./config.status --recheck
+

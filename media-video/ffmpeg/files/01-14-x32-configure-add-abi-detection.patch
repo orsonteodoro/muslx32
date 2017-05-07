@@ -34,7 +34,7 @@
          if check_cmd $yasmexe --version; then
 -            enabled x86_64 && yasm_extra="-m amd64"
 +            enabled x86_64_x64 && yasm_extra="-m amd64" && objformat=elf64
-+            enabled x86_64_x32 && yasm_extra="-m x32 -D__ILP32__" && objformat=elfx32
++            enabled x86_64_x32 && yasm_extra="-m x32 -D__ILP32__ -g dwarf2" && objformat=elfx32
              yasm_debug="-g dwarf2"
          elif check_cmd nasm -v; then
              yasmexe=nasm

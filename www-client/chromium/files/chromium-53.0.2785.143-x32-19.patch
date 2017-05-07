@@ -1,0 +1,24 @@
+diff -urp chromium-53.0.2785.143.orig/cc/BUILD.gn chromium-53.0.2785.143/cc/BUILD.gn
+--- chromium-53.0.2785.143.orig/cc/BUILD.gn	2016-10-05 14:33:11.734356564 -0700
++++ chromium-53.0.2785.143/cc/BUILD.gn	2016-10-05 14:30:59.688322064 -0700
+@@ -537,7 +537,7 @@ component("cc") {
+     "trees/tree_synchronizer.h",
+   ]
+ 
+-  if (current_cpu == "x86" || current_cpu == "x64") {
++  if (current_cpu == "x86" || current_cpu == "x64" || target_cpu == "x32") {
+     sources += [
+       "raster/texture_compressor_etc1_sse.cc",
+       "raster/texture_compressor_etc1_sse.h",
+diff -urp chromium-53.0.2785.143.orig/cc/cc.gyp chromium-53.0.2785.143/cc/cc.gyp
+--- chromium-53.0.2785.143.orig/cc/cc.gyp	2016-10-05 14:33:19.686659760 -0700
++++ chromium-53.0.2785.143/cc/cc.gyp	2016-10-05 14:31:26.312337154 -0700
+@@ -601,7 +601,7 @@
+         '../build/android/increase_size_for_speed.gypi',
+       ],
+       'conditions': [
+-        ['target_arch == "ia32" or target_arch == "x64"', {
++        ['target_arch == "ia32" or target_arch == "x64" or target_arch == "x32"', {
+           'sources': [
+             'raster/texture_compressor_etc1_sse.cc',
+             'raster/texture_compressor_etc1_sse.h',

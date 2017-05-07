@@ -1,0 +1,70 @@
+diff -urp wine-1.8.2.orig/include/basetsd.h wine-1.8.2/include/basetsd.h
+--- wine-1.8.2.orig/include/basetsd.h	2016-10-22 22:23:18.013012985 -0700
++++ wine-1.8.2/include/basetsd.h	2016-10-22 22:26:44.976930932 -0700
+@@ -97,12 +97,40 @@ typedef signed __int64   LONG64, *PLONG6
+ typedef unsigned __int64 ULONG64, *PULONG64;
+ typedef unsigned __int64 DWORD64, *PDWORD64;
+ #else
++#if defined(__X32__)
++typedef signed __int64   DECLSPEC_ALIGN(8) INT64;
++typedef union {
++    signed __int64 value;
++    char alignment[8];
++} DECLSPEC_ALIGN(8) *PINT64;
++typedef unsigned __int64 DECLSPEC_ALIGN(8) UINT64;
++typedef union {
++    unsigned __int64 value;
++    char alignment[8];
++} DECLSPEC_ALIGN(8) *PUINT64;
++typedef signed __int64   DECLSPEC_ALIGN(8) LONG64;
++typedef union {
++    signed __int64 value;
++    char alignment[8];
++} DECLSPEC_ALIGN(8) *PLONG64;
++typedef unsigned __int64 DECLSPEC_ALIGN(8) ULONG64;
++typedef union {
++    unsigned __int64 value;
++    char alignment[8];
++} DECLSPEC_ALIGN(8) *PULONG64;
++typedef unsigned __int64 DECLSPEC_ALIGN(8) DWORD64;
++typedef union {
++    unsigned __int64 value;
++    char alignment[8];
++} DECLSPEC_ALIGN(8) *PDWORD64;
++#else
+ typedef signed __int64   DECLSPEC_ALIGN(8) INT64, *PINT64;
+ typedef unsigned __int64 DECLSPEC_ALIGN(8) UINT64, *PUINT64;
+ typedef signed __int64   DECLSPEC_ALIGN(8) LONG64, *PLONG64;
+ typedef unsigned __int64 DECLSPEC_ALIGN(8) ULONG64, *PULONG64;
+ typedef unsigned __int64 DECLSPEC_ALIGN(8) DWORD64, *PDWORD64;
+ #endif
++#endif
+ 
+ /* Basic pointer-sized integer types */
+ 
+diff -urp wine-1.8.2.orig/include/winnt.h wine-1.8.2/include/winnt.h
+--- wine-1.8.2.orig/include/winnt.h	2016-10-22 22:23:18.031013674 -0700
++++ wine-1.8.2/include/winnt.h	2016-10-22 22:29:50.356023095 -0700
+@@ -460,8 +460,21 @@ typedef ULONG           UCSCHAR;
+ typedef signed __int64   LONGLONG,  *PLONGLONG;
+ typedef unsigned __int64 ULONGLONG, *PULONGLONG;
+ # else
++    #if defined(__X32__)
++typedef signed __int64   DECLSPEC_ALIGN(8) LONGLONG;
++typedef union {
++    signed __int64 value;
++    char alignment[8];
++} DECLSPEC_ALIGN(8) *PLONGLONG;
++typedef unsigned __int64 DECLSPEC_ALIGN(8) ULONGLONG;
++typedef union {
++    unsigned __int64 value;
++    char alignment[8];
++} DECLSPEC_ALIGN(8) *PULONGLONG;
++    #else
+ typedef signed __int64   DECLSPEC_ALIGN(8) LONGLONG,   *PLONGLONG;
+ typedef unsigned __int64 DECLSPEC_ALIGN(8) ULONGLONG,  *PULONGLONG;
++#   endif
+ # endif
+ #endif
+ 
+

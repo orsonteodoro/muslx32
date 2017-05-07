@@ -84,9 +84,15 @@ src_install() {
 	slot_info_pages
 	rm "${ED}"/usr/share/aclocal/README || die
 	rmdir "${ED}"/usr/share/aclocal || die
+	local manpages
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		manpages="${ED}"/usr/share/man/man1/aclocal.1
+	else
+		manpages="${ED}"/usr/share/man/man1/{aclocal,automake}.1
+	fi
 	rm \
 		"${ED}"/usr/bin/{aclocal,automake} \
-		"${ED}"/usr/share/man/man1/aclocal.1 || die
+		${manpages} || die
 
 	# remove all config.guess and config.sub files replacing them
 	# w/a symlink to a specific gnuconfig version

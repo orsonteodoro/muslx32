@@ -1,0 +1,16 @@
+diff -urp wine-1.8.2.orig/include/winnt.h wine-1.8.2/include/winnt.h
+--- wine-1.8.2.orig/include/winnt.h	2016-10-22 22:18:13.338358816 -0700
++++ wine-1.8.2/include/winnt.h	2016-10-22 22:20:25.161400092 -0700
+@@ -428,8 +428,12 @@ extern "C++" { \
+ 
+ /* Define the basic types */
+ #ifndef VOID
++#if defined(__X32__)
++#define VOID void
++#else
+ #define VOID void
+ #endif
++#endif
+ typedef VOID           *PVOID;
+ typedef VOID           *PVOID64;
+ typedef BYTE            BOOLEAN,    *PBOOLEAN;

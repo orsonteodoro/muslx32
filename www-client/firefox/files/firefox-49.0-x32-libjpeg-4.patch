@@ -1,0 +1,109 @@
+--- libjpeg-turbo-1.5.0.orig/simd/jsimdext.inc	2016-10-20 13:57:21.874665063 -0700
++++ libjpeg-turbo-1.5.0/simd/jsimdext.inc	2016-10-20 14:06:11.119840553 -0700
+@@ -178,6 +178,106 @@ section .note.GNU-stack noalloc noexec n
+ %define QWORD_BIT               64              ; sizeof(QWORD)*BYTE_BIT
+ %define OWORD_BIT               128             ; sizeof(OWORD)*BYTE_BIT
+ 
++%ifdef __x86_64__
++%ifdef __ILP32__
++%define REG_A                   eax
++%define REG_B                   ebx
++%define REG_C                   ecx
++%define REG_D                   edx
++%define REG_SP                  esp
++%define REG_BP                  ebp
++%define REG_SI                  esi
++%define REG_DI                  edi
++%define REG_rA                  rax
++%define REG_rB                  rbx
++%define REG_rC                  rcx
++%define REG_rD                  rdx
++%define REG_rSP                 rsp
++%define REG_rSI                 rsi
++%define REG_rDI                 rdi
++%define REG_8                   r8d
++%define REG_9                   r9d
++%define REG_10                  r10d
++%define REG_11                  r11d
++%define REG_12                  r12d
++%define REG_13                  r13d
++%define REG_14                  r14d
++%define REG_15                  r15d
++%define REG_r8                  r8
++%define REG_r9                  r9
++%define REG_r10                 r10
++%define REG_r11                 r11
++%define REG_r12                 r12
++%define REG_r13                 r13
++%define REG_r14                 r14
++%define REG_r15                 r15
++%define r0p                     r0d
++%define r1p                     r1d
++%define r2p                     r2d
++%define r3p                     r3d
++%define r4p                     r4d
++%define r5p                     r5d
++%define r6p                     r6d
++%define r7p                     r7d
++%define r8p                     r8d
++%define r9p                     r9d
++%define r10p                    r10d
++%define r11p                    r11d
++%define r12p                    r12d
++%define r13p                    r13d
++%define r14p                    r14d
++%define r15p                    r15d
++%else
++%define REG_A                   rax
++%define REG_B                   rbx
++%define REG_C                   rcx
++%define REG_D                   rdx
++%define REG_SP                  rsp
++%define REG_BP                  rbp
++%define REG_SI                  rsi
++%define REG_DI                  rdi
++%define REG_rA                  rax
++%define REG_rB                  rbx
++%define REG_rC                  rcx
++%define REG_rD                  rdx
++%define REG_rSP                 rsp
++%define REG_rSI                 rsi
++%define REG_rDI                 rdi
++%define REG_8                   r8d
++%define REG_9                   r9d
++%define REG_10                  r10
++%define REG_11                  r11
++%define REG_12                  r12
++%define REG_13                  r13
++%define REG_14                  r14
++%define REG_15                  r15
++%define REG_r8                  r8
++%define REG_r9                  r9
++%define REG_r10                 r10
++%define REG_r11                 r11
++%define REG_r12                 r12
++%define REG_r13                 r13
++%define REG_r14                 r14
++%define REG_r15                 r15
++%define r0p                     r0
++%define r1p                     r1
++%define r2p                     r2
++%define r3p                     r3
++%define r4p                     r4
++%define r5p                     r5
++%define r6p                     r6
++%define r7p                     r7
++%define r8p                     r8
++%define r9p                     r9
++%define r10p                    r10
++%define r11p                    r11
++%define r12p                    r12
++%define r13p                    r13
++%define r14p                    r14
++%define r15p                    r15
++%endif
++%endif
++
+ ; --------------------------------------------------------------------------
+ ;  External Symbol Name
+ ;

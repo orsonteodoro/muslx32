@@ -1,0 +1,75 @@
+diff -urp llvm-3.5.0.src.orig/include/llvm/ADT/Triple.h llvm-3.5.0.src/include/llvm/ADT/Triple.h
+--- llvm-3.5.0.src.orig/include/llvm/ADT/Triple.h	2016-10-17 23:48:53.638572034 -0700
++++ llvm-3.5.0.src/include/llvm/ADT/Triple.h	2016-10-18 00:14:25.702873782 -0700
+@@ -150,6 +150,7 @@ public:
+     Android,
+ 
+     Musl,
++    MuslX32,
+     MuslEABI,
+     MuslEABIHF,
+ 
+diff -urp llvm-3.5.0.src.orig/lib/Support/Triple.cpp llvm-3.5.0.src/lib/Support/Triple.cpp
+--- llvm-3.5.0.src.orig/lib/Support/Triple.cpp	2016-10-17 23:48:53.641572150 -0700
++++ llvm-3.5.0.src/lib/Support/Triple.cpp	2016-10-18 00:14:06.776158047 -0700
+@@ -169,6 +169,7 @@ const char *Triple::getEnvironmentTypeNa
+   case EABI: return "eabi";
+   case EABIHF: return "eabihf";
+   case Musl: return "musl";
++  case MuslX32: return "muslx32";
+   case MuslEABI: return "musleabi";
+   case MuslEABIHF: return "musleabihf";
+   case Android: return "android";
+@@ -348,6 +349,7 @@ static Triple::EnvironmentType parseEnvi
+     .StartsWith("code16", Triple::CODE16)
+     .StartsWith("gnu", Triple::GNU)
+     .StartsWith("musl", Triple::Musl)
++    .StartsWith("muslx32", Triple::MuslX32)
+     .StartsWith("musleabi", Triple::MuslEABI)
+     .StartsWith("musleabihf", Triple::MuslEABIHF)
+     .StartsWith("android", Triple::Android)
+diff -urp llvm-3.5.0.src.orig/lib/Target/X86/MCTargetDesc/X86AsmBackend.cpp llvm-3.5.0.src/lib/Target/X86/MCTargetDesc/X86AsmBackend.cpp
+--- llvm-3.5.0.src.orig/lib/Target/X86/MCTargetDesc/X86AsmBackend.cpp	2014-07-10 06:03:26.000000000 -0700
++++ llvm-3.5.0.src/lib/Target/X86/MCTargetDesc/X86AsmBackend.cpp	2016-10-17 23:50:34.478453273 -0700
+@@ -836,7 +836,8 @@ MCAsmBackend *llvm::createX86_64AsmBacke
+ 
+   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TheTriple.getOS());
+ 
+-  if (TheTriple.getEnvironment() == Triple::GNUX32)
++  if (TheTriple.getEnvironment() == Triple::GNUX32 ||
++      TheTriple.getEnvironment() == Triple::MuslX32)
+     return new ELFX86_X32AsmBackend(T, OSABI, CPU);
+   return new ELFX86_64AsmBackend(T, OSABI, CPU);
+ }
+diff -urp llvm-3.5.0.src.orig/lib/Target/X86/MCTargetDesc/X86MCAsmInfo.cpp llvm-3.5.0.src/lib/Target/X86/MCTargetDesc/X86MCAsmInfo.cpp
+--- llvm-3.5.0.src.orig/lib/Target/X86/MCTargetDesc/X86MCAsmInfo.cpp	2014-08-03 21:29:47.000000000 -0700
++++ llvm-3.5.0.src/lib/Target/X86/MCTargetDesc/X86MCAsmInfo.cpp	2016-10-17 23:50:54.766234132 -0700
+@@ -88,7 +88,8 @@ void X86ELFMCAsmInfo::anchor() { }
+ 
+ X86ELFMCAsmInfo::X86ELFMCAsmInfo(const Triple &T) {
+   bool is64Bit = T.getArch() == Triple::x86_64;
+-  bool isX32 = T.getEnvironment() == Triple::GNUX32;
++  bool isX32 = T.getEnvironment() == Triple::GNUX32 ||
++               T.getEnvironment() == Triple::MuslX32;
+ 
+   // For ELF, x86-64 pointer size depends on the ABI.
+   // For x86-64 without the x32 ABI, pointer size is 8. For x86 and for x86-64
+diff -urp llvm-3.5.0.src.orig/lib/Target/X86/X86Subtarget.h llvm-3.5.0.src/lib/Target/X86/X86Subtarget.h
+--- llvm-3.5.0.src.orig/lib/Target/X86/X86Subtarget.h	2014-07-21 07:54:21.000000000 -0700
++++ llvm-3.5.0.src/lib/Target/X86/X86Subtarget.h	2016-10-17 23:51:38.956934994 -0700
+@@ -295,12 +295,14 @@ public:
+   /// Is this x86_64 with the ILP32 programming model (x32 ABI)?
+   bool isTarget64BitILP32() const {
+     return In64BitMode && (TargetTriple.getEnvironment() == Triple::GNUX32 ||
++                           TargetTriple.getEnvironment() == Triple::MuslX32 ||
+                            TargetTriple.getOS() == Triple::NaCl);
+   }
+ 
+   /// Is this x86_64 with the LP64 programming model (standard AMD64, no x32)?
+   bool isTarget64BitLP64() const {
+-    return In64BitMode && (TargetTriple.getEnvironment() != Triple::GNUX32);
++    return In64BitMode && (TargetTriple.getEnvironment() != Triple::GNUX32 &&
++                           TargetTriple.getEnvironment() != Triple::MuslX32);
+   }
+ 
+   PICStyles::Style getPICStyle() const { return PICStyle; }

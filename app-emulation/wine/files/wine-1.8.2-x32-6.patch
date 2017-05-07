@@ -1,0 +1,16 @@
+diff -ur wine-1.8.2.orig/loader/preloader.c wine-1.8.2/loader/preloader.c
+--- wine-1.8.2.orig/loader/preloader.c	2016-08-30 03:03:16.612797549 -0700
++++ wine-1.8.2/loader/preloader.c	2016-08-30 03:17:17.881784082 -0700
+@@ -368,7 +368,12 @@
+                   "movq %rax,(%rsp)\n\t"     /* orig stack pointer */
+                   "movq $thread_data,%rsi\n\t"
+                   "movq $0x1002,%rdi\n\t"    /* ARCH_SET_FS */
++#if defined(__X32__)
++                  "movq $0x40000000,%rax\n\t"       /* __X32_SYSCALL_BIT */
++                  "addq $158,%rax\n\t"       /* SYS_arch_prctl */
++#else
+                   "movq $158,%rax\n\t"       /* SYS_arch_prctl */
++#endif
+                   "syscall\n\t"
+                   "movq %rsp,%rdi\n\t"       /* ptr to orig stack pointer */
+                   "call wld_start\n\t"

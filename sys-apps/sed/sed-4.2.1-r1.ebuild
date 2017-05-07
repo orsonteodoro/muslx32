@@ -53,9 +53,13 @@ src_compile() {
 
 	export ac_cv_search_setfilecon=$(usex selinux -lselinux)
 	export ac_cv_header_selinux_{context,selinux}_h=$(usex selinux)
+
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		myconf+=" --with-included-regex"
+	fi
+
 	use static && append-ldflags -static
 	econf \
-		--with-included-regex \
 		--bindir=${bindir} \
 		$(use_enable acl) \
 		$(use_enable nls) \

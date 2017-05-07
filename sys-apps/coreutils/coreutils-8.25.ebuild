@@ -1,6 +1,5 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 # To generate the man pages, unpack the upstream tarball and run:
 # ./configure --enable-install-program=arch,coreutils,hostname,kill
@@ -13,7 +12,7 @@ EAPI="4"
 inherit eutils flag-o-matic toolchain-funcs
 
 PATCH_VER="1.1"
-DESCRIPTION="Standard GNU file utilities (chmod, cp, dd, dir, ls...), text utilities (sort, tr, head, wc..), and shell utilities (whoami, who,...)"
+DESCRIPTION="Standard GNU utilities (chmod, cp, dd, ls, sort, tr, head, wc, who,...)"
 HOMEPAGE="https://www.gnu.org/software/coreutils/"
 SRC_URI="mirror://gnu/${PN}/${P}.tar.xz
 	mirror://gentoo/${P}-patches-${PATCH_VER}.tar.xz
@@ -23,7 +22,7 @@ SRC_URI="mirror://gnu/${PN}/${P}.tar.xz
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~m68k ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~arm-linux ~x86-linux"
+KEYWORDS="alpha amd64 arm arm64 hppa ia64 m68k ~mips ppc ppc64 s390 sh sparc x86 ~amd64-fbsd ~x86-fbsd ~arm-linux ~x86-linux"
 IUSE="acl caps gmp hostname kill multicall nls selinux static userland_BSD vanilla xattr"
 
 LIB_DEPEND="acl? ( sys-apps/acl[static-libs] )
@@ -85,11 +84,13 @@ src_configure() {
 	use static && append-ldflags -static && sed -i '/elf_sys=yes/s:yes:no:' configure #321821
 	use selinux || export ac_cv_{header_selinux_{context,flash,selinux}_h,search_setfilecon}=no #301782
 	use userland_BSD && myconf="${myconf} -program-prefix=g --program-transform-name=s/stat/nustat/"
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		myconf+=" --with-included-regex"
+	fi
 	# kill/uptime - procps
 	# groups/su   - shadow
 	# hostname    - net-tools
 	econf \
-		--with-included-regex \
 		--with-packager="Gentoo" \
 		--with-packager-version="${PVR} (p${PATCH_VER:-0})" \
 		--with-packager-bug-reports="https://bugs.gentoo.org/" \
@@ -103,6 +104,14 @@ src_configure() {
 		$(use_enable xattr) \
 		$(use_with gmp) \
 		${myconf}
+}
+
+#added by muslx32
+src_compile() {
+	default
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		make src/chroot
+	fi
 }
 
 src_test() {
@@ -140,6 +149,10 @@ src_install() {
 
 	insinto /etc
 	newins src/dircolors.hin DIR_COLORS
+
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		cp "${S}"/src/chroot "${ED}"/usr/bin/
+	fi
 
 	if [[ ${USERLAND} == "GNU" ]] ; then
 		cd "${ED}"/usr/bin

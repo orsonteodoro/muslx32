@@ -1,0 +1,540 @@
+diff -urN chromium-52.0.2743.116.orig/v8/src/compiler/x64/code-generator-x64.cc chromium-52.0.2743.116/v8/src/compiler/x64/code-generator-x64.cc
+--- chromium-52.0.2743.116.orig/v8/src/compiler/x64/code-generator-x64.cc	2016-08-05 13:14:12.920788077 -0700
++++ chromium-52.0.2743.116/v8/src/compiler/x64/code-generator-x64.cc	2016-08-05 18:03:34.359510154 -0700
+@@ -1017,9 +1017,9 @@
+         // overwrite an input for adc. We have to use the temp register.
+         use_temp = true;
+         __ Move(i.TempRegister(0), i.InputRegister(0));
+-        __ add(i.TempRegister(0), i.InputRegister(2));
++        __ addl(i.TempRegister(0), i.InputRegister(2));
+       } else {
+-        __ add(i.OutputRegister(0), i.InputRegister(2));
++        __ addl(i.OutputRegister(0), i.InputRegister(2));
+       }
+       __ adc(i.InputRegister(1), Operand(i.InputRegister(3)));
+       if (i.OutputRegister(1).code() != i.InputRegister(1).code()) {
+@@ -1042,11 +1042,11 @@
+         // overwrite an input for adc. We have to use the temp register.
+         use_temp = true;
+         __ Move(i.TempRegister(0), i.InputRegister(0));
+-        __ sub(i.TempRegister(0), i.InputRegister(2));
++        __ subl(i.TempRegister(0), i.InputRegister(2));
+       } else {
+-        __ sub(i.OutputRegister(0), i.InputRegister(2));
++        __ subl(i.OutputRegister(0), i.InputRegister(2));
+       }
+-      __ sbb(i.InputRegister(1), Operand(i.InputRegister(3)));
++      __ sbbl(i.InputRegister(1), Operand(i.InputRegister(3)));
+       if (i.OutputRegister(1).code() != i.InputRegister(1).code()) {
+         __ Move(i.OutputRegister(1), i.InputRegister(1));
+       }
+@@ -1056,14 +1056,14 @@
+       break;
+     }
+     case kX64MulPair: {
+-      __ imul(i.OutputRegister(1), i.InputOperand(0));
+-      __ mov(i.TempRegister(0), i.InputOperand(1));
+-      __ imul(i.TempRegister(0), i.InputOperand(2));
+-      __ add(i.OutputRegister(1), i.TempRegister(0));
+-      __ mov(i.OutputRegister(0), i.InputOperand(0));
++      __ imull(i.OutputRegister(1), i.InputOperand(0));
++      __ movp(i.TempRegister(0), i.InputOperand(1));
++      __ imull(i.TempRegister(0), i.InputOperand(2));
++      __ addl(i.OutputRegister(1), i.TempRegister(0));
++      __ movp(i.OutputRegister(0), i.InputOperand(0));
+       // Multiplies the low words and stores them in eax and edx.
+-      __ mul(i.InputRegister(2));
+-      __ add(i.OutputRegister(1), i.TempRegister(0));
++      __ mull(i.InputRegister(2));
++      __ addl(i.OutputRegister(1), i.TempRegister(0));
+ 
+       break;
+     }
+diff -urN chromium-52.0.2743.116.orig/v8/src/compiler/x64/instruction-codes-x64.h chromium-52.0.2743.116/v8/src/compiler/x64/instruction-codes-x64.h
+--- chromium-52.0.2743.116.orig/v8/src/compiler/x64/instruction-codes-x64.h	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/compiler/x64/instruction-codes-x64.h	2016-08-05 13:25:39.329777089 -0700
+@@ -56,6 +56,12 @@
+   V(X64Tzcnt32)                    \
+   V(X64Popcnt)                     \
+   V(X64Popcnt32)                   \
++  V(X64AddPair)                    \
++  V(X64SubPair)                    \
++  V(X64MulPair)                    \
++  V(X64ShlPair)                    \
++  V(X64ShrPair)                    \
++  V(X64SarPair)                    \
+   V(SSEFloat32Cmp)                 \
+   V(SSEFloat32Add)                 \
+   V(SSEFloat32Sub)                 \
+diff -urN chromium-52.0.2743.116.orig/v8/src/compiler/x64/instruction-selector-x64.cc chromium-52.0.2743.116/v8/src/compiler/x64/instruction-selector-x64.cc
+--- chromium-52.0.2743.116.orig/v8/src/compiler/x64/instruction-selector-x64.cc	2016-08-05 13:14:13.025788075 -0700
++++ chromium-52.0.2743.116/v8/src/compiler/x64/instruction-selector-x64.cc	2016-08-05 13:59:48.722744282 -0700
+@@ -1352,11 +1352,33 @@
+       g.DefineAsFixed(node, rax),
+       g.DefineAsFixed(NodeProperties::FindProjection(node, 1), rcx)};
+ 
+-  InstructionOperand temps[] = {g.TempRegister(edx)};
++  InstructionOperand temps[] = {g.TempRegister(rdx)};
+ 
+   Emit(kX64MulPair, 2, outputs, 4, inputs, 1, temps);
+ }
+ 
++void VisitWord64PairShift(InstructionSelector* selector, InstructionCode opcode,
++                          Node* node) {
++  X64OperandGenerator g(selector);
++
++  Node* shift = node->InputAt(2);
++  InstructionOperand shift_operand;
++  if (g.CanBeImmediate(shift)) {
++    shift_operand = g.UseImmediate(shift);
++  } else {
++    shift_operand = g.UseFixed(shift, rcx);
++  }
++  InstructionOperand inputs[] = {g.UseFixed(node->InputAt(0), rax),
++                                 g.UseFixed(node->InputAt(1), rdx),
++                                 shift_operand};
++
++  InstructionOperand outputs[] = {
++      g.DefineAsFixed(node, rax),
++      g.DefineAsFixed(NodeProperties::FindProjection(node, 1), rdx)};
++
++  selector->Emit(opcode, 2, outputs, 3, inputs);
++}
++
+ void InstructionSelector::VisitWord32PairShl(Node* node) {
+   VisitWord64PairShift(this, kX64ShlPair, node);
+ }
+diff -urN chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64-inl.h chromium-52.0.2743.116/v8/src/x64/assembler-x64-inl.h
+--- chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64-inl.h	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/x64/assembler-x64-inl.h	2016-08-06 05:04:49.544875033 -0700
+@@ -613,6 +613,12 @@
+   *p = disp;
+   len_ += sizeof(disp);
+ }
++
++Operand::Operand(Register reg) {
++  // reg
++  set_modrm(3, reg);
++}
++
+ }  // namespace internal
+ }  // namespace v8
+ 
+diff -urN chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64.cc chromium-52.0.2743.116/v8/src/x64/assembler-x64.cc
+--- chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64.cc	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/x64/assembler-x64.cc	2016-08-06 14:05:47.834355440 -0700
+@@ -288,6 +288,14 @@
+   }
+ }
+ 
++#if V8_TARGET_ARCH_64_BIT
++#else //V8_TARGET_ARCH_32_BIT
++bool Operand::is_reg(Register reg) const {
++  return ((buf_[0] & 0xF8) == 0xC0)  // addressing mode is register only.
++      && ((buf_[0] & 0x07) == reg.code());  // register codes match.
++}
++#endif
++
+ 
+ // -----------------------------------------------------------------------------
+ // Implementation of Assembler.
+@@ -497,6 +505,26 @@
+   }
+ }
+ 
++#if V8_TARGET_ARCH_64_BIT
++#else //V8_TARGET_ARCH_32_BIT
++void Assembler::emit_arith(int sel, Operand dst, const Immediate& x) {
++  DCHECK((0 <= sel) && (sel <= 7));
++  Register ireg = { sel };
++  if (x.is_int8()) {
++    emit(0x83);  // using a sign-extended 8-bit immediate.
++    emit_operand(ireg, dst);
++    emit(x.x_ & 0xFF);
++  } else if (dst.is_reg(rax)) {
++    emit((sel << 3) | 0x05);  // short form if the destination is eax.
++    emit(x);
++  } else {
++    emit(0x81);  // using a literal 32-bit immediate.
++    emit_operand(ireg, dst);
++    emit(x);
++  }
++}
++#endif //V8_TARGET_ARCH_32_BIT
++
+ 
+ // Assembler Instruction implementations.
+ 
+@@ -702,6 +730,19 @@
+   emit(src.value_);
+ }
+ 
++#if V8_TARGET_ARCH_64_BIT
++#else //V8_TARGET_ARCH_32_BIT
++void Assembler::adc(Register dst, int32_t imm32) {
++  EnsureSpace ensure_space(this);
++  emit_arith(2, Operand(dst), Immediate(imm32));
++}
++
++void Assembler::adc(Register dst, const Operand& src) {
++  EnsureSpace ensure_space(this);
++  emit(0x13);
++  emit_operand(dst, src);
++}
++#endif //V8_TARGET_ARCH_32_BIT
+ 
+ void Assembler::shift(Register dst,
+                       Immediate shift_amount,
+@@ -722,7 +763,7 @@
+   }
+ }
+ 
+-
++//shr( in x87
+ void Assembler::shift(Operand dst, Immediate shift_amount, int subcode,
+                       int size) {
+   EnsureSpace ensure_space(this);
+@@ -748,7 +789,7 @@
+   emit_modrm(subcode, dst);
+ }
+ 
+-
++//shr( in x87
+ void Assembler::shift(Operand dst, int subcode, int size) {
+   EnsureSpace ensure_space(this);
+   emit_rex(dst, size);
+@@ -1935,7 +1976,25 @@
+   emit_modrm(0x0, reg);
+ }
+ 
++#if V8_TARGET_ARCH_64_BIT
++#else //V8_TARGET_ARCH_32_BIT
++void Assembler::shr_cl(const Operand& dst) {
++  EnsureSpace ensure_space(this);
++  emit(0xD3);
++  emit_operand(rbp, dst);
++}
++#endif //V8_TARGET_ARCH_32_BIT
+ 
++#if V8_TARGET_ARCH_64_BIT
++#else //V8_TARGET_ARCH_32_BIT
++void Assembler::sar_cl(const Operand& dst) {
++  EnsureSpace ensure_space(this);
++  emit(0xD3);
++  emit_operand(rdi, dst);
++}
++#endif //V8_TARGET_ARCH_32_BIT
++
++#if V8_TARGET_ARCH_64_BIT
+ void Assembler::shld(Register dst, Register src) {
+   EnsureSpace ensure_space(this);
+   emit_rex_64(src, dst);
+@@ -1944,7 +2003,26 @@
+   emit_modrm(src, dst);
+ }
+ 
++#else //V8_TARGET_ARCH_32_BIT
++void Assembler::shld(Register dst, Register src, uint8_t shift) {
++  DCHECK(is_uint5(shift));
++  EnsureSpace ensure_space(this);
++  emit(0x0F);
++  emit(0xA4);
++  //emit_operand(src, Operand(dst));
++  emit_rex_32(src, dst);
++  emit(shift);
++}
++
++void Assembler::shld_cl(Register dst, Register src) {
++  EnsureSpace ensure_space(this);
++  emit(0x0F);
++  emit(0xA5);
++  emit_operand(src, Operand(dst));
++}
++#endif //V8_TARGET_ARCH_32_BIT
+ 
++#if V8_TARGET_ARCH_64_BIT
+ void Assembler::shrd(Register dst, Register src) {
+   EnsureSpace ensure_space(this);
+   emit_rex_64(src, dst);
+@@ -1952,6 +2030,35 @@
+   emit(0xAD);
+   emit_modrm(src, dst);
+ }
++#else //V8_TARGET_ARCH_32_BIT
++void Assembler::shrd(Register dst, Register src, uint8_t shift) {
++  DCHECK(is_uint5(shift));
++  EnsureSpace ensure_space(this);
++  emit(0x0F);
++  emit(0xAC);
++  //emit_operand(dst, Operand(src));
++  emit_rex_32(dst, src);
++  emit(shift);
++}
++
++void Assembler::shrd_cl(const Operand& dst, Register src) {
++  EnsureSpace ensure_space(this);
++  emit(0x0F);
++  emit(0xAD);
++  emit_operand(src, dst);
++}
++#endif //V8_TARGET_ARCH_32_BIT
++
++#if V8_TARGET_ARCH_64_BIT
++//none
++#else //V8_TARGET_ARCH_32_BIT
++void Assembler::shl_cl(const Operand& dst) {
++  EnsureSpace ensure_space(this);
++  emit(0xD3);
++  emit_operand(rsp, dst);
++}
++#endif //V8_TARGET_ARCH_32_BIT
++
+ 
+ void Assembler::xchgb(Register reg, const Operand& op) {
+   EnsureSpace ensure_space(this);
+diff -urN chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64.h chromium-52.0.2743.116/v8/src/x64/assembler-x64.h
+--- chromium-52.0.2743.116.orig/v8/src/x64/assembler-x64.h	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/x64/assembler-x64.h	2016-08-06 13:40:15.629379968 -0700
+@@ -342,8 +342,17 @@
+     value_ = static_cast<int32_t>(reinterpret_cast<intptr_t>(value));
+   }
+ 
++#if V8_TARGET_ARCH_32_BIT
++  bool is_int8() const {
++    return -128 <= x_ && x_ < 128 && RelocInfo::IsNone(rmode_);
++  }
++#endif
++
+  private:
+   int32_t value_;
++#if V8_TARGET_ARCH_32_BIT
++  int x_;
++#endif
+   RelocInfo::Mode rmode_ = RelocInfo::NONE32;
+ 
+   friend class Assembler;
+@@ -365,6 +374,9 @@
+ 
+ class Operand BASE_EMBEDDED {
+  public:
++  // reg
++  INLINE(explicit Operand(Register reg));
++
+   // [base + disp/r]
+   Operand(Register base, int32_t disp);
+ 
+@@ -398,6 +410,11 @@
+   // instruction.
+   int operand_size() const { return len_; }
+ 
++#if V8_TARGET_ARCH_32_BIT
++  // Returns true if this Operand is a wrapper for the specified register.
++  bool is_reg(Register reg) const;
++#endif
++
+  private:
+   byte rex_;
+   byte buf_[9];
+@@ -791,6 +808,12 @@
+   void xchgb(Register reg, const Operand& op);
+   void xchgw(Register reg, const Operand& op);
+ 
++#if V8_TARGET_ARCH_64_BIT
++#else //V8_TARGET_ARCH_32_BIT
++  void adc(Register dst, int32_t imm32);
++  void adc(Register dst, const Operand& src);
++#endif //V8_TARGET_ARCH_32_BIT
++
+   // Sign-extends rax into rdx:rax.
+   void cqo();
+   // Sign-extends eax into edx:eax.
+@@ -841,11 +864,27 @@
+   SHIFT_INSTRUCTION_LIST(DECLARE_SHIFT_INSTRUCTION)
+ #undef DECLARE_SHIFT_INSTRUCTION
+ 
++#if V8_TARGET_ARCH_64_BIT
+   // Shifts dst:src left by cl bits, affecting only dst.
+   void shld(Register dst, Register src);
+ 
+   // Shifts src:dst right by cl bits, affecting only dst.
+   void shrd(Register dst, Register src);
++#else //V8_TARGET_ARCH_32_BIT
++  void sar_cl(Register dst) { sar_cl(Operand(dst)); }
++  void sar_cl(const Operand& dst);
++
++  void shld(Register dst, Register src, uint8_t shift);
++  void shl_cl(const Operand& dst);
++  void shl_cl(Register dst) { shl_cl(Operand(dst)); }
++  void shld_cl(Register dst, Register src);
++
++  void shr_cl(const Operand& dst);
++  void shr_cl(Register dst) { shr_cl(Operand(dst)); }
++  void shrd(Register dst, Register src, uint8_t shift);
++  void shrd_cl(const Operand& dst, Register src);
++  void shrd_cl(Register dst, Register src) { shrd_cl(Operand(dst), src); }
++#endif //V8_TARGET_ARCH_32_BIT
+ 
+   void store_rax(void* dst, RelocInfo::Mode mode);
+   void store_rax(ExternalReference ref);
+@@ -1753,6 +1792,10 @@
+   // code emission
+   void GrowBuffer();
+ 
++#if V8_TARGET_ARCH_32_BIT
++  void emit_arith(int sel, Operand dst, const Immediate& x);
++#endif
++
+   void emit(byte x) { *pc_++ = x; }
+   inline void emitl(uint32_t x);
+   inline void emitp(void* x, RelocInfo::Mode rmode);
+@@ -1994,6 +2037,14 @@
+   void RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data = 0);
+ 
+   // Arithmetics
++  void emit_adc(Register dst, Immediate src, int size) {
++    immediate_arithmetic_op(0x02, dst, src, size);
++  }
++
++  void emit_adc(Register dst, const Operand& src, int size) {
++    arithmetic_op(0x13, dst, src, size);
++  }
++
+   void emit_add(Register dst, Register src, int size) {
+     arithmetic_op(0x03, dst, src, size);
+   }
+@@ -2120,6 +2171,10 @@
+     arithmetic_op(0x1b, dst, src, size);
+   }
+ 
++  void emit_sbb(Register dst, const Operand& src, int size) {
++    arithmetic_op(0x1b, dst, src, size);
++  }
++
+   void emit_sub(Register dst, Register src, int size) {
+     arithmetic_op(0x2B, dst, src, size);
+   }
+diff -urN chromium-52.0.2743.116.orig/v8/src/x64/macro-assembler-x64.cc chromium-52.0.2743.116/v8/src/x64/macro-assembler-x64.cc
+--- chromium-52.0.2743.116.orig/v8/src/x64/macro-assembler-x64.cc	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/x64/macro-assembler-x64.cc	2016-08-06 13:35:28.893384558 -0700
+@@ -4114,6 +4114,78 @@
+   Call(ces.GetCode(), RelocInfo::DEBUGGER_STATEMENT);
+ }
+ 
++#if V8_TARGET_ARCH_32_BIT
++void MacroAssembler::ShlPair(Register high, Register low, uint8_t shift) {
++  if (shift >= 32) {
++    movp(high, low);
++    shll(high, Immediate(shift - 32));
++    xorl(low, low);
++  } else {
++    shld(high, low, shift);
++    shll(low, Immediate(shift));
++  }
++}
++
++void MacroAssembler::ShlPair_cl(Register high, Register low) {
++  shld_cl(high, low); //shld
++  shl_cl(low); //shift
++  //shld(high, low);
++  //shift(low, esp, kInt32Size);
++  Label done;
++  testl(rcx, Immediate(0x20));
++  j(equal, &done, Label::kNear);
++  movp(high, low);
++  xorl(low, low);
++  bind(&done);
++}
++
++void MacroAssembler::ShrPair(Register high, Register low, uint8_t shift) {
++  if (shift >= 32) {
++    movp(low, high);
++    shrl(low, Immediate(shift - 32));
++    xorl(high, high);
++  } else {
++    shrd(high, low, shift);
++    shrl(high, Immediate(shift));
++  }
++}
++
++void MacroAssembler::ShrPair_cl(Register high, Register low) {
++  shrd_cl(low, high); //shrd
++  shr_cl(high); //shift
++  //shrd(low, high);
++  //shift(low, rbp, kInt32Size);
++  Label done;
++  testl(rcx, Immediate(0x20));
++  j(equal, &done, Label::kNear);
++  movp(low, high);
++  xorl(high, high);
++  bind(&done);
++}
++
++void MacroAssembler::SarPair(Register high, Register low, uint8_t shift) {
++  if (shift >= 32) {
++    movp(low, high);
++    sarl(low, Immediate(shift - 32));
++    sarl(high, Immediate(31));
++  } else {
++    shrd(high, low, shift);
++    sarl(high, Immediate(shift));
++  }
++}
++
++void MacroAssembler::SarPair_cl(Register high, Register low) {
++  shrd_cl(low, high);
++  sar_cl(high);
++  Label done;
++  testl(rcx, Immediate(0x20));
++  j(equal, &done, Label::kNear);
++  movp(low, high);
++  sarl(high, Immediate(31));
++  bind(&done);
++}
++#endif //V8_TARGET_ARCH_32_BIT
++
+ void MacroAssembler::PrepareForTailCall(const ParameterCount& callee_args_count,
+                                         Register caller_args_count_reg,
+                                         Register scratch0, Register scratch1,
+diff -urN chromium-52.0.2743.116.orig/v8/src/x64/macro-assembler-x64.h chromium-52.0.2743.116/v8/src/x64/macro-assembler-x64.h
+--- chromium-52.0.2743.116.orig/v8/src/x64/macro-assembler-x64.h	2016-08-03 12:04:09.000000000 -0700
++++ chromium-52.0.2743.116/v8/src/x64/macro-assembler-x64.h	2016-08-06 13:02:49.192415929 -0700
+@@ -413,6 +413,13 @@
+                       InvokeFlag flag,
+                       const CallWrapper& call_wrapper);
+ 
++  void ShlPair(Register high, Register low, uint8_t imm8);
++  void ShlPair_cl(Register high, Register low);
++  void ShrPair(Register high, Register low, uint8_t imm8);
++  void ShrPair_cl(Register high, Register src);
++  void SarPair(Register high, Register low, uint8_t imm8);
++  void SarPair_cl(Register high, Register low);
++
+   // ---------------------------------------------------------------------------
+   // Smi tagging, untagging and operations on tagged smis.
+ 
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/__init__.pyc and chromium-52.0.2743.116/v8/tools/testrunner/__init__.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/__init__.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/__init__.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/commands.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/commands.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/execution.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/execution.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/junit_output.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/junit_output.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/perfdata.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/perfdata.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/pool.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/pool.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/progress.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/progress.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/statusfile.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/statusfile.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/testsuite.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/testsuite.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/utils.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/utils.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/local/verbose.pyc and chromium-52.0.2743.116/v8/tools/testrunner/local/verbose.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/network/__init__.pyc and chromium-52.0.2743.116/v8/tools/testrunner/network/__init__.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/network/distro.pyc and chromium-52.0.2743.116/v8/tools/testrunner/network/distro.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/network/network_execution.pyc and chromium-52.0.2743.116/v8/tools/testrunner/network/network_execution.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/objects/__init__.pyc and chromium-52.0.2743.116/v8/tools/testrunner/objects/__init__.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/objects/context.pyc and chromium-52.0.2743.116/v8/tools/testrunner/objects/context.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/objects/output.pyc and chromium-52.0.2743.116/v8/tools/testrunner/objects/output.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/objects/peer.pyc and chromium-52.0.2743.116/v8/tools/testrunner/objects/peer.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/objects/testcase.pyc and chromium-52.0.2743.116/v8/tools/testrunner/objects/testcase.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/objects/workpacket.pyc and chromium-52.0.2743.116/v8/tools/testrunner/objects/workpacket.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/server/__init__.pyc and chromium-52.0.2743.116/v8/tools/testrunner/server/__init__.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/server/compression.pyc and chromium-52.0.2743.116/v8/tools/testrunner/server/compression.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/server/constants.pyc and chromium-52.0.2743.116/v8/tools/testrunner/server/constants.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/server/local_handler.pyc and chromium-52.0.2743.116/v8/tools/testrunner/server/local_handler.pyc differ
+Binary files chromium-52.0.2743.116.orig/v8/tools/testrunner/server/signatures.pyc and chromium-52.0.2743.116/v8/tools/testrunner/server/signatures.pyc differ

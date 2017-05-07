@@ -1,0 +1,21 @@
+diff -ur wine-1.8.2.orig/dlls/ntdll/virtual.c wine-1.8.2/dlls/ntdll/virtual.c
+--- wine-1.8.2.orig/dlls/ntdll/virtual.c	2016-04-12 04:42:53.000000000 -0700
++++ wine-1.8.2/dlls/ntdll/virtual.c	2016-08-31 13:18:31.607823520 -0700
+@@ -106,7 +106,7 @@
+ };
+ static RTL_CRITICAL_SECTION csVirtual = { &critsect_debug, -1, 0, 0, 0, 0 };
+ 
+-#ifdef __i386__
++#if defined(__i386__) || defined(__X32__)
+ static const UINT page_shift = 12;
+ static const UINT_PTR page_mask = 0xfff;
+ /* Note: these are Windows limits, you cannot change them. */
+@@ -114,7 +114,7 @@
+ static void *user_space_limit    = (void *)0x7fff0000;  /* top of the user address space */
+ static void *working_set_limit   = (void *)0x7fff0000;  /* top of the current working set */
+ static void *address_space_start = (void *)0x110000;    /* keep DOS area clear */
+-#elif defined(__x86_64__)
++#elif defined(__x86_64__) && !defined(__X32__)
+ static const UINT page_shift = 12;
+ static const UINT_PTR page_mask = 0xfff;
+ static void *address_space_limit = (void *)0x7fffffff0000;

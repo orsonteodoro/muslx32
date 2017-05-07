@@ -1,0 +1,12 @@
+diff -ur libreoffice-5.1.4.2.orig/avmedia/source/vlc/wrapper/Types.hxx libreoffice-5.1.4.2/avmedia/source/vlc/wrapper/Types.hxx
+--- libreoffice-5.1.4.2.orig/avmedia/source/vlc/wrapper/Types.hxx	2016-06-14 13:05:10.000000000 -0700
++++ libreoffice-5.1.4.2/avmedia/source/vlc/wrapper/Types.hxx	2016-08-19 17:00:03.858207852 -0700
+@@ -12,6 +12,8 @@
+ #ifndef INCLUDED_AVMEDIA_SOURCE_VLC_WRAPPER_TYPES_HXX
+ #define INCLUDED_AVMEDIA_SOURCE_VLC_WRAPPER_TYPES_HXX
+ 
++#include <stdint.h> 
++
+ #if defined WNT
+         typedef __int64 libvlc_time_t;
+ #else

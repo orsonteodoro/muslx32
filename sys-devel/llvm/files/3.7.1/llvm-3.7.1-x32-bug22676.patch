@@ -1,0 +1,18 @@
+diff -urp llvm-3.7.1.src.orig/lib/Target/X86/X86ISelDAGToDAG.cpp llvm-3.7.1.src/lib/Target/X86/X86ISelDAGToDAG.cpp
+--- llvm-3.7.1.src.orig/lib/Target/X86/X86ISelDAGToDAG.cpp	2016-10-19 00:08:11.113868777 -0700
++++ llvm-3.7.1.src/lib/Target/X86/X86ISelDAGToDAG.cpp	2016-10-19 00:06:30.507984761 -0700
+@@ -1610,8 +1610,12 @@ bool X86DAGToDAGISel::SelectTLSADDRAddr(
+   AM.SymbolFlags = GA->getTargetFlags();
+ 
+   if (N.getValueType() == MVT::i32) {
+-    AM.Scale = 1;
+-    AM.IndexReg = CurDAG->getRegister(X86::EBX, MVT::i32);
++    if (Subtarget->is64Bit()) {
++	AM.IndexReg = CurDAG->getRegister(0, N.getValueType());
++    } else {
++        AM.Scale = 1;
++        AM.IndexReg = CurDAG->getRegister(X86::EBX, MVT::i32);
++    }
+   } else {
+     AM.IndexReg = CurDAG->getRegister(0, MVT::i64);
+   }

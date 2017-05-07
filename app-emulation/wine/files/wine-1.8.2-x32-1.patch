@@ -1,0 +1,45 @@
+diff -ur wine-1.8.2.orig/configure wine-1.8.2/configure
+--- wine-1.8.2.orig/configure	2016-08-24 12:48:09.632534337 -0700
++++ wine-1.8.2/configure	2016-08-24 12:54:05.303528643 -0700
+@@ -4935,6 +4935,19 @@
+ esac
+ 
+ case $host in
++  x86_64*muslx32|x86_64*gnux32)
++      CC="$CC -mx32"
++      CXX="$CXX -mx32"
++      CFLAGS="$CFLAGS -mx32 -Wno-attributes -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast"
++      LDFLAGS="$LDFLAGS -mx32"
++      CXXFLAGS="$CXXFLAGS -mx32"
++      CPPFLAGS="$CPPFLAGS -D__X32__"
++      host_cpu="x86_64"
++      notice_platform="64-bit "
++      TARGETFLAGS="-mx32"
++
++      enable_win16=${enable_win16:-no}
++      ;;
+   x86_64*|amd64*)
+     if test "x$enable_win64" != "xyes" -a "$cross_compiling" != "yes"
+     then
+diff -ur wine-1.8.2.orig/configure.ac wine-1.8.2/configure.ac
+--- wine-1.8.2.orig/configure.ac	2016-08-24 12:47:59.608534497 -0700
++++ wine-1.8.2/configure.ac	2016-08-24 12:54:17.886528442 -0700
+@@ -136,6 +136,18 @@
+ esac
+ 
+ case $host in
++  x86_64*muslx32|x86_64*gnux32)
++    CC="$CC -mx32"
++    CXX="$CXX -mx32"
++    CFLAGS="$CFLAGS -mx32 -Wno-attributes -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast"
++    LDFLAGS="$LDFLAGS -mx32"
++    CXXFLAGS="$CXXFLAGS -mx32"
++    CPPFLAGS="$CPPFLAGS -D__X32__"
++    host_cpu="x86_64"
++    notice_platform="64-bit "
++    AC_SUBST(TARGETFLAGS,"-mx32")
++    enable_win16=${enable_win16:-no}
++    ;;
+   x86_64*|amd64*)
+     if test "x$enable_win64" != "xyes" -a "$cross_compiling" != "yes"
+     then
