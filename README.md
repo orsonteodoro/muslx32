@@ -3,15 +3,15 @@ This is an unofficial muslx32 (musl libc and x32 ABI) overlay for Gentoo Linux
 
 ### About the muslx32 profile
 
-This profile uses a 64-bit linux kernel with x32 abi compatibility.  All of the userland libraries and programs are built as native x32 ABI without duplicate 64-bit and 32-bit versions (a.k.a. multilib).  The profile contains patches that fix x32 problems and musl problems.  Other overlays seperate them but in this overlay, we combine them.
+This profile uses a 64-bit linux kernel with x32 abi compatibility.  All of the userland libraries and programs are built as native x32 ABI without duplicate 64-bit and 32-bit versions (a.k.a. multilib).  The profile contains patches that fix x32 problems and musl problems.  Other overlays seperate them, but in this overlay we combine them.
 
 ### Current goals
 
-The current go is trying to get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
+The current goal is trying to get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
 ### Why musl and x32 and Gentoo? 
 
-Musl because it is lightweight.  X32 because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  I was really disappointed about Alpine and the shortcomings of the other previously tested distros.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux and Slax packages were pretty much outdated.  blueness said that he wouldn't make muslx32 as top priority or it wasn't his job to do or after the hardened gcc patches for the platform were ready, so I decided to just do it myself without the hardened part.
+Musl because it is lightweight.  x32 ABI because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  I was really disappointed about Alpine and the shortcomings of the other previously tested distros.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux and Slax packages were pretty much outdated.  blueness said that he wouldn't make muslx32 as top priority or it wasn't his job to do or after the hardened gcc patches for the platform were ready, so I decided to just do it myself without the hardened part.
 
 ### What is x32?
 
@@ -53,6 +53,7 @@ Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void 
 * Check and fix packages that use constant numbers for syscalls.  The syscall needs to added/or'ed by __X32_SYSCALL_BIT or 0x40000000.
 * Check all sizeof(void*) and similar to be sure they are in the 4G address range if porting from 64 bit code.
 * Replace all important longs that assume 64-bit as long long.  In x32, long is actual 4 bytes.
+* Check and fix the build system scripts--inspect both the linker flags and the compiler flags and constants--if it did not provide a special case for x32 ABI.
 
 ### Where can we meet on IRC?
 
