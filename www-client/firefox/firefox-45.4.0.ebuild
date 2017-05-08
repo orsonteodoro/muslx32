@@ -66,6 +66,7 @@ DEPEND="${RDEPEND}
 		virtual/opengl )
 	x86? ( ${ASM_DEPEND}
 		virtual/opengl )"
+REQUIRED_USE="elibc_musl? ( abi_x86_x32? ( system-libvpx )  )"
 
 # No source releases for alpha|beta
 if [[ ${PV} =~ alpha ]]; then
@@ -134,38 +135,41 @@ src_prepare() {
 	# Allow user to apply any additional patches without modifing ebuild
 	eapply_user
 
-	if [[ "${CHOST}" =~ "musl" ]]; then
-		sed -i "s|#include <sys/cdefs.h>|#include <sys/types.h>|g" ./security/sandbox/chromium/sandbox/linux/seccomp-bpf/linux_seccomp.h || die "musl patch failed"
-		cp "${FILESDIR}"/stab.h "${S}"/toolkit/crashreporter/google-breakpad/src/ || die "failed to copy stab.h"
-		epatch "${FILESDIR}"/${PN}-38.8.0-blocksize-musl.patch
-		epatch "${FILESDIR}"/${PN}-38.8.0-updater.patch
-	fi
-	if use abi_x86_x32; then
-		append-cppflags -DOS_LINUX=1 #1
-		epatch "${FILESDIR}"/${PN}-38.8.0-dont-use-amd64-ycbcr-on-x32.patch #2
-		epatch "${FILESDIR}"/${PN}-38.8.0-fix-non-__lp64__-for-x32.patch
-		epatch "${FILESDIR}"/${PN}-34.0-disable-breakpad-on-x32.patch
-			epatch "${FILESDIR}"/${PN}-34.0-no-jit-on-x32.patch #renable
-		epatch "${FILESDIR}"/${PN}-45.2.0-disable-jpegturbo-optimizations-on-x32.patch #works temporary disable
-		#epatch "${FILESDIR}"/${PN}-45.2-memory_mapped_file.patch
-		#epatch "${FILESDIR}"/${PN}-45.2.0-linux_syscall_support_h.patch
-		#epatch "${FILESDIR}"/${PN}-45.2.0-elf_core_dump_h.patch
-		epatch "${FILESDIR}"/${PN}-45.2.0-sysdef.patch
-		epatch "${FILESDIR}"/${PN}-45.2.0-linux_syscall_support_h-x32.patch
-		epatch "${FILESDIR}"/${PN}-45.2.0-stat-x32.patch
-		#epatch "${FILESDIR}"/${PN}-45.2.0-libav-asflags.patch
-		sed -i 's|-f elf64|-f elfx32|' ./configure.in || die "sed failed for elfx32 (1)"
-		sed -i 's|-f elf64|-f elfx32|' ./configure || die "sed failed for elfx32 (2)"
-		epatch "${FILESDIR}"/${PN}-45.2.0-x32-structs64.patch
-		epatch "${FILESDIR}"/${PN}-47.0.1-xpcom-x32.patch
-		epatch "${FILESDIR}"/${PN}-47.0.1-disable-hw-intel-aes.patch
-			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-1.patch #enable for punbox64 have punbox64
-			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-2.patch #asmjs padding #required for jit
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		if [[ "${CHOST}" =~ "musl" ]]; then
+			sed -i "s|#include <sys/cdefs.h>|#include <sys/types.h>|g" ./security/sandbox/chromium/sandbox/linux/seccomp-bpf/linux_seccomp.h || die "musl patch failed"
+			cp "${FILESDIR}"/stab.h "${S}"/toolkit/crashreporter/google-breakpad/src/ || die "failed to copy stab.h"
+			epatch "${FILESDIR}"/${PN}-38.8.0-blocksize-musl.patch
+			epatch "${FILESDIR}"/${PN}-38.8.0-updater.patch
+		fi
+		if use abi_x86_x32; then
+			append-cppflags -DOS_LINUX=1 #1
+			epatch "${FILESDIR}"/${PN}-38.8.0-dont-use-amd64-ycbcr-on-x32.patch #2
+			epatch "${FILESDIR}"/${PN}-38.8.0-fix-non-__lp64__-for-x32.patch
+			epatch "${FILESDIR}"/${PN}-34.0-disable-breakpad-on-x32.patch
+				epatch "${FILESDIR}"/${PN}-34.0-no-jit-on-x32.patch #renable
+			epatch "${FILESDIR}"/${PN}-45.2.0-disable-jpegturbo-optimizations-on-x32.patch #works temporary disable
+			#epatch "${FILESDIR}"/${PN}-45.2-memory_mapped_file.patch
+			#epatch "${FILESDIR}"/${PN}-45.2.0-linux_syscall_support_h.patch
+			#epatch "${FILESDIR}"/${PN}-45.2.0-elf_core_dump_h.patch
+			epatch "${FILESDIR}"/${PN}-45.2.0-sysdef.patch
+			epatch "${FILESDIR}"/${PN}-45.2.0-linux_syscall_support_h-x32.patch
+			epatch "${FILESDIR}"/${PN}-45.2.0-stat-x32.patch
+			#epatch "${FILESDIR}"/${PN}-45.2.0-libav-asflags.patch
+			sed -i 's|-f elf64|-f elfx32|' ./configure.in || die "sed failed for elfx32 (1)"
+			sed -i 's|-f elf64|-f elfx32|' ./configure || die "sed failed for elfx32 (2)"
+			epatch "${FILESDIR}"/${PN}-45.2.0-x32-structs64.patch
+			epatch "${FILESDIR}"/${PN}-47.0.1-xpcom-x32.patch
+			epatch "${FILESDIR}"/${PN}-47.0.1-disable-hw-intel-aes.patch
+				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-1.patch #enable for punbox64 have punbox64
+				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-2.patch #asmjs padding #required for jit
 
-			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-punbox64-1.patch
+				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-punbox64-1.patch
 
-			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-nunbox32-1.patch
-			#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-nunbox32-2.patch
+				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-nunbox32-1.patch
+				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-nunbox32-2.patch
+			epatch "${FILESDIR}"/${PN}-45.4.0-event-size-symbol-rename.patch
+		fi
 	fi
 
 	# Enable gnomebreakpad

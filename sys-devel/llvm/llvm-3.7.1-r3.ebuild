@@ -224,9 +224,11 @@ src_prepare() {
 
 		popd >/dev/null || die
 
-		eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-musl-clang-support.patch
-		eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-musl-compiler-rt.patch
-		eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-muslx32-clang.patch
+		if [[ "${CHOST}" =~ "muslx32" ]] ; then
+			eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-musl-clang-support.patch
+			eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-musl-compiler-rt.patch
+			eapply "${FILESDIR}"/3.7.1/musl/llvm-3.7.1-muslx32-clang.patch
+		fi
 	fi
 
 	if use lldb; then
@@ -245,21 +247,23 @@ src_prepare() {
 		eapply "${FILESDIR}"/3.7.1/lldb/tinfo.patch
 	fi
 
-	eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-musl-fixes.patch
-	eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-musl-support.patch
-	if [[ "${CHOST}" =~ "muslx32" ]]; then
-		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-muslx32-triple.patch
-		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-muslx32-lib.patch
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-musl-fixes.patch
+		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-musl-support.patch
+		if [[ "${CHOST}" =~ "muslx32" ]]; then
+			eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-muslx32-triple.patch
+			eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-muslx32-lib.patch
 
-		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-x32-clang-compiler-rt-1.patch
-		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-x32-clang-compiler-rt-2.patch
+			eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-x32-clang-compiler-rt-1.patch
+			eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-x32-clang-compiler-rt-2.patch
 
-		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-x32-exclude-atomic-and-personality.patch
-		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-x32-no-x86_64-support-1.patch
-		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-x32-no-x86_64-support-2.patch
-		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-musl-x32-wchar_t.patch
+			eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-x32-exclude-atomic-and-personality.patch
+			eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-x32-no-x86_64-support-1.patch
+			eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-x32-no-x86_64-support-2.patch
+			eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.7.1-musl-x32-wchar_t.patch
+		fi
+		eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-reorder-environment-parse-musl.patch
 	fi
-	eapply "${FILESDIR}"/3.7.1/musl/${PN}-3.5.0-reorder-environment-parse-musl.patch
 
 	# User patches
 	eapply_user

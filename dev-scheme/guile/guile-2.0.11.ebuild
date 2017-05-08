@@ -18,7 +18,8 @@ DEPEND="
 	>=dev-libs/gmp-4.1
 	>=sys-devel/libtool-1.5.6
 	sys-devel/gettext
-	emacs? ( virtual/emacs )"
+	emacs? ( virtual/emacs )
+	dev-libs/libunistring" #line added by muslx32 overlay
 RDEPEND="${DEPEND}"
 
 # Guile seems to contain some slotting support, /usr/share/guile/ is slotted,

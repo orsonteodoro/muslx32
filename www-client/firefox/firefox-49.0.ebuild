@@ -61,6 +61,7 @@ DEPEND="${RDEPEND}
 	pgo? ( >=sys-devel/gcc-4.5 )
 	amd64? ( ${ASM_DEPEND} virtual/opengl )
 	x86? ( ${ASM_DEPEND} virtual/opengl )"
+REQUIRED_USE="elibc_musl? ( abi_x86_x32? ( system-libvpx )  )"
 
 S="${WORKDIR}/firefox-${MOZ_PV}"
 
@@ -117,81 +118,84 @@ src_prepare() {
 	eapply "${WORKDIR}/firefox"
 #		"${FILESDIR}"/${PN}-48.0-pgo.patch
 
-	if [[ "${CHOST}" =~ "musl" ]]; then
-		sed -i "s|#include <sys/cdefs.h>|#include <sys/types.h>|g" ./security/sandbox/chromium/sandbox/linux/seccomp-bpf/linux_seccomp.h || die "musl patch failed"
-		cp "${FILESDIR}"/stab.h "${S}"/toolkit/crashreporter/google-breakpad/src/ || die "failed to copy stab.h"
-		epatch "${FILESDIR}"/${PN}-38.8.0-blocksize-musl.patch
-		epatch "${FILESDIR}"/${PN}-38.8.0-updater.patch
-	fi
-	if use abi_x86_x32; then
-		append-cppflags -DOS_LINUX=1 #1
-		epatch "${FILESDIR}"/${PN}-38.8.0-dont-use-amd64-ycbcr-on-x32.patch #2
-		epatch "${FILESDIR}"/${PN}-38.8.0-fix-non-__lp64__-for-x32.patch
-		epatch "${FILESDIR}"/${PN}-49.0-disable-breakpad-on-x32.patch ##
-		#epatch "${FILESDIR}"/${PN}-47.0.1-disable-crashreporter.patch
-		epatch "${FILESDIR}"/${PN}-49.0-no-jit-on-x32.patch ##
-		#epatch "${FILESDIR}"/${PN}-45.2.0-disable-jpegturbo-optimizations-on-x32.patch #obsol #? ##
-		epatch "${FILESDIR}"/${PN}-45.2.0-sysdef.patch
-		epatch "${FILESDIR}"/${PN}-49.0-linux_syscall_support_h-x32.patch #checking ##
-		epatch "${FILESDIR}"/${PN}-45.2.0-stat-x32.patch #test
-		epatch "${FILESDIR}"/${PN}-49.0-asflags-elfx32.patch # ###
-		sed -i 's|-f elf64|-f elfx32|' ./old-configure.in || die "sed failed for elfx32 (1)"
-		sed -i 's|-f elf64|-f elfx32|' ./old-configure || die "sed failed for elfx32 (2)"
-		epatch "${FILESDIR}"/${PN}-49.0-x32-structs64.patch #test ##
-		#epatch "${FILESDIR}"/${PN}-47.0.1-fstat-missing.patch test
-		#epatch "${FILESDIR}"/${PN}-47.0.1-stat64-x32.patch #test
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		if [[ "${CHOST}" =~ "musl" ]]; then
+			sed -i "s|#include <sys/cdefs.h>|#include <sys/types.h>|g" ./security/sandbox/chromium/sandbox/linux/seccomp-bpf/linux_seccomp.h || die "musl patch failed"
+			cp "${FILESDIR}"/stab.h "${S}"/toolkit/crashreporter/google-breakpad/src/ || die "failed to copy stab.h"
+			epatch "${FILESDIR}"/${PN}-38.8.0-blocksize-musl.patch
+			epatch "${FILESDIR}"/${PN}-38.8.0-updater.patch
+		fi
+		if use abi_x86_x32; then
+			append-cppflags -DOS_LINUX=1 #1
+			epatch "${FILESDIR}"/${PN}-38.8.0-dont-use-amd64-ycbcr-on-x32.patch #2
+			epatch "${FILESDIR}"/${PN}-38.8.0-fix-non-__lp64__-for-x32.patch
+			epatch "${FILESDIR}"/${PN}-49.0-disable-breakpad-on-x32.patch ##
+			#epatch "${FILESDIR}"/${PN}-47.0.1-disable-crashreporter.patch
+			epatch "${FILESDIR}"/${PN}-49.0-no-jit-on-x32.patch ##
+			#epatch "${FILESDIR}"/${PN}-45.2.0-disable-jpegturbo-optimizations-on-x32.patch #obsol #? ##
+			epatch "${FILESDIR}"/${PN}-45.2.0-sysdef.patch
+			epatch "${FILESDIR}"/${PN}-49.0-linux_syscall_support_h-x32.patch #checking ##
+			epatch "${FILESDIR}"/${PN}-45.2.0-stat-x32.patch #test
+			epatch "${FILESDIR}"/${PN}-49.0-asflags-elfx32.patch # ###
+			sed -i 's|-f elf64|-f elfx32|' ./old-configure.in || die "sed failed for elfx32 (1)"
+			sed -i 's|-f elf64|-f elfx32|' ./old-configure || die "sed failed for elfx32 (2)"
+			epatch "${FILESDIR}"/${PN}-49.0-x32-structs64.patch #test ##
+			#epatch "${FILESDIR}"/${PN}-47.0.1-fstat-missing.patch test
+			#epatch "${FILESDIR}"/${PN}-47.0.1-stat64-x32.patch #test
 
-		##
-		#sed -i 's|--enable-asm --enable-yasm|--disable-asm --disable-yasm|g' ./media/ffvpx/config_unix64.h || die "sed failed disabling asm for ffvpx" #
-		#sed -i 's|HAVE_YASM 1|HAVE_YASM 0|g' ./media/ffvpx/config_unix64.h || die "sed failed disabling yasm for ffvpx" #
-		#sed -i 's|HAVE_INLINE_ASM 1|HAVE_INLINE_ASM 0|g' ./media/ffvpx/config_unix64.h || die "sed failed disabling inline asm for ffvpx" #
-		#sed -i 's|HAVE_YASM 1|HAVE_YASM 0|g' ./media/ffvpx/config_unix64.asm || die "sed failed disabling yasm for ffvpx" #
-		#sed -i 's|HAVE_INLINE_ASM 1|HAVE_INLINE_ASM 0|g' ./media/ffvpx/config_unix64.asm || die "sed failed disabling inline asm for ffvpx" #
+			##
+			#sed -i 's|--enable-asm --enable-yasm|--disable-asm --disable-yasm|g' ./media/ffvpx/config_unix64.h || die "sed failed disabling asm for ffvpx" #
+			#sed -i 's|HAVE_YASM 1|HAVE_YASM 0|g' ./media/ffvpx/config_unix64.h || die "sed failed disabling yasm for ffvpx" #
+			#sed -i 's|HAVE_INLINE_ASM 1|HAVE_INLINE_ASM 0|g' ./media/ffvpx/config_unix64.h || die "sed failed disabling inline asm for ffvpx" #
+			#sed -i 's|HAVE_YASM 1|HAVE_YASM 0|g' ./media/ffvpx/config_unix64.asm || die "sed failed disabling yasm for ffvpx" #
+			#sed -i 's|HAVE_INLINE_ASM 1|HAVE_INLINE_ASM 0|g' ./media/ffvpx/config_unix64.asm || die "sed failed disabling inline asm for ffvpx" #
 
-		##
-		#sed -i 's|--enable-asm --enable-yasm|--disable-asm --disable-yasm|g' ./media/ffvpx/config_unix32.h || die "sed failed disabling asm for ffvpx" #
-		#sed -i 's|HAVE_YASM 1|HAVE_YASM 0|g' ./media/ffvpx/config_unix32.h || die "sed failed disabling yasm for ffvpx" #
-		#sed -i 's|HAVE_INLINE_ASM 1|HAVE_INLINE_ASM 0|g' ./media/ffvpx/config_unix32.h || die "sed failed disabling inline asm for ffvpx" #
+			##
+			#sed -i 's|--enable-asm --enable-yasm|--disable-asm --disable-yasm|g' ./media/ffvpx/config_unix32.h || die "sed failed disabling asm for ffvpx" #
+			#sed -i 's|HAVE_YASM 1|HAVE_YASM 0|g' ./media/ffvpx/config_unix32.h || die "sed failed disabling yasm for ffvpx" #
+			#sed -i 's|HAVE_INLINE_ASM 1|HAVE_INLINE_ASM 0|g' ./media/ffvpx/config_unix32.h || die "sed failed disabling inline asm for ffvpx" #
 
-		#epatch "${FILESDIR}"/${PN}-47.0.1-ffvpx-moz_build.patch #
-		#sed -i 's|#ifdef cpuid|#if 0|g' ./media/ffvpx/libavutil/x86/cpu.c #
+			#epatch "${FILESDIR}"/${PN}-47.0.1-ffvpx-moz_build.patch #
+			#sed -i 's|#ifdef cpuid|#if 0|g' ./media/ffvpx/libavutil/x86/cpu.c #
 
-		pushd media/ffvpx
-		epatch "${FILESDIR}"/02-14-x32-inline-asm-fix-asm.h.patch
-		epatch "${FILESDIR}"/03-14-x32-inline-asm-fix-cpudetection.patch
-		epatch "${FILESDIR}"/14a-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
-		epatch "${FILESDIR}"/14b-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
-		popd
-		epatch "${FILESDIR}"/firefox-49.0-ffvpx-x32-cabac.patch
-		sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|%define ARCH_X86_64 1\n|%define ARCH_X86_64 1\n%define ARCH_X86_64_X64 0\n%define ARCH_X86_64_X32 1\n|g' ./media/ffvpx/config.asm
-		sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|%define ARCH_X86_64 1\n|%define ARCH_X86_64 1\n%define ARCH_X86_64_X64 0\n%define ARCH_X86_64_X32 1\n|g' ./media/ffvpx/config_unix64.asm
-                sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|#define ARCH_X86_64 1\n|#define ARCH_X86_64 1\n#define ARCH_X86_64_X64 0\n#define ARCH_X86_64_X32 1\n|g' ./media/ffvpx/config_unix64.h
-		sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|#elif defined\(XP_UNIX\)\n#if defined\(HAVE_64BIT_BUILD\)|#elif defined(XP_UNIX)\n#if defined(HAVE_64BIT_BUILD) \|\| (defined(__x86_64__) \&\& defined(__ILP32__))|g' ./media/ffvpx/config.h
+			pushd media/ffvpx
+			epatch "${FILESDIR}"/02-14-x32-inline-asm-fix-asm.h.patch
+			epatch "${FILESDIR}"/03-14-x32-inline-asm-fix-cpudetection.patch
+			epatch "${FILESDIR}"/14a-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
+			epatch "${FILESDIR}"/14b-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
+			popd
+			epatch "${FILESDIR}"/firefox-49.0-ffvpx-x32-cabac.patch
+			sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|%define ARCH_X86_64 1\n|%define ARCH_X86_64 1\n%define ARCH_X86_64_X64 0\n%define ARCH_X86_64_X32 1\n|g' ./media/ffvpx/config.asm
+			sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|%define ARCH_X86_64 1\n|%define ARCH_X86_64 1\n%define ARCH_X86_64_X64 0\n%define ARCH_X86_64_X32 1\n|g' ./media/ffvpx/config_unix64.asm
+	                sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|#define ARCH_X86_64 1\n|#define ARCH_X86_64 1\n#define ARCH_X86_64_X64 0\n#define ARCH_X86_64_X32 1\n|g' ./media/ffvpx/config_unix64.h
+			sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|#elif defined\(XP_UNIX\)\n#if defined\(HAVE_64BIT_BUILD\)|#elif defined(XP_UNIX)\n#if defined(HAVE_64BIT_BUILD) \|\| (defined(__x86_64__) \&\& defined(__ILP32__))|g' ./media/ffvpx/config.h
 
-		pushd media/libav
-		epatch "${FILESDIR}"/02-14-x32-inline-asm-fix-asm.h.patch
-		epatch "${FILESDIR}"/03-14-x32-inline-asm-fix-cpudetection.patch
-		epatch "${FILESDIR}"/07-14-x32-yasm-fft.asm-fix-pointer-access.patch
-		epatch "${FILESDIR}"/06-14-x32-yasm-x86inc-add-ptrsize-and-p-suffix.patch
-		popd
-		sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|%define ARCH_X86_32 0\n%define ARCH_X86_64 1\n|%define ARCH_X86_32 0\n%define ARCH_X86_64 1\n%define ARCH_X86_64_X64 0\n%define ARCH_X86_64_X32 1\n|g' ./media/libav/config_common.asm
-		sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|#define ARCH_X86_32 0\n#define ARCH_X86_64 1\n|#define ARCH_X86_32 0\n#define ARCH_X86_64 1\n#define ARCH_X86_64_X64 0\n#define ARCH_X86_64_X32 1\n|g' ./media/libav/config_common.h
+			pushd media/libav
+			epatch "${FILESDIR}"/02-14-x32-inline-asm-fix-asm.h.patch
+			epatch "${FILESDIR}"/03-14-x32-inline-asm-fix-cpudetection.patch
+			epatch "${FILESDIR}"/07-14-x32-yasm-fft.asm-fix-pointer-access.patch
+			epatch "${FILESDIR}"/06-14-x32-yasm-x86inc-add-ptrsize-and-p-suffix.patch
+			popd
+			sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|%define ARCH_X86_32 0\n%define ARCH_X86_64 1\n|%define ARCH_X86_32 0\n%define ARCH_X86_64 1\n%define ARCH_X86_64_X64 0\n%define ARCH_X86_64_X32 1\n|g' ./media/libav/config_common.asm
+			sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|#define ARCH_X86_32 0\n#define ARCH_X86_64 1\n|#define ARCH_X86_32 0\n#define ARCH_X86_64 1\n#define ARCH_X86_64_X64 0\n#define ARCH_X86_64_X32 1\n|g' ./media/libav/config_common.h
 
-		epatch "${FILESDIR}"/firefox-49.0-libvpx-libyuv-x32.patch
-		sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|#define ARCH_X86_64 1\n|#define ARCH_X86_64 1\n#define ARCH_X86_64_X64 0\n#define ARCH_X86_64_X32 1\n|g' ./media/libvpx/vpx_config_x86_64-linux-gcc.h
+			epatch "${FILESDIR}"/firefox-49.0-libvpx-libyuv-x32.patch
+			sed -i -r -e ':a' -e 'N' -e '$!ba' -e 's|#define ARCH_X86_64 1\n|#define ARCH_X86_64 1\n#define ARCH_X86_64_X64 0\n#define ARCH_X86_64_X32 1\n|g' ./media/libvpx/vpx_config_x86_64-linux-gcc.h
 
-                ##epatch "${FILESDIR}"/${PN}-49.0-ffvpx-x32-1.patch ##
-                ##epatch "${FILESDIR}"/${PN}-49.0-ffvpx-x32-2.patch ##
-		epatch "${FILESDIR}"/${PN}-47.0.1-xpcom-x32.patch
-		epatch "${FILESDIR}"/${PN}-47.0.1-disable-hw-intel-aes.patch
-		#epatch "${FILESDIR}"/${PN}-49.0-pthread_setname_np-musl.patch
+	                ##epatch "${FILESDIR}"/${PN}-49.0-ffvpx-x32-1.patch ##
+	                ##epatch "${FILESDIR}"/${PN}-49.0-ffvpx-x32-2.patch ##
+			epatch "${FILESDIR}"/${PN}-47.0.1-xpcom-x32.patch
+			epatch "${FILESDIR}"/${PN}-47.0.1-disable-hw-intel-aes.patch
+			#epatch "${FILESDIR}"/${PN}-49.0-pthread_setname_np-musl.patch
 
-		epatch "${FILESDIR}"/firefox-49.0-x32-libjpeg-1.patch
-		epatch "${FILESDIR}"/firefox-49.0-x32-libjpeg-2.patch
-		pushd media/libjpeg
-		epatch "${FILESDIR}"/firefox-49.0-x32-libjpeg-3.patch
-		epatch "${FILESDIR}"/firefox-49.0-x32-libjpeg-4.patch
-		popd
+			epatch "${FILESDIR}"/firefox-49.0-x32-libjpeg-1.patch
+			epatch "${FILESDIR}"/firefox-49.0-x32-libjpeg-2.patch
+			pushd media/libjpeg
+			epatch "${FILESDIR}"/firefox-49.0-x32-libjpeg-3.patch
+			epatch "${FILESDIR}"/firefox-49.0-x32-libjpeg-4.patch
+			popd
+			epatch "${FILESDIR}"/${PN}-45.4.0-event-size-symbol-rename.patch
+		fi
 	fi
 
 	# Enable gnomebreakpad
