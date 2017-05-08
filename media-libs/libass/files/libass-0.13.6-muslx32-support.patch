@@ -1,0 +1,24 @@
+diff -urp libass-0.13.6.orig/configure libass-0.13.6/configure
+--- libass-0.13.6.orig/configure	2017-01-03 19:32:11.000000000 +0000
++++ libass-0.13.6/configure	2017-05-08 13:31:47.932847324 +0000
+@@ -13551,7 +13551,7 @@ if test x$enable_asm != xno; then :
+             X86=true
+             BITS=32
+             ASFLAGS="$ASFLAGS -DARCH_X86_64=0 -m x86"  ;; #(
+-  x86_64-*-gnux32|amd64-*-gnux32) :
++  x86_64-*-gnux32|amd64-*-gnux32|x86_64-*-muslx32) :
+ 
+             AS=yasm
+             INTEL=true
+diff -urp libass-0.13.6.orig/configure.ac libass-0.13.6/configure.ac
+--- libass-0.13.6.orig/configure.ac	2017-01-03 19:31:50.000000000 +0000
++++ libass-0.13.6/configure.ac	2017-05-08 13:31:49.889897310 +0000
+@@ -62,7 +62,7 @@ AS_IF([test x$enable_asm != xno], [
+             X86=true
+             BITS=32
+             ASFLAGS="$ASFLAGS -DARCH_X86_64=0 -m x86" ],
+-        [x86_64-*-gnux32|amd64-*-gnux32], [
++        [x86_64-*-gnux32|amd64-*-gnux32|x86_64-*-muslx32], [
+             AS=yasm
+             INTEL=true
+             X64=true
