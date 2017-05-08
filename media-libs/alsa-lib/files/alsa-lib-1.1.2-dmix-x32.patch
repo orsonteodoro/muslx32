@@ -1,0 +1,488 @@
+diff -urpN -x '*.rej' -x '*.orig' alsa-lib-1.1.2.orig/src/pcm/Makefile.am alsa-lib-1.1.2/src/pcm/Makefile.am
+--- alsa-lib-1.1.2.orig/src/pcm/Makefile.am	2017-05-08 13:52:05.079958877 +0000
++++ alsa-lib-1.1.2/src/pcm/Makefile.am	2017-05-08 13:52:37.647792424 +0000
+@@ -103,7 +103,7 @@ if BUILD_PCM_PLUGIN_MMAP_EMUL
+ libpcm_la_SOURCES += pcm_mmap_emul.c
+ endif
+ 
+-EXTRA_DIST = pcm_dmix_i386.c pcm_dmix_x86_64.c pcm_dmix_generic.c
++EXTRA_DIST = pcm_dmix_i386.c pcm_dmix_x86_64.c pcm_dmix_x86_x32.c pcm_dmix_generic.c
+ 
+ noinst_HEADERS = pcm_local.h pcm_plugin.h mask.h mask_inline.h \
+ 	         interval.h interval_inline.h plugin_ops.h ladspa.h \
+diff -urpN -x '*.rej' -x '*.orig' alsa-lib-1.1.2.orig/src/pcm/Makefile.in alsa-lib-1.1.2/src/pcm/Makefile.in
+--- alsa-lib-1.1.2.orig/src/pcm/Makefile.in	2016-08-02 17:49:20.000000000 +0000
++++ alsa-lib-1.1.2/src/pcm/Makefile.in	2017-05-08 13:53:08.335577909 +0000
+@@ -378,7 +378,7 @@ libpcm_la_SOURCES = mask.c interval.c pc
+ 	$(am__append_23) $(am__append_24) $(am__append_25) \
+ 	$(am__append_26) $(am__append_27) $(am__append_28) \
+ 	$(am__append_29) $(am__append_30) $(am__append_31)
+-EXTRA_DIST = pcm_dmix_i386.c pcm_dmix_x86_64.c pcm_dmix_generic.c
++EXTRA_DIST = pcm_dmix_i386.c pcm_dmix_x86_64.c pcm_dmix_x86_x32.c pcm_dmix_generic.c
+ noinst_HEADERS = pcm_local.h pcm_plugin.h mask.h mask_inline.h \
+ 	         interval.h interval_inline.h plugin_ops.h ladspa.h \
+ 		 pcm_direct.h pcm_dmix_i386.h pcm_dmix_x86_64.h \
+diff -urpN -x '*.rej' -x '*.orig' alsa-lib-1.1.2.orig/src/pcm/pcm_dmix.c alsa-lib-1.1.2/src/pcm/pcm_dmix.c
+--- alsa-lib-1.1.2.orig/src/pcm/pcm_dmix.c	2016-08-02 17:48:38.000000000 +0000
++++ alsa-lib-1.1.2/src/pcm/pcm_dmix.c	2017-05-08 13:52:37.650792500 +0000
+@@ -142,8 +142,10 @@ static void dmix_server_free(snd_pcm_dir
+ #include "pcm_dmix_generic.c"
+ #if defined(__i386__)
+ #include "pcm_dmix_i386.c"
+-#elif defined(__x86_64__)
++#elif defined(__x86_64__) && !defined(__ILP32__)
+ #include "pcm_dmix_x86_64.c"
++#elif defined(__x86_64__) && defined(__ILP32__)
++#include "pcm_dmix_x86_x32.c"
+ #else
+ #ifndef DOC_HIDDEN
+ #define mix_select_callbacks(x)	generic_mix_select_callbacks(x)
+diff -urpN -x '*.rej' -x '*.orig' alsa-lib-1.1.2.orig/src/pcm/pcm_dmix_x86_x32.c alsa-lib-1.1.2/src/pcm/pcm_dmix_x86_x32.c
+--- alsa-lib-1.1.2.orig/src/pcm/pcm_dmix_x86_x32.c	1970-01-01 00:00:00.000000000 +0000
++++ alsa-lib-1.1.2/src/pcm/pcm_dmix_x86_x32.c	2017-05-08 13:52:37.650792500 +0000
+@@ -0,0 +1,100 @@
++/*
++ * optimized mixing code for x86-64
++ */
++
++#define MIX_AREAS_16 mix_areas_16
++#define MIX_AREAS_32 mix_areas_32
++#define MIX_AREAS_24 mix_areas_24
++#define LOCK_PREFIX ""
++#define XADD "addl"
++#define XSUB "subl"
++#include "pcm_dmix_x86_x32.h"
++#undef MIX_AREAS_16
++#undef MIX_AREAS_32
++#undef MIX_AREAS_24
++#undef LOCK_PREFIX
++#undef XADD
++#undef XSUB
++
++#define MIX_AREAS_16 remix_areas_16
++#define MIX_AREAS_32 remix_areas_32
++#define MIX_AREAS_24 remix_areas_24
++#define LOCK_PREFIX ""
++#define XADD "subl"
++#define XSUB "addl"
++#include "pcm_dmix_x86_x32.h"
++#undef MIX_AREAS_16
++#undef MIX_AREAS_32
++#undef MIX_AREAS_24
++#undef LOCK_PREFIX
++#undef XADD
++#undef XSUB
++
++#define MIX_AREAS_16 mix_areas_16_smp
++#define MIX_AREAS_32 mix_areas_32_smp
++#define MIX_AREAS_24 mix_areas_24_smp
++#define LOCK_PREFIX "lock ; "
++#define XADD "addl"
++#define XSUB "subl"
++#include "pcm_dmix_x86_x32.h"
++#undef MIX_AREAS_16
++#undef MIX_AREAS_32
++#undef MIX_AREAS_24
++#undef LOCK_PREFIX
++#undef XADD
++#undef XSUB
++ 
++#define MIX_AREAS_16 remix_areas_16_smp
++#define MIX_AREAS_32 remix_areas_32_smp
++#define MIX_AREAS_24 remix_areas_24_smp
++#define LOCK_PREFIX "lock ; "
++#define XADD "subl"
++#define XSUB "addl"
++#include "pcm_dmix_x86_x32.h"
++#undef MIX_AREAS_16
++#undef MIX_AREAS_32
++#undef MIX_AREAS_24
++#undef LOCK_PREFIX
++#undef XADD
++#undef XSUB
++ 
++#define x86_64_dmix_supported_format \
++	((1ULL << SND_PCM_FORMAT_S16_LE) |\
++	 (1ULL << SND_PCM_FORMAT_S32_LE) |\
++	 (1ULL << SND_PCM_FORMAT_S24_3LE))
++
++#define dmix_supported_format \
++	(x86_64_dmix_supported_format | generic_dmix_supported_format)
++
++static void mix_select_callbacks(snd_pcm_direct_t *dmix)
++{
++	static int smp = 0;
++	
++	if (!((1ULL<< dmix->shmptr->s.format) & x86_64_dmix_supported_format)) {
++		generic_mix_select_callbacks(dmix);
++		return;
++	}
++
++	if (!smp) {
++		FILE *in;
++		char line[255];
++
++		/* try to determine, if we have SMP */
++		in = fopen("/proc/cpuinfo", "r");
++		if (in) {
++			while (!feof(in)) {
++				fgets(line, sizeof(line), in);
++				if (!strncmp(line, "processor", 9))
++					smp++;
++			}
++			fclose(in);
++		}
++	}
++	// printf("SMP: %i\n", smp);
++	dmix->u.dmix.mix_areas_16 = smp > 1 ? mix_areas_16_smp : mix_areas_16;
++	dmix->u.dmix.remix_areas_16 = smp > 1 ? remix_areas_16_smp : remix_areas_16;
++	dmix->u.dmix.mix_areas_32 = smp > 1 ? mix_areas_32_smp : mix_areas_32;
++	dmix->u.dmix.remix_areas_32 = smp > 1 ? remix_areas_32_smp : remix_areas_32;
++	dmix->u.dmix.mix_areas_24 = smp > 1 ? mix_areas_24_smp : mix_areas_24;
++	dmix->u.dmix.remix_areas_24 = smp > 1 ? remix_areas_24_smp : remix_areas_24;
++}
+diff -urpN -x '*.rej' -x '*.orig' alsa-lib-1.1.2.orig/src/pcm/pcm_dmix_x86_x32.h alsa-lib-1.1.2/src/pcm/pcm_dmix_x86_x32.h
+--- alsa-lib-1.1.2.orig/src/pcm/pcm_dmix_x86_x32.h	1970-01-01 00:00:00.000000000 +0000
++++ alsa-lib-1.1.2/src/pcm/pcm_dmix_x86_x32.h	2017-05-08 13:52:37.651792526 +0000
+@@ -0,0 +1,341 @@
++/**
++ * \file pcm/pcm_dmix_x86_64.h
++ * \ingroup PCM_Plugins
++ * \brief PCM Direct Stream Mixing (dmix) Plugin Interface - X86-64 assembler code
++ * \author Takashi Iwai <tiwai@suse.de>
++ * \date 2003
++ */
++/*
++ *  PCM - Direct Stream Mixing
++ *  Copyright (c) 2003 by Jaroslav Kysela <perex@perex.cz>
++ *                        Takashi Iwai <tiwai@suse.de>
++ *
++ *
++ *   This library is free software; you can redistribute it and/or modify
++ *   it under the terms of the GNU Lesser General Public License as
++ *   published by the Free Software Foundation; either version 2.1 of
++ *   the License, or (at your option) any later version.
++ *
++ *   This program is distributed in the hope that it will be useful,
++ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *   GNU Lesser General Public License for more details.
++ *
++ *   You should have received a copy of the GNU Lesser General Public
++ *   License along with this library; if not, write to the Free Software
++ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ *
++ */
++
++/*
++ *  MMX optimized
++ */
++static void MIX_AREAS_16(unsigned int size,
++			 volatile signed short *dst, signed short *src,
++			 volatile signed int *sum, size_t dst_step,
++			 size_t src_step, size_t sum_step)
++{
++	unsigned long long old_rbx;
++
++	/*
++	 *  RSI - src
++	 *  RDI - dst
++	 *  RBX - sum
++	 *  ECX - old sample
++	 *  EAX - sample / temporary
++	 *  EDX - temporary
++	 */
++	__asm__ __volatile__ (
++		"\n"
++
++		"\tmovq %%rbx, %7\n"
++		/*
++		 *  initialization, load RSI, RDI, RBX registers
++		 */
++		"\tmovl %1, %%edi\n"
++		"\tmovl %2, %%esi\n"
++		"\tmovl %3, %%ebx\n"
++
++		/*
++		 * while (size-- > 0) {
++		 */
++		"\tcmpl $0, %0\n"
++		"jz 6f\n"
++
++		"\t.p2align 4,,15\n"
++
++		"1:"
++
++		/*
++		 *   sample = *src;
++		 *   sum_sample = *sum;
++		 *   if (cmpxchg(*dst, 0, 1) == 0)
++		 *     sample -= sum_sample;
++		 *   xadd(*sum, sample);
++		 */
++		"\tmovw $0, %%ax\n"
++		"\tmovw $1, %%cx\n"
++		"\tmovl (%%ebx), %%edx\n"
++		"\t" LOCK_PREFIX "cmpxchgw %%cx, (%%edi)\n"
++		"\tmovswl (%%esi), %%ecx\n"
++		"\tjnz 2f\n"
++		"\t" XSUB " %%edx, %%ecx\n"
++		"2:"
++		"\t" LOCK_PREFIX XADD " %%ecx, (%%ebx)\n"
++
++		/*
++		 *   do {
++		 *     sample = old_sample = *sum;
++		 *     saturate(v);
++		 *     *dst = sample;
++		 *   } while (v != *sum);
++		 */
++
++		"3:"
++		"\tmovl (%%ebx), %%ecx\n"
++		"\tmovd %%ecx, %%mm0\n"
++		"\tpackssdw %%mm1, %%mm0\n"
++		"\tmovd %%mm0, %%eax\n"
++		"\tmovw %%ax, (%%edi)\n"
++		"\tcmpl %%ecx, (%%ebx)\n"
++		"\tjnz 3b\n"
++
++		/*
++		 * while (size-- > 0)
++		 */
++		"\taddl %4, %%edi\n"
++		"\taddl %5, %%esi\n"
++		"\taddl %6, %%ebx\n"
++		"\tdecl %0\n"
++		"\tjnz 1b\n"
++
++		"6:"
++		
++		"\temms\n"
++		"\tmovq %7, %%rbx\n"
++
++		: /* no output regs */
++		: "m" (size), "m" (dst), "m" (src),
++		  "m" (sum), "m" (dst_step), "m" (src_step),
++		  "m" (sum_step), "m" (old_rbx)
++		: "rsi", "rdi", "edx", "ecx", "eax"
++	);
++}
++
++/*
++ *  32-bit version (24-bit resolution)
++ */
++static void MIX_AREAS_32(unsigned int size,
++			 volatile signed int *dst, signed int *src,
++			 volatile signed int *sum, size_t dst_step,
++			 size_t src_step, size_t sum_step)
++{
++	unsigned long long old_rbx;
++
++	/*
++	 *  RSI - src
++	 *  RDI - dst
++	 *  RBX - sum
++	 *  ECX - old sample
++	 *  EAX - sample / temporary
++	 *  EDX - temporary
++	 */
++	__asm__ __volatile__ (
++		"\n"
++
++		"\tmovq %%rbx, %7\n"
++		/*
++		 *  initialization, load ESI, EDI, EBX registers
++		 */
++		"\tmovl %1, %%edi\n"
++		"\tmovl %2, %%esi\n"
++		"\tmovl %3, %%ebx\n"
++
++		/*
++		 * while (size-- > 0) {
++		 */
++		"\tcmpl $0, %0\n"
++		"jz 6f\n"
++
++		"\t.p2align 4,,15\n"
++
++		"1:"
++
++		/*
++		 *   sample = *src;
++		 *   sum_sample = *sum;
++		 *   if (cmpxchg(*dst, 0, 1) == 0)
++		 *     sample -= sum_sample;
++		 *   xadd(*sum, sample);
++		 */
++		"\tmovl $0, %%eax\n"
++		"\tmovl $1, %%ecx\n"
++		"\tmovl (%%ebx), %%edx\n"
++		"\t" LOCK_PREFIX "cmpxchgl %%ecx, (%%edi)\n"
++		"\tjnz 2f\n"
++		"\tmovl (%%esi), %%ecx\n"
++		/* sample >>= 8 */
++		"\tsarl $8, %%ecx\n"
++		"\t" XSUB " %%edx, %%ecx\n"
++		"\tjmp 21f\n"
++		"2:"
++		"\tmovl (%%esi), %%ecx\n"
++		/* sample >>= 8 */
++		"\tsarl $8, %%ecx\n"
++		"21:"
++		"\t" LOCK_PREFIX XADD " %%ecx, (%%ebx)\n"
++
++		/*
++		 *   do {
++		 *     sample = old_sample = *sum;
++		 *     saturate(v);
++		 *     *dst = sample;
++		 *   } while (v != *sum);
++		 */
++
++		"3:"
++		"\tmovl (%%ebx), %%ecx\n"
++		/*
++		 *  if (sample > 0x7fff00)
++		 */
++		"\tmovl $0x7fffff, %%eax\n"
++		"\tcmpl %%eax, %%ecx\n"
++		"\tjg 4f\n"
++		/*
++		 *  if (sample < -0x800000)
++		 */
++		"\tmovl $-0x800000, %%eax\n"
++		"\tcmpl %%eax, %%ecx\n"
++		"\tjl 4f\n"
++		"\tmovl %%ecx, %%eax\n"
++		"4:"
++		/*
++		 *  sample <<= 8;
++		 */
++		"\tsall $8, %%eax\n"
++		"\tmovl %%eax, (%%edi)\n"
++		"\tcmpl %%ecx, (%%ebx)\n"
++		"\tjnz 3b\n"
++
++		/*
++		 * while (size-- > 0)
++		 */
++		"\taddl %4, %%edi\n"
++		"\taddl %5, %%esi\n"
++		"\taddl %6, %%ebx\n"
++		"\tdecl %0\n"
++		"\tjnz 1b\n"
++		
++		"6:"
++		"\tmovq %7, %%rbx\n"
++
++		: /* no output regs */
++		: "m" (size), "m" (dst), "m" (src),
++		  "m" (sum), "m" (dst_step), "m" (src_step),
++		  "m" (sum_step), "m" (old_rbx)
++		: "rsi", "rdi", "edx", "ecx", "eax"
++	);
++}
++
++/*
++ *  24-bit version
++ */
++static void MIX_AREAS_24(unsigned int size,
++			 volatile unsigned char *dst, unsigned char *src,
++			 volatile signed int *sum, size_t dst_step,
++			 size_t src_step, size_t sum_step)
++{
++	unsigned long long old_rbx;
++
++	/*
++	 *  RSI - src
++	 *  RDI - dst
++	 *  RBX - sum
++	 *  ECX - old sample
++	 *  EAX - sample / temporary
++	 *  EDX - temporary
++	 */
++	__asm__ __volatile__ (
++		"\n"
++
++		"\tmovq %%rbx, %7\n"
++		/*
++		 *  initialization, load ESI, EDI, EBX registers
++		 */
++		"\tmovl %1, %%edi\n"
++		"\tmovl %2, %%esi\n"
++		"\tmovl %3, %%ebx\n"
++
++		/*
++		 * while (size-- > 0) {
++		 */
++		"\tcmpl $0, %0\n"
++		"jz 6f\n"
++
++		"\t.p2align 4,,15\n"
++
++		"1:"
++
++		/*
++		 *   sample = *src;
++		 *   sum_sample = *sum;
++		 *   if (test_and_set_bit(0, dst) == 0)
++		 *     sample -= sum_sample;
++		 *   *sum += sample;
++		 */
++		"\tmovsbl 2(%%esi), %%eax\n"
++		"\tmovzwl (%%esi), %%ecx\n"
++		"\tmovl (%%ebx), %%edx\n"
++		"\tsall $16, %%eax\n"
++		"\torl %%eax, %%ecx\n"
++		"\t" LOCK_PREFIX "btsw $0, (%%edi)\n"
++		"\tjc 2f\n"
++		"\t" XSUB " %%edx, %%ecx\n"
++		"2:"
++		"\t" LOCK_PREFIX XADD " %%ecx, (%%ebx)\n"
++
++		/*
++		 *   do {
++		 *     sample = old_sample = *sum;
++		 *     saturate(sample);
++		 *     *dst = sample | 1;
++		 *   } while (old_sample != *sum);
++		 */
++
++		"3:"
++		"\tmovl (%%ebx), %%ecx\n"
++
++		"\tmovl $0x7fffff, %%eax\n"
++		"\tmovl $-0x7fffff, %%edx\n"
++		"\tcmpl %%eax, %%ecx\n"
++		"\tcmovng %%ecx, %%eax\n"
++		"\tcmpl %%edx, %%ecx\n"
++		"\tcmovl %%edx, %%eax\n"
++
++		"\torl $1, %%eax\n"
++		"\tmovw %%ax, (%%edi)\n"
++		"\tshrl $16, %%eax\n"
++		"\tmovb %%al, 2(%%edi)\n"
++	
++		"\tcmpl %%ecx, (%%ebx)\n"
++		"\tjnz 3b\n"
++
++		/*
++		 * while (size-- > 0)
++		 */
++		"\taddl %4, %%edi\n"
++		"\taddl %5, %%esi\n"
++		"\taddl %6, %%ebx\n"
++		"\tdecl %0\n"
++		"\tjnz 1b\n"
++		
++		"6:"
++		"\tmovq %7, %%rbx\n"
++
++		: /* no output regs */
++		: "m" (size), "m" (dst), "m" (src),
++		  "m" (sum), "m" (dst_step), "m" (src_step),
++		  "m" (sum_step), "m" (old_rbx)
++		: "rsi", "rdi", "edx", "ecx", "eax"
++	);
++}
