@@ -96,7 +96,7 @@ weston | Segfaults
 pulseaudio | It cannot connect to pavucontrol or pulseaudio apps
 webkit-gtk | It just gives a blank screen.  Jit is broken or something else related not relevant to the patches.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
 evdev | Semi broken and quirky; dev permissions need to be manually set or devices reloaded. init script fixes are in these instructions
-grub2-install | It doesn't work natively in x32 use lilo.  you can still install grub from amd64 profile.
+grub2-install | It doesn't work natively in x32 use lilo.  you can still install grub from amd64 profile or partiton.
 xterm | It works in root but not as user
 mono | It is for C#.  The patches from PLD Linux are incomplete.  Details of the patch can be found on https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html for what needs to be done.  From my previous attempt, the fix is not trivial which PLD would suggest.
 nodejs | It depends on v8.  v8 doesn't support x32.
