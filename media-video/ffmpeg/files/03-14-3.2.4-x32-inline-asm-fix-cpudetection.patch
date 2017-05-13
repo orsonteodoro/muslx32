@@ -1,0 +1,26 @@
+diff -urp ffmpeg-3.2.4.orig/libavutil/x86/cpu.c ffmpeg-3.2.4/libavutil/x86/cpu.c
+--- ffmpeg-3.2.4.orig/libavutil/x86/cpu.c	2017-02-10 13:25:28.000000000 +0000
++++ ffmpeg-3.2.4/libavutil/x86/cpu.c	2017-05-11 10:30:58.144747704 +0000
+@@ -41,9 +41,9 @@
+ /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
+ #define cpuid(index, eax, ebx, ecx, edx)                        \
+     __asm__ volatile (                                          \
+-        "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
++        "mov    %%"FF_REG_rb", %%"FF_REG_rS" \n\t"                \
+         "cpuid                       \n\t"                      \
+-        "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
++        "xchg   %%"FF_REG_rb", %%"FF_REG_rS                       \
+         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
+         : "0" (index), "2"(0))
+ 
+@@ -74,7 +74,7 @@
+ 
+ static int cpuid_test(void)
+ {
+-    x86_reg a, c;
++    x86_native_reg a, c;
+ 
+     /* Check if CPUID is supported by attempting to toggle the ID bit in
+      * the EFLAGS register. */
+Only in ffmpeg-3.2.4/libavutil/x86: cpu.c.orig
+Only in ffmpeg-3.2.4/libavutil/x86: cpu.c.rej

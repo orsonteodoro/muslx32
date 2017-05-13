@@ -295,29 +295,31 @@ src_prepare() {
 		export revision=git-N-${FFMPEG_REVISION}
 	fi
 
-	epatch "${FILESDIR}"/${PN}-2.8.6-x32-postprocess_template_c.patch
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		epatch "${FILESDIR}"/${PN}-2.8.6-x32-postprocess_template_c.patch
 
-	#most x32 patches come from from Matthias Räncker <theonetruecamper@gmx.de>
-        #patches 14a, 15, 16, postprocess, resample_asm from Orson Teodoro <orsonteodoro@yahoo.com>
-	epatch "${FILESDIR}"/01-14-x32-configure-add-abi-detection.patch
-	epatch "${FILESDIR}"/02-14-x32-inline-asm-fix-asm.h.patch
-	epatch "${FILESDIR}"/03-14-x32-inline-asm-fix-cpudetection.patch
-	epatch "${FILESDIR}"/04-14-x32-inline-asm-fix-push-pop-indirect-jmp.patch #missing some parts
-	epatch "${FILESDIR}"/05-14-x32-inline-asm-fix-cabac.patch
-	epatch "${FILESDIR}"/06-14-x32-yasm-x86inc-add-ptrsize-and-p-suffix.patch
-	epatch "${FILESDIR}"/07-14-x32-yasm-fft.asm-fix-pointer-access.patch
-	epatch "${FILESDIR}"/08-14-x32-yasm-audio_convert.asm-fix-ptr-usage.patch
-	epatch "${FILESDIR}"/09-14-x32-yasm-output.asm-fix-ptr-usage.patch
-        #10 is skipped missing files to patch
-	epatch "${FILESDIR}"/11-14-x32-yasm-audio_mix.asm-fix-ptr-usage.patch
-	epatch "${FILESDIR}"/12-14-x32-yasm-h264_idct.asm-fix-ptr-usage.patch
-	epatch "${FILESDIR}"/13-14-x32-yasm-h264_idct_10bit.asm-fix-ptr-usage.patch
-	epatch "${FILESDIR}"/14a-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
-	epatch "${FILESDIR}"/14b-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
-	epatch "${FILESDIR}"/15-14-x32-yasm-audio_convert_asm-fix-ptr-usage.patch
-	epatch "${FILESDIR}"/16-14-x32-yasm-flacdsp_asm-fix-ptr-usage.patch
-	epatch "${FILESDIR}"/${PN}-2.8.6-1-byte-overread-videodsp_am.patch #from Ronald S. Bultje
-	epatch "${FILESDIR}"/${PN}-2.8.6-x32-resample_asm-ptr-usage.patch
+		#most x32 patches come from from Matthias Räncker <theonetruecamper@gmx.de>
+	        #patches 14a, 15, 16, postprocess, resample_asm from Orson Teodoro <orsonteodoro@yahoo.com>
+		epatch "${FILESDIR}"/01-14-x32-configure-add-abi-detection.patch
+		epatch "${FILESDIR}"/02-14-x32-inline-asm-fix-asm.h.patch
+		epatch "${FILESDIR}"/03-14-x32-inline-asm-fix-cpudetection.patch
+		epatch "${FILESDIR}"/04-14-x32-inline-asm-fix-push-pop-indirect-jmp.patch #missing some parts
+		epatch "${FILESDIR}"/05-14-x32-inline-asm-fix-cabac.patch
+		epatch "${FILESDIR}"/06-14-x32-yasm-x86inc-add-ptrsize-and-p-suffix.patch
+		epatch "${FILESDIR}"/07-14-x32-yasm-fft.asm-fix-pointer-access.patch
+		epatch "${FILESDIR}"/08-14-x32-yasm-audio_convert.asm-fix-ptr-usage.patch
+		epatch "${FILESDIR}"/09-14-x32-yasm-output.asm-fix-ptr-usage.patch
+	        #10 is skipped missing files to patch
+		epatch "${FILESDIR}"/11-14-x32-yasm-audio_mix.asm-fix-ptr-usage.patch
+		epatch "${FILESDIR}"/12-14-x32-yasm-h264_idct.asm-fix-ptr-usage.patch
+		epatch "${FILESDIR}"/13-14-x32-yasm-h264_idct_10bit.asm-fix-ptr-usage.patch
+		epatch "${FILESDIR}"/14a-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
+		epatch "${FILESDIR}"/14b-14-x32-yasm-videodsp.asm-fix-access-to-parameters-passed-on-stack.patch
+		epatch "${FILESDIR}"/15-14-x32-yasm-audio_convert_asm-fix-ptr-usage.patch
+		epatch "${FILESDIR}"/16-14-x32-yasm-flacdsp_asm-fix-ptr-usage.patch
+		epatch "${FILESDIR}"/${PN}-2.8.6-1-byte-overread-videodsp_am.patch #from Ronald S. Bultje
+		epatch "${FILESDIR}"/${PN}-2.8.6-x32-resample_asm-ptr-usage.patch
+	fi
 
 	epatch_user
 }

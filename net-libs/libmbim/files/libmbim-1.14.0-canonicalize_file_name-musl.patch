@@ -1,0 +1,55 @@
+modified for libmbim
+source: https://git.busybox.net/buildroot/plain/package/libqmi/0001-musl-compat-canonicalize_file_name.patch?id=bab4a2fd37b1ce4bdeb25f7bf98adf07eea8c504
+From 85863c9e051fe59add4e47dbfcb37072234f0110 Mon Sep 17 00:00:00 2001
+From: Matt Weber <matthew.weber@rockwellcollins.com>
+Date: Mon, 1 May 2017 19:55:07 -0500
+Subject: [PATCH] musl compat canonicalize_file_name()
+
+Adds an inline equivalent of canonicalize_file_name
+using realpath().
+
+Bug report (origin of this patch):
+https://bugs.freedesktop.org/show_bug.cgi?id=99944
+
+Signed-off-by: Matthew Weber <matthew.weber@rockwellcollins.com>
+---
+diff -urp libmbim-1.14.0.orig/configure.ac libmbim-1.14.0/configure.ac
+--- libmbim-1.14.0.orig/configure.ac	2016-07-05 09:28:53.000000000 +0000
++++ libmbim-1.14.0/configure.ac	2017-05-11 08:44:42.248927534 +0000
+@@ -92,6 +92,8 @@ AC_SUBST(MBIMPROXY_LIBS)
+ GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
+ AC_SUBST(GLIB_MKENUMS)
+ 
++AC_CHECK_FUNCS([canonicalize_file_name])
++
+ dnl Documentation
+ GTK_DOC_CHECK(1.0)
+ 
+diff -urp libmbim-1.14.0.orig/src/libmbim-glib/mbim-utils.h libmbim-1.14.0/src/libmbim-glib/mbim-utils.h
+--- libmbim-1.14.0.orig/src/libmbim-glib/mbim-utils.h	2015-01-20 23:25:49.000000000 +0000
++++ libmbim-1.14.0/src/libmbim-glib/mbim-utils.h	2017-05-11 08:45:25.544611736 +0000
+@@ -28,6 +28,24 @@
+ #error "Only <libmbim-glib.h> can be included directly."
+ #endif
+ 
++#ifndef HAVE_CANONICALIZE_FILE_NAME
++#include <limits.h>
++#include <string.h>
++#include <stdlib.h>
++#include <stdio.h>
++static char * canonicalize_file_name(const char *path)
++{
++       char buf[PATH_MAX] = { };
++
++       snprintf(buf, sizeof(buf) - 1, "%s", path);
++
++       if (!realpath(path, buf))
++               return NULL;
++
++       return strdup(buf);
++}
++#endif
++
+ #include <glib.h>
+ 
+ G_BEGIN_DECLS

@@ -1,0 +1,12 @@
+diff -urp libunistring-0.9.7.orig/lib/Makefile.gnulib libunistring-0.9.7/lib/Makefile.gnulib
+--- libunistring-0.9.7.orig/lib/Makefile.gnulib	2016-12-02 16:42:23.000000000 +0000
++++ libunistring-0.9.7/lib/Makefile.gnulib	2017-05-10 20:43:42.024772837 +0000
+@@ -459,7 +459,7 @@ install-exec-localcharset: all-local
+ 	  case '$(host_os)' in \
+ 	    darwin[56]*) \
+ 	      need_charset_alias=true ;; \
+-	    darwin* | cygwin* | mingw* | pw32* | cegcc*) \
++	    darwin* | cygwin* | mingw* | pw32* | cegcc* | musl*) \
+ 	      need_charset_alias=false ;; \
+ 	    *) \
+ 	      need_charset_alias=true ;; \

@@ -70,6 +70,10 @@ QA_PRESTRIPPED="usr/lib*/${PN}/firefox"
 BUILD_OBJ_DIR="${S}/ff"
 
 pkg_setup() {
+        if [[ "${CHOST}" =~ "muslx32" ]] ; then
+                ewarn "this ebuild doesn't work for muslx32.  it is left for ebuild developers to work on it."
+        fi
+
 	moz_pkgsetup
 
 	# Avoid PGO profiling problems due to enviroment leakage

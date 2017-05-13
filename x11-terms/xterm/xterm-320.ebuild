@@ -95,4 +95,8 @@ src_install() {
 
 	# restore the navy blue
 	sed -i -e "s:blue2$:blue:" "${D}${DEFAULTS_DIR}"/XTerm-color || die
+
+	if [[ "${CHOST}" =~ "muslx32" ]] ;then
+		elog "${P} only works as root on muslx32."
+	fi
 }

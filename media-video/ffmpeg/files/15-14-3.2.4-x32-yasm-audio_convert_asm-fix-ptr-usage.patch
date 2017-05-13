@@ -1,0 +1,122 @@
+diff -urp ffmpeg-3.2.4.orig/libswresample/x86/audio_convert.asm ffmpeg-3.2.4/libswresample/x86/audio_convert.asm
+--- ffmpeg-3.2.4.orig/libswresample/x86/audio_convert.asm	2017-02-10 13:25:28.000000000 +0000
++++ ffmpeg-3.2.4/libswresample/x86/audio_convert.asm	2017-05-11 10:57:43.830868627 +0000
+@@ -33,9 +33,9 @@ SECTION .text
+ ;to, from, a/u, log2_outsize, log_intsize, const
+ %macro PACK_2CH 5-7
+ cglobal pack_2ch_%2_to_%1_%3, 3, 4, 6, dst, src, len, src2
+-    mov src2q   , [srcq+gprsize]
+-    mov srcq    , [srcq]
+-    mov dstq    , [dstq]
++    mov src2p   , [srcq+ptrsize]
++    mov srcp    , [srcq]
++    mov dstp    , [dstq]
+ %ifidn %3, a
+     test dstq, mmsize-1
+         jne pack_2ch_%2_to_%1_u_int %+ SUFFIX
+@@ -90,9 +90,9 @@ pack_2ch_%2_to_%1_u_int %+ SUFFIX:
+ 
+ %macro UNPACK_2CH 5-7
+ cglobal unpack_2ch_%2_to_%1_%3, 3, 4, 7, dst, src, len, dst2
+-    mov dst2q   , [dstq+gprsize]
+-    mov srcq    , [srcq]
+-    mov dstq    , [dstq]
++    mov dst2p   , [dstq+ptrsize]
++    mov srcp    , [srcq]
++    mov dstp    , [dstq]
+ %ifidn %3, a
+     test dstq, mmsize-1
+         jne unpack_2ch_%2_to_%1_u_int %+ SUFFIX
+@@ -162,8 +162,8 @@ unpack_2ch_%2_to_%1_u_int %+ SUFFIX:
+ 
+ %macro CONV 5-7
+ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
+-    mov srcq    , [srcq]
+-    mov dstq    , [dstq]
++    mov srcp    , [srcq]
++    mov dstp    , [dstq]
+ %ifidn %3, a
+     test dstq, mmsize-1
+         jne %2_to_%1_u_int %+ SUFFIX
+@@ -209,13 +209,13 @@ cglobal pack_6ch_%2_to_%1_%3, 2, 8, %6,
+ %else
+     %define lend dword r2m
+ %endif
+-    mov    src1q, [srcq+1*gprsize]
+-    mov    src2q, [srcq+2*gprsize]
+-    mov    src3q, [srcq+3*gprsize]
+-    mov    src4q, [srcq+4*gprsize]
+-    mov    src5q, [srcq+5*gprsize]
+-    mov     srcq, [srcq]
+-    mov     dstq, [dstq]
++    mov    src1p, [srcq+1*ptrsize]
++    mov    src2p, [srcq+2*ptrsize]
++    mov    src3p, [srcq+3*ptrsize]
++    mov    src4p, [srcq+4*ptrsize]
++    mov    src5p, [srcq+5*ptrsize]
++    mov     srcp, [srcq]
++    mov     dstp, [dstq]
+ %ifidn %3, a
+     test dstq, mmsize-1
+         jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
+@@ -312,13 +312,13 @@ cglobal unpack_6ch_%2_to_%1_%3, 2, 8, %6
+ %else
+     %define lend dword r2m
+ %endif
+-    mov    dst1q, [dstq+1*gprsize]
+-    mov    dst2q, [dstq+2*gprsize]
+-    mov    dst3q, [dstq+3*gprsize]
+-    mov    dst4q, [dstq+4*gprsize]
+-    mov    dst5q, [dstq+5*gprsize]
+-    mov     dstq, [dstq]
+-    mov     srcq, [srcq]
++    mov    dst1p, [dstq+1*ptrsize]
++    mov    dst2p, [dstq+2*ptrsize]
++    mov    dst3p, [dstq+3*ptrsize]
++    mov    dst4p, [dstq+4*ptrsize]
++    mov    dst5p, [dstq+5*ptrsize]
++    mov     dstp, [dstq]
++    mov     srcp, [srcq]
+ %ifidn %3, a
+     test dstq, mmsize-1
+         jne unpack_6ch_%2_to_%1_u_int %+ SUFFIX
+@@ -382,7 +382,7 @@ unpack_6ch_%2_to_%1_u_int %+ SUFFIX:
+ 
+ %macro PACK_8CH 8
+ cglobal pack_8ch_%2_to_%1_%3, 2, PACK_8CH_GPRS, %6, ARCH_X86_32*48, dst, src, len, src1, src2, src3, src4, src5, src6, src7
+-    mov     dstq, [dstq]
++    mov     dstp, [dstq]
+ %if ARCH_X86_32
+     DEFINE_ARGS dst, src, src2, src3, src4, src5, src6
+     %define lend dword r2m
+@@ -397,20 +397,20 @@ cglobal pack_8ch_%2_to_%1_%3, 2, PACK_8C
+     %define src7m dword [rsp+40]
+     mov     dstm, dstq
+ %endif
+-    mov    src7q, [srcq+7*gprsize]
+-    mov    src6q, [srcq+6*gprsize]
++    mov    src7p, [srcq+7*ptrsize]
++    mov    src6p, [srcq+6*ptrsize]
+ %if ARCH_X86_32
+     mov    src7m, src7q
+ %endif
+-    mov    src5q, [srcq+5*gprsize]
+-    mov    src4q, [srcq+4*gprsize]
+-    mov    src3q, [srcq+3*gprsize]
++    mov    src5p, [srcq+5*ptrsize]
++    mov    src4p, [srcq+4*ptrsize]
++    mov    src3p, [srcq+3*ptrsize]
+ %if ARCH_X86_32 && HAVE_ALIGNED_STACK == 0
+     mov    src4m, src4q
+ %endif
+-    mov    src2q, [srcq+2*gprsize]
+-    mov    src1q, [srcq+1*gprsize]
+-    mov     srcq, [srcq]
++    mov    src2p, [srcq+2*ptrsize]
++    mov    src1p, [srcq+1*ptrsize]
++    mov     srcp, [srcq]
+ %ifidn %3, a
+ %if ARCH_X86_32
+     test dstmp, mmsize-1
+Only in ffmpeg-3.2.4/libswresample/x86: audio_convert.asm.orig
+Only in ffmpeg-3.2.4/libswresample/x86: audio_convert.asm.rej

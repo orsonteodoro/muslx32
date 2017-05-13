@@ -24,14 +24,6 @@ DEPEND="${RDEPEND}"
 
 S=${WORKDIR}/${MY_P}
 
-#pkg_setup() {
-#	default
-#	if [[ "${CHOST}" =~ "muslx32" ]] ; then
-#		ewarn "this package needs to be cross compiled."
-#		ewarn "todo: it also needs to be patch so it can be compiled natively."
-#	fi
-#}
-
 src_prepare() {
 	if [[ ${PLEVEL} != ${PV} ]] ; then
 		local i
@@ -44,12 +36,19 @@ src_prepare() {
 }
 
 multilib_src_configure() {
+	local muslx32_config
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		#strange but it works... it could be musl detection problem or improper os handling.
+		#this is required to emerge mpfr more than 1 natively
+		muslx32_config=( --build=${CHOST//musl/gnu}  )
+	fi
 	# Make sure mpfr doesn't go probing toolchains it shouldn't #476336#19
 	ECONF_SOURCE=${S} \
 	user_redefine_cc=yes \
 	econf \
 		--docdir="\$(datarootdir)/doc/${PF}" \
-		$(use_enable static-libs static)
+		$(use_enable static-libs static) \
+		${muslx32_config[@]}
 }
 
 multilib_src_install_all() {

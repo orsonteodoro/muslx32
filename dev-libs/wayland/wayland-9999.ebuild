@@ -41,6 +41,10 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
 multilib_src_configure() {
+        if [[ "${CHOST}" =~ "muslx32" ]] ; then
+                ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+        fi
+
 	strip-flags
 	filter-flags -O0 -O1 -O2 -Os -O3 -O4
 	append-cflags -O0

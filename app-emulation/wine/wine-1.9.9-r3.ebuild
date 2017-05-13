@@ -291,6 +291,9 @@ pkg_pretend() {
 }
 
 pkg_setup() {
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+	fi
 	wine_build_environment_check || die
 	wine_env_vcs_vars || die
 	if ! use staging; then

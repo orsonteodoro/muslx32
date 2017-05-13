@@ -114,6 +114,12 @@ pkg_pretend() {
 }
 
 pkg_setup() {
+	if use clang ; then
+	        if [[ "${CHOST}" =~ "muslx32" ]] ; then
+	                ewarn "clang may not for muslx32.  the clang compiler is left for ebuild developers and clang developers to work on it."
+	        fi
+	fi
+
 	pkg_pretend
 }
 

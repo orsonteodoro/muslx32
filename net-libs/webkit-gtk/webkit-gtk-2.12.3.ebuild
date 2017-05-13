@@ -139,6 +139,10 @@ pkg_pretend() {
 }
 
 pkg_setup() {
+        if [[ "${CHOST}" =~ "muslx32" ]] ; then
+                ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+        fi
+
 	if [[ ${MERGE_TYPE} != "binary" ]] && is-flagq "-g*" && ! is-flagq "-g*0" ; then
 		check-reqs_pkg_setup
 	fi

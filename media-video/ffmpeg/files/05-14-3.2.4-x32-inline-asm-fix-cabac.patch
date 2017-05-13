@@ -1,0 +1,112 @@
+--- ffmpeg-2.8.6.orig/libavcodec/x86/cabac.h	2015-06-19 13:44:46.000000000 -0700
++++ ffmpeg-2.8.6/libavcodec/x86/cabac.h	2016-10-19 22:35:36.811565135 -0700
+@@ -56,11 +56,16 @@
+ #define BRANCHLESS_GET_CABAC_UPDATE(ret, retq, low, range, tmp) \
+         "cmp    "low"       , "tmp"                        \n\t"\
+         "cmova  %%ecx       , "range"                      \n\t"\
+-        "sbb    %%rcx       , %%rcx                        \n\t"\
++        "sbb    %%"FF_REG_c"   , %%"FF_REG_c"                    \n\t"\
+         "and    %%ecx       , "tmp"                        \n\t"\
+-        "xor    %%rcx       , "retq"                       \n\t"\
++        "xor    %%"FF_REG_c"   , "retq"                       \n\t"\
+         "sub    "tmp"       , "low"                        \n\t"
+ #else /* HAVE_FAST_CMOV */
++#if ARCH_X86_X64
++#define BRANCHLESS_GET_CABAC_UPDATE_SLOW_CMOV_RET_SIGN_EXTEND  "movslq "ret" , "retq" \n\t"
++#else
++#define BRANCHLESS_GET_CABAC_UPDATE_SLOW_CMOV_RET_SIGN_EXTEND
++#endif
+ #define BRANCHLESS_GET_CABAC_UPDATE(ret, retq, low, range, tmp) \
+ /* P4 Prescott has crappy cmov,sbb,64bit shift so avoid them */ \
+         "sub    "low"       , "tmp"                        \n\t"\
+@@ -72,7 +77,7 @@
+         "and    "tmp"       , %%ecx                        \n\t"\
+         "sub    %%ecx       , "low"                        \n\t"\
+         "xor    "tmp"       , "ret"                        \n\t"\
+-        "movslq "ret"       , "retq"                       \n\t"
++        BRANCHLESS_GET_CABAC_UPDATE_SLOW_CMOV_RET_SIGN_EXTEND
+ #endif /* HAVE_FAST_CMOV */
+ 
+ #define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, byte, end, norm_off, lps_off, mlps_off, tables) \
+@@ -80,7 +85,7 @@
+         "mov    "range"     , "tmp"                                     \n\t"\
+         "and    $0xC0       , "range"                                   \n\t"\
+         "lea    ("ret", "range", 2), %%ecx                              \n\t"\
+-        "movzbl "lps_off"("tables", %%rcx), "range"                     \n\t"\
++        "movzbl "lps_off"("tables", %%"FF_REG_c"), "range"                 \n\t"\
+         "sub    "range"     , "tmp"                                     \n\t"\
+         "mov    "tmp"       , %%ecx                                     \n\t"\
+         "shl    $17         , "tmp"                                     \n\t"\
+@@ -102,7 +107,7 @@
+         "shr    $15         , %%ecx                                     \n\t"\
+         "bswap  "tmp"                                                   \n\t"\
+         "shr    $15         , "tmp"                                     \n\t"\
+-        "movzbl "norm_off"("tables", %%rcx), %%ecx                      \n\t"\
++        "movzbl "norm_off"("tables", %%"FF_REG_c"), %%ecx                  \n\t"\
+         "sub    $0xFFFF     , "tmp"                                     \n\t"\
+         "neg    %%ecx                                                   \n\t"\
+         "add    $7          , %%ecx                                     \n\t"\
+@@ -190,8 +195,8 @@ static av_always_inline int get_cabac_in
+ #endif
+ 
+     __asm__ volatile(
+-        BRANCHLESS_GET_CABAC("%0", "%q0", "(%4)", "%1", "%w1",
+-                             "%2", "%q2", "%3", "%b3",
++        BRANCHLESS_GET_CABAC("%0", "%"FF_REG_PTR_MOD"0", "(%4)", "%1", "%w1",
++                             "%2", "%"FF_REG_PTR_MOD"2", "%3", "%b3",
+                              "%c6(%5)", "%c7(%5)",
+                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
+                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
+--- ffmpeg-2.8.6.orig/libavcodec/x86/h264_i386.h	2015-12-19 18:07:46.000000000 -0800
++++ ffmpeg-2.8.6/libavcodec/x86/h264_i386.h	2016-10-19 22:36:31.002632338 -0700
+@@ -68,8 +68,8 @@ static int decode_significance_x86(CABAC
+     __asm__ volatile(
+         "3:                                     \n\t"
+ 
+-        BRANCHLESS_GET_CABAC("%4", "%q4", "(%1)", "%3", "%w3",
+-                             "%5", "%q5", "%k0", "%b0",
++        BRANCHLESS_GET_CABAC("%4", "%"FF_REG_PTR_MOD"4", "(%1)", "%3", "%w3",
++                             "%5", "%"FF_REG_PTR_MOD"5", "%k0", "%b0",
+                              "%c11(%6)", "%c12(%6)",
+                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
+                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
+@@ -80,8 +80,8 @@ static int decode_significance_x86(CABAC
+         " jz 4f                                 \n\t"
+         "add  %10, %1                           \n\t"
+ 
+-        BRANCHLESS_GET_CABAC("%4", "%q4", "(%1)", "%3", "%w3",
+-                             "%5", "%q5", "%k0", "%b0",
++        BRANCHLESS_GET_CABAC("%4", "%"FF_REG_PTR_MOD"4", "(%1)", "%3", "%w3",
++                             "%5", "%"FF_REG_PTR_MOD"5", "%k0", "%b0",
+                              "%c11(%6)", "%c12(%6)",
+                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
+                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
+@@ -149,8 +149,8 @@ static int decode_significance_8x8_x86(C
+         "movzb (%0, %6), %6                     \n\t"
+         "add %9, %6                             \n\t"
+ 
+-        BRANCHLESS_GET_CABAC("%4", "%q4", "(%6)", "%3", "%w3",
+-                             "%5", "%q5", "%k0", "%b0",
++        BRANCHLESS_GET_CABAC("%4", "%"FF_REG_PTR_MOD"4", "(%6)", "%3", "%w3",
++                             "%5", "%"FF_REG_PTR_MOD"5", "%k0", "%b0",
+                              "%c12(%7)", "%c13(%7)",
+                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
+                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
+@@ -162,14 +162,14 @@ static int decode_significance_8x8_x86(C
+         " jz 4f                                 \n\t"
+ 
+ #ifdef BROKEN_RELOCATIONS
+-        "movzb %c14(%15, %q6), %6\n\t"
++        "movzb %c14(%15, %"FF_REG_PTR_MOD"6), %6\n\t"
+ #else
+         "movzb "MANGLE(ff_h264_cabac_tables)"+%c14(%6), %6\n\t"
+ #endif
+         "add %11, %6                            \n\t"
+ 
+-        BRANCHLESS_GET_CABAC("%4", "%q4", "(%6)", "%3", "%w3",
+-                             "%5", "%q5", "%k0", "%b0",
++        BRANCHLESS_GET_CABAC("%4", "%"FF_REG_PTR_MOD"4", "(%6)", "%3", "%w3",
++                             "%5", "%"FF_REG_PTR_MOD"5", "%k0", "%b0",
+                              "%c12(%7)", "%c13(%7)",
+                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
+                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),

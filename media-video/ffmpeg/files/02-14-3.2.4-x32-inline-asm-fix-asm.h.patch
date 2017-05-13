@@ -1,0 +1,76 @@
+diff -urp ffmpeg-3.2.4.orig/libavutil/x86/asm.h ffmpeg-3.2.4/libavutil/x86/asm.h
+--- ffmpeg-3.2.4.orig/libavutil/x86/asm.h	2017-02-10 13:25:28.000000000 +0000
++++ ffmpeg-3.2.4/libavutil/x86/asm.h	2017-05-11 10:26:23.621165309 +0000
+@@ -27,14 +27,16 @@
+ typedef struct xmm_reg { uint64_t a, b; } xmm_reg;
+ typedef struct ymm_reg { uint64_t a, b, c, d; } ymm_reg;
+ 
+-#if ARCH_X86_64
++#if ARCH_X86_64_X64
+ #    define FF_OPSIZE "q"
++#    define FF_REG_PTR_MOD "q"
+ #    define FF_REG_a "rax"
+ #    define FF_REG_b "rbx"
+ #    define FF_REG_c "rcx"
+ #    define FF_REG_d "rdx"
+ #    define FF_REG_D "rdi"
+ #    define FF_REG_S "rsi"
++#    define FF_REG_8 "r8"
+ #    define FF_PTR_SIZE "8"
+ typedef int64_t x86_reg;
+ 
+@@ -47,16 +49,19 @@ typedef int64_t x86_reg;
+ #    define FF_REGc    rcx
+ #    define FF_REGd    rdx
+ #    define FF_REGSP   rsp
++#    define FF_REG8    r8
+ 
+-#elif ARCH_X86_32
++#elif ARCH_X86_64_X32 || ARCH_X86_32
+ 
+ #    define FF_OPSIZE "l"
++#    define FF_REG_PTR_MOD "k"
+ #    define FF_REG_a "eax"
+ #    define FF_REG_b "ebx"
+ #    define FF_REG_c "ecx"
+ #    define FF_REG_d "edx"
+ #    define FF_REG_D "edi"
+ #    define FF_REG_S "esi"
++#    define FF_REG_8 "r8d"
+ #    define FF_PTR_SIZE "4"
+ typedef int32_t x86_reg;
+ 
+@@ -68,10 +73,31 @@ typedef int32_t x86_reg;
+ #    define FF_REGc    ecx
+ #    define FF_REGd    edx
+ #    define FF_REGSP   esp
++#    define FF_REG8    r8d
+ #else
+ typedef int x86_reg;
+ #endif
+ 
++#if ARCH_X86_64
++#    define FF_REG_ra "rax"
++#    define FF_REG_rb "rbx"
++#    define FF_REG_rc "rcx"
++#    define FF_REG_rd "rdx"
++#    define FF_REG_rD "rdi"
++#    define FF_REG_rS "rsi"
++#    define FF_REG_rBP "rbp"
++typedef int64_t x86_native_reg;
++#elif ARCH_X86_32
++#    define FF_REG_ra "eax"
++#    define FF_REG_rb "ebx"
++#    define FF_REG_rc "ecx"
++#    define FF_REG_rd "edx"
++#    define FF_REG_rD "edi"
++#    define FF_REG_rS "esi"
++#    define FF_REG_rBP "ebp"
++typedef int32_t x86_native_reg;
++#endif
++
+ #define HAVE_7REGS (ARCH_X86_64 || (HAVE_EBX_AVAILABLE && HAVE_EBP_AVAILABLE))
+ #define HAVE_6REGS (ARCH_X86_64 || (HAVE_EBX_AVAILABLE || HAVE_EBP_AVAILABLE))
+ 
+Only in ffmpeg-3.2.4/libavutil/x86: asm.h.orig
+Only in ffmpeg-3.2.4/libavutil/x86: asm.h.rej

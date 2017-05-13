@@ -115,6 +115,10 @@ pkg_pretend() {
 }
 
 pkg_setup() {
+        if [[ "${CHOST}" =~ "muslx32" ]] ; then
+                ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+        fi
+
 	# Check whether any of the debugging flags is enabled
 	if [[ ${MERGE_TYPE} != "binary" ]] && is-flagq "-g*" && ! is-flagq "-g*0" ; then
 		if is-flagq "-ggdb" && [[ ${WEBKIT_GTK_GGDB} != "yes" ]]; then

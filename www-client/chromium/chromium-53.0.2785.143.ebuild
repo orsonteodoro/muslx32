@@ -156,6 +156,10 @@ For other desktop environments, try one of the following:
 "
 
 src_unpack() {
+        if [[ "${CHOST}" =~ "muslx32" ]] ; then
+                ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+        fi
+
 	unpack "${A}"
 
 if false; then #prior to code review... old

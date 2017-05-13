@@ -69,6 +69,9 @@ REQUIRED_USE="corefonts? ( truetype )
 S=${WORKDIR}/${MY_P}
 
 src_prepare() {
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+	fi
 	default
 
 	elibtoolize # for Darwin modules

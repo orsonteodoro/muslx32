@@ -1,0 +1,111 @@
+# muslx32_makefile_patcher - Patches Makefile quarks for the muslx32 platform
+# Copyright (C) 2017  Orson Teodoro <orsonteodoro@yahoo.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+#Maintainer notes:
+#The following apply patches for the muslx32 build system.  It is easier to apply patches at this point than to patch each ebuild and then force rebuilding any Makefile*.  The problem can be in coreutils' test shell command, automake, libtool or files generated from these 
+#scripts distributed with the package.
+
+#echo "$EBUILD_PHASE"
+if [[ $EBUILD_PHASE == configure ]]; then
+	einfo "Applying automake/libtool musl patch"
+	for file in $(find "${WORKDIR}" -name "Makefile" -o -name "Makefile.in" -o -name "Makefile.in.in" -o -name "Make-in"); do
+		einfo "Editing $file"
+
+		local myallrecursive
+		local myinstallrecursive
+
+		myallrecursive=""
+		grep -q "all-recursive" $file
+		[[ "$?" == "0" ]] && myallrecursive="all-recursive"
+
+		myinstallrecursive=""
+		grep -q "install-recursive" $file
+		[[ "$?" == "0" ]] && myinstallrecursive="install-recursive"
+
+		#Maintainer notes:
+		#The following add the current directory $(CURDIR)/ before processing each subdir
+		#It also strips out the ( ) shell
+
+		#einfo "Applying automake musl patch"
+		grep -q "\$(am__cd) \$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target" "$file"
+		[[ "$?" == "0" ]] && sed -i 's|(\$(am__cd) \$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target) |$(am__cd) $(CURDIR)/$$subdir \&\& $(MAKE) $(AM_MAKEFLAGS) $$local_target |g' "$file"
+
+		grep -q "\$(am__cd) \$(srcdir)/\$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target" "$file"
+		[[ "$?" == "0" ]] && sed -i 's|\$(am__cd) \$(srcdir)/\$\$subdir && \$(MAKE) \$(AM_MAKEFLAGS) \$\$local_target |$(am__cd) $(CURDIR)/$$subdir \&\& $(MAKE) $(AM_MAKEFLAGS) $$local_target |g' "$file"
+
+		#Maintainer notes:
+		#The following inject all-am and install-am target to get make to properly work.  it is more easier to inject it in this bashrc than to patch each individual ebuild and make a special case for muslx32 profile.
+
+		grep -q "all-am" $file
+		[[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e 's|\nall: all-recursive\n|\nall: all-recursive all-am\n|g' "$file"
+
+		grep -q "all-am" $file
+		[[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall: \$(BUILT_SOURCES)\n|\nall: \$(BUILT_SOURCES) ${myallrecursive} all-am\n|g" "$file"
+
+		grep -q "all-am" $file
+		[[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall: \$(BUILT_SOURCES) config.h\n|\nall: \$(BUILT_SOURCES) config.h ${myallrecursive} all-am\n|g" "$file"
+
+		grep -q "install-am" $file
+	        [[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e 's|\ninstall: install-recursive\n|\ninstall: install-recursive install-am\n|g' "$file"
+
+		grep -q "install-am" $file
+		[[ "$?" == "0" ]] && sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\ninstall: \$(BUILT_SOURCES)\n|\ninstall: ${myinstallrecursive} \$(BUILT_SOURCES) install-am\n|g" "$file"
+
+		if [[ $file =~ "/po/" && $file =~ "Makefile.in.in" ]]; then
+			sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall: \([-a-zA-Z ]*\)all-@USE_NLS@\n\n|\nall: \1 ${myallrecursive} all-@USE_NLS@\nall-am:\ninstall-am:\n\n|g" "$file"
+		fi
+
+		if [[ $file =~ "/po/" && $file =~ "Make-in" ]]; then
+			sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall: all-@USE_NLS@\n\n|\nall: ${myallrecursive} all-@USE_NLS@\nall-am:\ninstall-am:\ninfo-am:\n\n|g" "$file"
+		fi
+
+		grep -q "\$\$files" "$file"
+		if [[ "$?" == "0" ]]; then
+			#Maintainer notes:
+			#
+			#there are some quirks (that work in the glibc but not in the muslx32) that without the following would break the build system.  they need to be patched before make is called.
+			#the test shell command has been replaced with [[ ]]
+			#check the file if it exists before processing it.  if it doesn't exist or refers to a null path skip it and process the next
+			#processed files may need to be prefixed with $(CURDIR)/
+			#
+			#einfo "Applying libtool musl patch"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|if test -f "\$(CURDIR)/\$\$p"; then d="\$(CURDIR)/"\; else d="\$(srcdir)/"\; fi\; \\|if [[ -f "$(CURDIR)/$$p" ]]\; then \\\n\t    d="$(CURDIR)/"\; \\\n\telif [[ -f "$(srcdir)/$$p" ]]\; then \\\n\t    d="$(srcdir)/"\; \\\n\telif [[ -f "$$p" ]]; then \\\n\t    d=""\; \\\n\tfi\; \\|g' "$file"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|if test -f \$\$p\; then d=\; else d="\$(srcdir)\/"\; fi\; \\\n\t  echo "\$\$d\$\$p"\; echo "\$\$\p"\; \\|if [[ -f "$(CURDIR)/$$p" ]]; then \\\n\t    d="$(CURDIR)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$(srcdir)/$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$$p" ]]; then \\\n\t    echo "$$p"; \\\n\t  fi; \\|g' "$file"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|for p in \$\$list\; do \\\n\t  if test -f "\$\$p"\; then d=\; else d="\$(srcdir)\/"\; fi\; \\\n\t  echo "\$$d\$\$p"\; \\|for p in $$list; do \\\n\t  if [[ -f "$(CURDIR)/$$p" ]]; then \\\n\t    d="$(CURDIR)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$(srcdir)/$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$d$$p"; \\\n\t  elif [[ -f "$$p" ]]; then \\\n\t    d="$(srcdir)/"; \\\n\t    echo "$$p"; \\\n\t  fi; \\|g' "$file"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|echo " \$(\([-_a-zA-Z0-9]*\)) \$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t  \$([-_a-zA-Z0-9]*) \$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"	
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|test -z "\$\$files" \|\| { echo " \$(\([-_a-zA-Z0-9]*\)) \$(srcdir)\/\$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t  \$([-_a-zA-Z0-9]*) \$(srcdir)\/\$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; }\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"	
+	                sed -i -e ':a' -e 'N' -e '$!ba' -e 's|test -z "\$\$files" \|\| { \\\n\t    echo " \$(\([-_a-zA-Z0-9]*\)) \$\$files \x27\$(DESTDIR)\$(\([-_a-zA-Z0-9]*\))\x27"\; \\\n\t    \$([-_a-zA-Z0-9]*) \$\$files "\$(DESTDIR)\$([-_a-zA-Z0-9]*)" \|\| exit \$\$?\; }\; \\|if \[\[ -d "$$files" \|\| -z "$$files" \]\]\; then \\\n\t    continue; \\\n\t  fi; \\\n\t  echo " $(\1) $$files \x27$(DESTDIR)$(\2)\x27"; \\\n\t  $(\1) $$files "$(DESTDIR)$(\2)" \|\| exit $$?; \\|g' "$file"
+			sed -i -e ':a' -e 'N' -e '$!ba' -e 's|echo " \$(INSTALL_SCRIPT) \$\$files \x27\$(DESTDIR)\$(bindir)\$\$dir\x27"\; \\|if [[ -z "$$files" \|\| -d "$$files" ]]; then \\\n\t\t   continue; \\\n\t       fi; \\\n\t       echo " $(INSTALL_SCRIPT) $$files \x27$(DESTDIR)$(bindir)$$dir\x27"; \\|g' "$file"	
+		fi
+
+		#Maintainer notes:
+		#The following ignore ctags invocation
+	                
+		grep -q "CTAGS = ctags" "$file"
+		if [[ "$?" == "0" ]]; then
+			sed -i "s|CTAGS = ctags|CTAGS = true|g" "$file"
+		fi
+
+		#Maintainer notes:
+		#The following adds $(SOURCES) to the all-am target
+
+		grep -q "SOURCES = " "$file"
+		if [[ "$?" == "0" ]]; then
+			sed -i -e ':a' -e 'N' -e '$!ba' -e "s|\nall-am: Makefile \$(LTLIBRARIES) \$(DATA) \$(HEADERS) config.h\n|\nall-am: Makefile \$(SOURCES) \$(LTLIBRARIES) \$(DATA) \$(HEADERS) config.h\n|g" "$file"
+		fi
+	done
+fi

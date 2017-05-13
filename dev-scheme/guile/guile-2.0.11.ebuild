@@ -3,7 +3,7 @@
 # $Id$
 
 EAPI=3
-inherit eutils autotools flag-o-matic elisp-common
+inherit eutils autotools flag-o-matic elisp-common toolchain-funcs
 
 DESCRIPTION="Scheme interpreter"
 HOMEPAGE="http://www.gnu.org/software/guile/"
@@ -15,11 +15,11 @@ IUSE="networking +regex discouraged +deprecated emacs nls debug-freelist debug-m
 RESTRICT="!regex? ( test )"
 
 DEPEND="
+	dev-libs/libunistring
 	>=dev-libs/gmp-4.1
 	>=sys-devel/libtool-1.5.6
 	sys-devel/gettext
-	emacs? ( virtual/emacs )
-	dev-libs/libunistring" #line added by muslx32 overlay
+	emacs? ( virtual/emacs )" #libunistring added by muslx32 overlay
 RDEPEND="${DEPEND}"
 
 # Guile seems to contain some slotting support, /usr/share/guile/ is slotted,
@@ -44,13 +44,25 @@ src_prepare() {
 src_configure() {
 	# see bug #178499
 	filter-flags -ftree-vectorize
-	strip-flags
-	filter-flags -O2 -O3 -O4 -Os -O1 -O0
-	append-cflags -O2
-	append-cxxflags -O2
-	append-cppflags -I${S}/lib
+
+	local myconf
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		strip-flags
+		filter-flags -O2 -O3 -O4 -Os -O1 -O0
+		append-cflags -O2
+		append-cxxflags -O2
+		append-cppflags -I${S}/lib
+		append-cppflags -I/usr/lib/gcc/${CHOST}/$(gcc-fullversion)/include-fixed/ #testing
+
+		#myconf=( --without-libunistring-prefix )
+		myconf=( --without-included-libunistring )
+		#myconf=( --with-libunistring-prefix=/usr )
+		append-ldflags -L/usr/lib
+		true
+	fi
 
 	#will fail for me if posix is disabled or without modules -- hkBst
+
 	econf \
 		--disable-error-on-warning \
 		--disable-static \
@@ -67,7 +79,8 @@ src_configure() {
 		$(use_enable debug guile-debug) \
 		$(use_with threads) \
 		--with-modules \
-		EMACS=no
+		EMACS=no \
+		${myconf[@]}
 }
 
 src_compile()  {

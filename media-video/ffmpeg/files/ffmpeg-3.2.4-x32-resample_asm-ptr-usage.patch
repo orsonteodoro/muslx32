@@ -1,0 +1,137 @@
+diff -urp ffmpeg-3.2.4.orig/libswresample/x86/resample.asm ffmpeg-3.2.4/libswresample/x86/resample.asm
+--- ffmpeg-3.2.4.orig/libswresample/x86/resample.asm	2017-02-10 13:25:28.000000000 +0000
++++ ffmpeg-3.2.4/libswresample/x86/resample.asm	2017-05-11 11:03:10.610515108 +0000
+@@ -22,7 +22,7 @@
+ 
+ %include "libavutil/x86/x86util.asm"
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64_X64
+ %define pointer resq
+ %else
+ %define pointer resd
+@@ -65,8 +65,13 @@ cglobal resample_common_%1, 0, 15, 2, ct
+                                       phase_mask, dst_end, filter_bank
+ 
+     ; use red-zone for variable storage
+-%define ctx_stackq            [rsp-0x8]
+-%define src_stackq            [rsp-0x10]
++%ifdef __ILP32__
++%define ctx_stackp            [rsp-0x4]
++%define src_stackp            [rsp-0x8]
++%else
++%define ctx_stackp            [rsp-0x8]
++%define src_stackp            [rsp-0x10]
++%endif
+ %if WIN64
+ %define update_context_stackd r4m
+ %else ; unix64
+@@ -82,9 +87,9 @@ cglobal resample_common_%1, 0, 15, 2, ct
+     mov                       indexd, [ctxq+ResampleContext.index]
+     mov                        fracd, [ctxq+ResampleContext.frac]
+     mov                dst_incr_modd, [ctxq+ResampleContext.dst_incr_mod]
+-    mov                 filter_bankq, [ctxq+ResampleContext.filter_bank]
++    mov                 filter_bankp, [ctxq+ResampleContext.filter_bank]
+     mov                    src_incrd, [ctxq+ResampleContext.src_incr]
+-    mov                   ctx_stackq, ctxq
++    mov                   ctx_stackp, ctxp
+     mov           min_filter_len_x4d, [ctxq+ResampleContext.filter_length]
+     mov                dst_incr_divd, [ctxq+ResampleContext.dst_incr_div]
+     shl           min_filter_len_x4d, %3
+@@ -109,14 +114,14 @@ cglobal resample_common_%1, 0, 15, 2, ct
+     neg           min_filter_len_x4q
+     sub                 filter_bankq, min_filter_len_x4q
+     sub                         srcq, min_filter_len_x4q
+-    mov                   src_stackq, srcq
++    mov                   src_stackp, srcp
+ %else ; x86-32
+ cglobal resample_common_%1, 1, 7, 2, ctx, phase_count, dst, frac, \
+                                      index, min_filter_length_x4, filter_bank
+ 
+     ; push temp variables to stack
+-%define ctx_stackq            r0mp
+-%define src_stackq            r2mp
++%define ctx_stackp            r0mp
++%define src_stackp            r2mp
+ %define update_context_stackd r4m
+ 
+     mov                         dstq, r1mp
+@@ -133,7 +138,7 @@ cglobal resample_common_%1, 1, 7, 2, ctx
+     shl        min_filter_length_x4d, %3
+     mov                        fracd, [ctxq+ResampleContext.frac]
+     neg        min_filter_length_x4q
+-    mov                 filter_bankq, [ctxq+ResampleContext.filter_bank]
++    mov                 filter_bankp, [ctxq+ResampleContext.filter_bank]
+     sub                         r2mp, min_filter_length_x4q
+     sub                 filter_bankq, min_filter_length_x4q
+     PUSH                              min_filter_length_x4q
+@@ -256,10 +261,10 @@ cglobal resample_common_%1, 1, 7, 2, ctx
+     ; strictly speaking, the function should always return the consumed
+     ; number of bytes; however, we only use the value if update_context
+     ; is true, so let's just leave it uninitialized otherwise
+-    mov                         ctxq, ctx_stackq
++    mov                         ctxp, ctx_stackp
+     movifnidn                    rax, srcq
+     mov [ctxq+ResampleContext.frac ], fracd
+-    sub                          rax, src_stackq
++    sub                          rax, src_stackp
+     mov [ctxq+ResampleContext.index], indexd
+     shr                          rax, %3
+ 
+@@ -289,8 +294,13 @@ cglobal resample_linear_%1, 0, 15, 5, ct
+ %endif
+ 
+     ; use red-zone for variable storage
+-%define ctx_stackq            [rsp-0x8]
+-%define src_stackq            [rsp-0x10]
++%ifdef __ILP32__
++%define ctx_stackp            [rsp-0x4]
++%define src_stackp            [rsp-0x8]
++%else
++%define ctx_stackp            [rsp-0x8]
++%define src_stackp            [rsp-0x10]
++%endif
+ %define phase_mask_stackd     [rsp-0x14]
+ %if WIN64
+ %define update_context_stackd r4m
+@@ -309,7 +319,7 @@ cglobal resample_linear_%1, 0, 15, 5, ct
+     mov                dst_incr_modd, [ctxq+ResampleContext.dst_incr_mod]
+     mov                 filter_bankq, [ctxq+ResampleContext.filter_bank]
+     mov                    src_incrd, [ctxq+ResampleContext.src_incr]
+-    mov                   ctx_stackq, ctxq
++    mov                   ctx_stackp, ctxp
+     mov           min_filter_len_x4d, [ctxq+ResampleContext.filter_length]
+ %ifidn %1, int16
+     movd                          m4, [pd_0x4000]
+@@ -341,14 +351,14 @@ cglobal resample_linear_%1, 0, 15, 5, ct
+     neg           min_filter_len_x4q
+     sub                 filter_bankq, min_filter_len_x4q
+     sub                         srcq, min_filter_len_x4q
+-    mov                   src_stackq, srcq
++    mov                   src_stackp, srcp
+ %else ; x86-32
+ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
+                                      frac, index, dst, filter_bank
+ 
+     ; push temp variables to stack
+-%define ctx_stackq            r0mp
+-%define src_stackq            r2mp
++%define ctx_stackp            r0mp
++%define src_stackp            r2mp
+ %define update_context_stackd r4m
+ 
+     mov                         dstq, r1mp
+@@ -564,10 +574,10 @@ cglobal resample_linear_%1, 1, 7, 5, ctx
+     ; strictly speaking, the function should always return the consumed
+     ; number of bytes; however, we only use the value if update_context
+     ; is true, so let's just leave it uninitialized otherwise
+-    mov                         ctxq, ctx_stackq
++    mov                         ctxp, ctx_stackp
+     movifnidn                    rax, srcq
+     mov [ctxq+ResampleContext.frac ], fracd
+-    sub                          rax, src_stackq
++    sub                          rax, src_stackp
+     mov [ctxq+ResampleContext.index], indexd
+     shr                          rax, %3
+ 
+Only in ffmpeg-3.2.4/libswresample/x86: resample.asm.rej

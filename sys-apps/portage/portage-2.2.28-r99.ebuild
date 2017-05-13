@@ -274,6 +274,19 @@ new_config_protect() {
 }
 
 pkg_postinst() {
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		einfo "Copying Makefile patcher for muslx32"
+		cp "${FILESDIR}"/muslx32_makefile_patcher ${EROOT}/etc/portage/
+		touch ${EROOT}/etc/portage/bashrc
+		grep 'source ${EROOT}/etc/portage/muslx32_makefile_patcher' ${EROOT}/etc/portage/bashrc > /dev/null
+		if [[ "$?" != "0" ]] ; then
+			echo 'if [ -f "${EROOT}/etc/portage/muslx32_makefile_patcher" ]; then' >> ${EROOT}/etc/portage/bashrc
+			echo '	source ${EROOT}/etc/portage/muslx32_makefile_patcher' >> ${EROOT}/etc/portage/bashrc
+			echo 'elif [ -f "/usr/${CHOST}/etc/portage/muslx32_makefile_patcher" ]; then' >> ${EROOT}/etc/portage/bashrc
+			echo '	source /usr/${CHOST}/etc/portage/muslx32_makefile_patcher' >> ${EROOT}/etc/portage/bashrc
+			echo 'fi' >> ${EROOT}/etc/portage/bashrc
+		fi
+	fi
 
 	if ${REPOS_CONF_UPGRADE} ; then
 		einfo "Generating repos.conf"

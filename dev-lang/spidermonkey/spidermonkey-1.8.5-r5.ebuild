@@ -13,7 +13,7 @@ TARBALL_PV="$(replace_all_version_separators '' $(get_version_component_range 1-
 MY_P="${MY_PN}-${PV}"
 TARBALL_P="${MY_PN}${TARBALL_PV}-1.0.0"
 DESCRIPTION="Stand-alone JavaScript C library"
-HOMEPAGE="http://www.mozilla.org/js/spidermonkey/"
+HOMEPAGE="https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey"
 SRC_URI="https://ftp.mozilla.org/pub/mozilla.org/js/${TARBALL_P}.tar.gz"
 
 LICENSE="NPL-1.1"
@@ -25,7 +25,7 @@ S="${WORKDIR}/${MY_P}"
 BUILDDIR="${S}/js/src"
 
 RDEPEND=">=dev-libs/nspr-4.7.0
-	sys-libs/readline:0
+	sys-libs/readline:0=
 	x64-macos? ( dev-libs/jemalloc )"
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
@@ -62,9 +62,9 @@ src_prepare() {
 	# https://bugs.gentoo.org/show_bug.cgi?id=439558
 	epatch "${FILESDIR}"/${PN}-1.8.7-x32.patch
 
-	epatch "${FILESDIR}"/${PN}-1.8.5-macroassemblerx86common_cpp-enable_assembler.patch
-
 	if [[ "${CHOST}" =~ "muslx32" ]]; then
+		epatch "${FILESDIR}"/${PN}-1.8.5-macroassemblerx86common_cpp-enable_assembler.patch
+
 		epatch "${FILESDIR}"/${PN}-1.8.5-muslx32.patch
 		sed -i 's|-DENABLE_JIT=1|-DENABLE_JIT=0 -DENABLE_YARR_JIT=0|g' js/src/Makefile.in || die "jit disable fail"
 		sed -i 's|-DENABLE_ASSEMBLER=1|-DENABLE_ASSEMBLER=0|g' js/src/Makefile.in || die "jit disable fail"

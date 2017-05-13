@@ -94,6 +94,10 @@ DEPEND="${RDEPEND}
 "
 
 src_prepare() {
+        if [[ "${CHOST}" =~ "muslx32" ]] ; then
+                ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+        fi
+
 	if [[ ${PV} = 9999* ]]; then
 		eautoreconf
 	fi

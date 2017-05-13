@@ -3,7 +3,8 @@
 
 EAPI=5
 
-inherit eutils
+inherit eutils \
+	autotools flag-o-matic #line added by muslx32 overlay
 
 DESCRIPTION="A set of tools that use the proc filesystem"
 HOMEPAGE="http://psmisc.sourceforge.net/"
@@ -41,6 +42,12 @@ src_prepare() {
 }
 
 src_configure() {
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		append-cppflags -DX86_64
+	fi
+	#2 lines below were added by muslx32 overlay
+	ac_cv_func_malloc_0_nonnull=yes \
+	ac_cv_func_realloc_0_nonnull=yes \
 	econf \
 		$(use_enable selinux) \
 		--disable-harden-flags \

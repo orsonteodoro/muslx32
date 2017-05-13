@@ -65,6 +65,10 @@ REQUIRED_USE="
 S=${WORKDIR}
 
 pkg_setup() {
+        if [[ "${CHOST}" =~ "muslx32" ]] ; then
+                ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+        fi
+
 	python-any-r1_pkg_setup
 }
 

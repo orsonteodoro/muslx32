@@ -43,6 +43,10 @@ pkg_pretend() {
 }
 
 pkg_setup() {
+        if [[ "${CHOST}" =~ "muslx32" ]] ; then
+                ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+        fi
+
 	linux-info_pkg_setup
 	mono-env_pkg_setup
 }
