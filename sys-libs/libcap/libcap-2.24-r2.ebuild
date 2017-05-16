@@ -66,7 +66,7 @@ multilib_src_install() {
 		dopamsecurity '' pam_cap/capability.conf
 		if [[ "${CHOST}" =~ "muslx32" ]] ; then
 			mkdir -p "${ED}"/etc/security/ || die
-			mv "${ED}"/capability.conf "${ED}"/etc/security/ || die
+			cp "${ED}"/capability.conf "${ED}"/etc/security/ || die
 		fi
 	fi
 }
