@@ -109,6 +109,6 @@ clang | Clang 3.7 does work with compiling a hello world program, but it still b
 
 You need the muslx32toolkit below.  It has convenience scripts to build stage3 and stage4 images.  You can build the images using your existing Gentoo installation.  It can fully automate building from crossdev toolchain, to stage 3 image, to stage 4 image, and finally to stage 4 extras.
 
-Building the stage 3/4 image will take around 2 days with the muslx32toolkit which has been cut from the old documented method which took weeks.  You can still follow the old method by just reading the scripts and preforming the steps by hand to understand how to build an image using a cross compiler and cross toolchain infrastructure (i.e. `<crossdev-profile-triplet>-emerge -e system`) for those more interested in how crossdev works.
+Building the stage 3/4 image will take around 2 days [1 day up to stage4, 1 day for stage 4 extras (x11,firefox,etc)] with the muslx32toolkit which has been cut from the old documented method which took weeks.  You can still follow the old method by just reading the scripts and preforming the steps by hand to understand how to build an image using a cross compiler and cross toolchain infrastructure (i.e. `<crossdev-profile-triplet>-emerge -e system`) for those more interested in how crossdev works.
 
 https://github.com/orsonteodoro/muslx32toolkit
