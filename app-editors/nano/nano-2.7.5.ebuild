@@ -29,7 +29,8 @@ RDEPEND="!static? ( ${LIB_DEPEND//\[static-libs(+)]} )"
 DEPEND="${RDEPEND}
 	nls? ( sys-devel/gettext )
 	virtual/pkgconfig
-	static? ( ${LIB_DEPEND} )"
+	static? ( ${LIB_DEPEND} )
+	app-shells/bash" #line added by muslx32 overlay.  bash needs to be reemerged before the nano package.
 
 src_prepare() {
 	if [[ "${CHOST}" =~ "muslx32" ]] ; then
