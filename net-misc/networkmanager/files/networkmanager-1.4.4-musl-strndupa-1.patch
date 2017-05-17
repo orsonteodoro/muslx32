@@ -1,0 +1,31 @@
+diff -urpN NetworkManager-1.4.4.orig/configure.ac NetworkManager-1.4.4/configure.ac
+--- NetworkManager-1.4.4.orig/configure.ac	2017-05-17 20:09:08.285043200 +0000
++++ NetworkManager-1.4.4/configure.ac	2017-05-17 20:33:05.211274517 +0000
+@@ -91,6 +91,7 @@ AC_SUBST(nmrundir, '${runstatedir}'/$PAC
+ 
+ AC_GNU_SOURCE
+ AC_CHECK_FUNCS([__secure_getenv secure_getenv])
++AC_CHECK_DECLS([strndupa])
+ 
+ # Alternative configuration plugins
+ AC_ARG_ENABLE(config-plugin-ibft, AS_HELP_STRING([--enable-config-plugin-ibft], [enable ibft configuration plugin]))
+diff -urpN NetworkManager-1.4.4.orig/src/systemd/src/basic/strndupa.h NetworkManager-1.4.4/src/systemd/src/basic/strndupa.h
+--- NetworkManager-1.4.4.orig/src/systemd/src/basic/strndupa.h	1970-01-01 00:00:00.000000000 +0000
++++ NetworkManager-1.4.4/src/systemd/src/basic/strndupa.h	2017-05-17 20:37:23.861193856 +0000
+@@ -0,0 +1,16 @@
++#pragma once
++
++/**
++ * Reimplementation of glibc strndupa
++ * http://lists.freedesktop.org/archives/systemd-devel/2014-September/023190.html
++ */
++#if !HAVE_DECL_STRNDUPA
++#define strndupa(s, n)						\
++	({							\
++		const char *__old = (s);			\
++		size_t __len = strnlen(__old, (n));		\
++		char *__new = (char *)alloca(__len + 1);	\
++		__new[__len] = '\0';				\
++		(char *)memcpy(__new, __old, __len);		\
++	})
++#endif

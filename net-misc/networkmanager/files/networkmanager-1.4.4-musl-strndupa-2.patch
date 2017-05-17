@@ -1,0 +1,55 @@
+diff -urp NetworkManager-1.4.4.orig/src/systemd/src/basic/in-addr-util.c NetworkManager-1.4.4/src/systemd/src/basic/in-addr-util.c
+--- NetworkManager-1.4.4.orig/src/systemd/src/basic/in-addr-util.c	2016-12-13 09:08:32.000000000 +0000
++++ NetworkManager-1.4.4/src/systemd/src/basic/in-addr-util.c	2017-05-17 20:55:35.867028086 +0000
+@@ -30,6 +30,7 @@
+ #include "in-addr-util.h"
+ #include "macro.h"
+ #include "parse-util.h"
++#include "strndupa.h"
+ #include "util.h"
+ 
+ bool in4_addr_is_null(const struct in_addr *a) {
+diff -urp NetworkManager-1.4.4.orig/src/systemd/src/basic/parse-util.c NetworkManager-1.4.4/src/systemd/src/basic/parse-util.c
+--- NetworkManager-1.4.4.orig/src/systemd/src/basic/parse-util.c	2017-05-17 20:42:10.239170383 +0000
++++ NetworkManager-1.4.4/src/systemd/src/basic/parse-util.c	2017-05-17 20:55:34.489975348 +0000
+@@ -37,6 +37,7 @@
+ #include "parse-util.h"
+ #include "process-util.h"
+ #include "string-util.h"
++#include "strndupa.h"
+ 
+ int parse_boolean(const char *v) {
+         assert(v);
+diff -urp NetworkManager-1.4.4.orig/src/systemd/src/basic/socket-util.c NetworkManager-1.4.4/src/systemd/src/basic/socket-util.c
+--- NetworkManager-1.4.4.orig/src/systemd/src/basic/socket-util.c	2016-12-15 19:38:53.000000000 +0000
++++ NetworkManager-1.4.4/src/systemd/src/basic/socket-util.c	2017-05-17 20:55:32.314892049 +0000
+@@ -45,6 +45,7 @@
+ #include "socket-util.h"
+ #include "string-table.h"
+ #include "string-util.h"
++#include "strndupa.h"
+ #include "strv.h"
+ #include "user-util.h"
+ #include "utf8.h"
+diff -urp NetworkManager-1.4.4.orig/src/systemd/src/basic/time-util.c NetworkManager-1.4.4/src/systemd/src/basic/time-util.c
+--- NetworkManager-1.4.4.orig/src/systemd/src/basic/time-util.c	2016-12-15 19:38:53.000000000 +0000
++++ NetworkManager-1.4.4/src/systemd/src/basic/time-util.c	2017-05-17 20:55:29.482783586 +0000
+@@ -39,6 +39,7 @@
+ #include "parse-util.h"
+ #include "path-util.h"
+ #include "string-util.h"
++#include "strndupa.h"
+ #include "strv.h"
+ #include "time-util.h"
+ 
+diff -urp NetworkManager-1.4.4.orig/src/systemd/src/shared/dns-domain.c NetworkManager-1.4.4/src/systemd/src/shared/dns-domain.c
+--- NetworkManager-1.4.4.orig/src/systemd/src/shared/dns-domain.c	2016-12-15 19:38:53.000000000 +0000
++++ NetworkManager-1.4.4/src/systemd/src/shared/dns-domain.c	2017-05-17 20:55:31.290852830 +0000
+@@ -40,6 +40,7 @@
+ #include "string-util.h"
+ #include "strv.h"
+ #include "utf8.h"
++#include "strndupa.h"
+ 
+ int dns_label_unescape(const char **name, char *dest, size_t sz) {
+         const char *n;

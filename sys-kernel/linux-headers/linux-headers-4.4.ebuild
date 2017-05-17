@@ -30,8 +30,6 @@ src_prepare() {
 	epatch "${FILESDIR}"/libc-4.3-portability.patch
 	if [[ "${CHOST}" =~ "muslx32" ]] ; then
 		epatch "${FILESDIR}/${PN}-4.4-IFNAMSIZ.patch"
-		epatch "${FILESDIR}/libc-compat.h-prevent-redefinition-of-struct-ethhdr.patch" #for networkmanager
-		#sed -i -r -e ':a' -e 'N' -e '$!ba' -e "s|#include <asm/byteorder.h>\n\n|#include <asm/byteorder.h>\n#include <linux/if.h>\n\n|g" /usr/${CROSSDEV_TARGET}/usr/include/linux/if_tunnel.h  #same thing as the patch
 	fi
 }
 
