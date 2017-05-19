@@ -1,0 +1,32 @@
+daddr_t is an unknow type for musl libc
+
+musl-gcc output:
+solaris.c:14:2: error: unknown type name ‘daddr_t’
+
+Replace it with long.
+
+Compiled tested only, please review.
+
+Cc: Christophe Varoqui <christophe varoqui opensvc com>
+Cc: device-mapper development <dm-devel redhat com>
+Signed-off-by: Xose Vazquez Perez <xose vazquez gmail com>
+
+---
+ kpartx/solaris.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--
+diff -urp multipath-tools-0.5.0.orig/kpartx/solaris.c multipath-tools-0.5.0/kpartx/solaris.c
+--- multipath-tools-0.5.0.orig/kpartx/solaris.c	2013-12-17 21:40:41.000000000 +0000
++++ multipath-tools-0.5.0/kpartx/solaris.c	2017-05-19 09:02:23.818948764 +0000
+@@ -11,7 +11,7 @@
+ struct solaris_x86_slice {
+ 	unsigned short	s_tag;		/* ID tag of partition */
+ 	unsigned short	s_flag;		/* permision flags */
+-	daddr_t 	s_start;	/* start sector no of partition */
++	long	 	s_start;	/* start sector no of partition */
+ 	long		s_size;		/* # of blocks in partition */
+ };
+ 
+Only in multipath-tools-0.5.0/kpartx: solaris.c.orig
+Only in multipath-tools-0.5.0/kpartx: solaris.c.rej

@@ -1,0 +1,12 @@
+diff -urp reiserfsprogs-3.6.24.orig/tune/Makefile.am reiserfsprogs-3.6.24/tune/Makefile.am
+--- reiserfsprogs-3.6.24.orig/tune/Makefile.am	2013-08-26 20:55:43.000000000 +0000
++++ reiserfsprogs-3.6.24/tune/Makefile.am	2017-05-19 02:02:16.327822503 +0000
+@@ -8,6 +8,6 @@ EXTRA_DIST = $(man_MANS)
+ LDADD = $(top_builddir)/reiserfscore/libcore.a $(top_builddir)/lib/libmisc.a
+ 
+ install-exec-hook:
+-	$(LN_S) reiserfstune $(DESTDIR)$(sbindir)/tunefs.reiserfs
++	$(LN_S) -f reiserfstune $(DESTDIR)$(sbindir)/tunefs.reiserfs
+ 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
+-	$(LN_S) reiserfstune.8 $(DESTDIR)$(mandir)/man8/tunefs.reiserfs.8
++	$(LN_S) -f reiserfstune.8 $(DESTDIR)$(mandir)/man8/tunefs.reiserfs.8

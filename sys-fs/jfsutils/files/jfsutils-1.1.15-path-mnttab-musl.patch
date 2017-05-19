@@ -1,0 +1,79 @@
+Only in jfsutils-1.1.15/fsck: dirindex.o
+Only in jfsutils-1.1.15/fsck: fsck_message.o
+Only in jfsutils-1.1.15/fsck: fsckbmap.o
+Only in jfsutils-1.1.15/fsck: fsckconn.o
+Only in jfsutils-1.1.15/fsck: fsckdire.o
+Only in jfsutils-1.1.15/fsck: fsckdtre.o
+Only in jfsutils-1.1.15/fsck: fsckea.o
+Only in jfsutils-1.1.15/fsck: fsckimap.o
+Only in jfsutils-1.1.15/fsck: fsckino.o
+Only in jfsutils-1.1.15/fsck: fsckmeta.o
+Only in jfsutils-1.1.15/fsck: fsckpfs.o
+Only in jfsutils-1.1.15/fsck: fsckruns.o
+Only in jfsutils-1.1.15/fsck: fsckwsp.o
+Only in jfsutils-1.1.15/fsck: fsckxtre.o
+Only in jfsutils-1.1.15/fsck: jfs_fsck
+Only in jfsutils-1.1.15/fsck: xchkdsk.o
+Only in jfsutils-1.1.15/fscklog: display.o
+Only in jfsutils-1.1.15/fscklog: extract.o
+Only in jfsutils-1.1.15/fscklog: fscklog.o
+Only in jfsutils-1.1.15/fscklog: jfs_fscklog
+Only in jfsutils-1.1.15/include: compat.h
+Only in jfsutils-1.1.15/libfs: devices.o
+Only in jfsutils-1.1.15/libfs: diskmap.o
+Only in jfsutils-1.1.15/libfs: fsckmsgdef.o
+diff -urp jfsutils-1.1.15.orig/libfs/fssubs.c jfsutils-1.1.15/libfs/fssubs.c
+--- jfsutils-1.1.15.orig/libfs/fssubs.c	2007-08-23 15:49:27.000000000 +0000
++++ jfsutils-1.1.15/libfs/fssubs.c	2017-05-19 02:13:15.069983360 +0000
+@@ -25,6 +25,10 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#ifndef _PATH_MNTTAB
++# define _PATH_MNTTAB "/etc/fstab"
++#endif
++
+ #if HAVE_MNTENT_H
+ #include <mntent.h>
+ #undef HAVE_GETMNTINFO		/* we don't want both */
+Only in jfsutils-1.1.15/libfs: fssubs.o
+Only in jfsutils-1.1.15/libfs: inode.o
+Only in jfsutils-1.1.15/libfs: jfs_endian.o
+Only in jfsutils-1.1.15/libfs: libfs.a
+Only in jfsutils-1.1.15/libfs: log_dump.o
+Only in jfsutils-1.1.15/libfs: log_map.o
+Only in jfsutils-1.1.15/libfs: log_read.o
+Only in jfsutils-1.1.15/libfs: log_work.o
+Only in jfsutils-1.1.15/libfs: logform.o
+Only in jfsutils-1.1.15/libfs: logredo.o
+Only in jfsutils-1.1.15/libfs: message.o
+Only in jfsutils-1.1.15/libfs: open_by_label.o
+Only in jfsutils-1.1.15/libfs: super.o
+Only in jfsutils-1.1.15/libfs: unicode_to_utf8.o
+Only in jfsutils-1.1.15/libfs: uniupr.o
+Only in jfsutils-1.1.15/libfs: utilsubs.o
+Only in jfsutils-1.1.15/logdump: helpers.o
+Only in jfsutils-1.1.15/logdump: jfs_logdump
+Only in jfsutils-1.1.15/logdump: logdump.o
+Only in jfsutils-1.1.15/mkfs: initmap.o
+Only in jfsutils-1.1.15/mkfs: inodemap.o
+Only in jfsutils-1.1.15/mkfs: inodes.o
+Only in jfsutils-1.1.15/mkfs: jfs_mkfs
+Only in jfsutils-1.1.15/mkfs: mkfs.o
+Only in jfsutils-1.1.15/tune: jfs_tune
+Only in jfsutils-1.1.15/tune: super.o
+Only in jfsutils-1.1.15/tune: tune.o
+Only in jfsutils-1.1.15/xpeek: alter.o
+Only in jfsutils-1.1.15/xpeek: directory.o
+Only in jfsutils-1.1.15/xpeek: display.o
+Only in jfsutils-1.1.15/xpeek: dmap.o
+Only in jfsutils-1.1.15/xpeek: fsckcbbl.o
+Only in jfsutils-1.1.15/xpeek: help.o
+Only in jfsutils-1.1.15/xpeek: iag.o
+Only in jfsutils-1.1.15/xpeek: inode.o
+Only in jfsutils-1.1.15/xpeek: io.o
+Only in jfsutils-1.1.15/xpeek: jfs_debugfs
+Only in jfsutils-1.1.15/xpeek: super.o
+Only in jfsutils-1.1.15/xpeek: super2.o
+Only in jfsutils-1.1.15/xpeek: ui.o
+Only in jfsutils-1.1.15/xpeek: xpeek.o

@@ -1,0 +1,439 @@
+source: https://code.foxkit.us/adelie/patches/blob/master/sys-fs/diskdev_cmds/diskdev_cmds-332.14-musl-build-fixes.patch
+Patch for building on musl
+from: A. Wilcox
+
+source: http://lists.busybox.net/pipermail/buildroot/2016-August/169722.html
+added cdefs.h for musl compatibility
+
+--
+
+diff -urp diskdev_cmds-332.14.orig/disklib/dump.h diskdev_cmds-332.14/disklib/dump.h
+--- diskdev_cmds-332.14.orig/disklib/dump.h	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/disklib/dump.h	2017-05-19 12:47:48.453195533 +0000
+@@ -111,7 +111,11 @@ extern int	dev_bshift;	/* log2(dev_bsize
+ extern int	tp_bshift;	/* log2(TP_BSIZE) */
+ 
+ #ifndef __P
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ #endif
+ 
+ /* operator interface functions */
+diff -urp diskdev_cmds-332.14.orig/dump.tproj/unctime.c diskdev_cmds-332.14/dump.tproj/unctime.c
+--- diskdev_cmds-332.14.orig/dump.tproj/unctime.c	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/dump.tproj/unctime.c	2017-05-19 12:47:34.676670700 +0000
+@@ -65,7 +65,11 @@
+ #endif
+ 
+ #ifndef __P
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ #endif
+ 
+ /*
+diff -urp diskdev_cmds-332.14.orig/fdisk.tproj/getrawpartition.c diskdev_cmds-332.14/fdisk.tproj/getrawpartition.c
+--- diskdev_cmds-332.14.orig/fdisk.tproj/getrawpartition.c	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fdisk.tproj/getrawpartition.c	2017-05-19 12:47:46.981139453 +0000
+@@ -59,7 +59,11 @@
+  * POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ #if defined(LIBC_SCCS) && !defined(lint)
+ __RCSID("$NetBSD: getrawpartition.c,v 1.4 1999/07/02 15:49:12 simonb Exp $");
+ #endif
+diff -urp diskdev_cmds-332.14.orig/fdisk.tproj/util.h diskdev_cmds-332.14/fdisk.tproj/util.h
+--- diskdev_cmds-332.14.orig/fdisk.tproj/util.h	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fdisk.tproj/util.h	2017-05-19 12:47:45.925099222 +0000
+@@ -59,7 +59,11 @@
+ #ifndef _UTIL_H_
+ #define _UTIL_H_
+ 
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ #include <sys/types.h>
+ 
+ /*
+Only in diskdev_cmds-332.14/fsck_hfs.tproj: cache.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: BTree.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: BTreeAllocate.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: BTreeMiscOps.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: BTreeNodeOps.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: BTreeScanner.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: BTreeTreeOps.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: BlockCache.o
+diff -urp diskdev_cmds-332.14.orig/fsck_hfs.tproj/dfalib/CatalogCheck.c diskdev_cmds-332.14/fsck_hfs.tproj/dfalib/CatalogCheck.c
+--- diskdev_cmds-332.14.orig/fsck_hfs.tproj/dfalib/CatalogCheck.c	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fsck_hfs.tproj/dfalib/CatalogCheck.c	2017-05-19 12:29:19.484961884 +0000
+@@ -64,7 +64,7 @@ static int  CheckThread_HFS(const HFSCat
+ static void CheckBSDInfo(const HFSPlusCatalogKey * key, const HFSPlusBSDInfo * bsdInfo, int isdir);
+ static int  CheckCatalogName(u_int16_t charCount, const u_int16_t *uniChars,
+                              u_int32_t parentID, Boolean thread);
+-static int  CheckCatalogName_HFS(u_int16_t charCount, const u_char *filename,
++static int  CheckCatalogName_HFS(u_int16_t charCount, const UInt8 *filename,
+                                  u_int32_t parentID, Boolean thread);
+ 
+ static int  RecordBadAllocation(UInt32 parID, unsigned char * filename, UInt32 forkType, UInt32 oldBlkCnt, UInt32 newBlkCnt);
+@@ -951,9 +951,9 @@ CheckCatalogName(u_int16_t charCount, co
+  * if repairable then log the error and create a repair order
+  */
+ static int
+-CheckCatalogName_HFS(u_int16_t charCount, const u_char *filename, u_int32_t parentID, Boolean thread)
++CheckCatalogName_HFS(u_int16_t charCount, const UInt8 *filename, u_int32_t parentID, Boolean thread)
+ {
+-	u_char *			myPtr;
++	UInt8 *			myPtr;
+ 	RepairOrderPtr 		roPtr;
+ 	int					myLength;
+     CatalogName			newName;
+@@ -997,7 +997,7 @@ CheckCatalogName_HFS(u_int16_t charCount
+             if ( roPtr == NULL ) 
+                 return( noErr );
+  
+-            myPtr = (u_char *)&roPtr->name[0];
++            myPtr = (UInt8 *)&roPtr->name[0];
+             *myPtr++ = charCount; // copy in length of old name and bump past it
+             CopyMemory( filename, myPtr, charCount );
+             myPtr += charCount; // bump past old name
+@@ -1030,15 +1030,15 @@ UniqueDotName( 	SGlobPtr GPtr,
+                 Boolean isSingleDotName,
+              	Boolean isHFSPlus )
+ {
+-    u_char				newChar;
++    UInt8				newChar;
+ 	OSErr 				result;
+ 	int					nameLen;
+ 	UInt16				recSize;
+ 	SFCB *				fcbPtr;
+-    u_char *			myPtr;
++    UInt8 *			myPtr;
+ 	CatalogRecord		record;
+     CatalogKey			catKey;
+-    u_char				dotName[] = {'d', 'o', 't', 'd', 'o', 't', 0x0d, 0x00};
++    UInt8				dotName[] = {'d', 'o', 't', 'd', 'o', 't', 0x0d, 0x00};
+ 
+   	fcbPtr = GPtr->calculatedCatalogFCB;
+  
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: CatalogCheck.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: HardLinkCheck.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SAllocate.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SBTree.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SCatalog.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SControl.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SDevice.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SExtents.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SKeyCompare.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SRebuildCatalogBTree.o
+diff -urp diskdev_cmds-332.14.orig/fsck_hfs.tproj/dfalib/SRepair.c diskdev_cmds-332.14/fsck_hfs.tproj/dfalib/SRepair.c
+--- diskdev_cmds-332.14.orig/fsck_hfs.tproj/dfalib/SRepair.c	2017-05-19 12:22:46.317996171 +0000
++++ diskdev_cmds-332.14/fsck_hfs.tproj/dfalib/SRepair.c	2017-05-19 12:29:19.488962036 +0000
+@@ -92,11 +92,11 @@ static 	OSErr 	FindExtentInExtentRec (Bo
+ 
+ /* Functions to copy disk blocks or data buffer to disk */
+ static 	OSErr 	CopyDiskBlocks(SGlobPtr GPtr, const UInt32 startAllocationBlock, const UInt32 blockCount, const UInt32 newStartAllocationBlock );
+-static 	OSErr 	WriteDiskBlocks(SGlobPtr GPtr, UInt32 startBlock, UInt32 blockCount, u_char *buffer, int buflen);
++static 	OSErr 	WriteDiskBlocks(SGlobPtr GPtr, UInt32 startBlock, UInt32 blockCount, UInt8 *buffer, int buflen);
+ 
+ /* Functions to create file and directory by name */
+-static 	OSErr 	CreateFileByName(SGlobPtr GPtr, UInt32 parentID, UInt16 fileType, u_char *fileName, unsigned int filenameLen, u_char *data, unsigned int dataLen);
+-static 	UInt32 	CreateDirByName(SGlob *GPtr , const u_char *dirName, const UInt32 parentID);
++static 	OSErr 	CreateFileByName(SGlobPtr GPtr, UInt32 parentID, UInt16 fileType, UInt8 *fileName, unsigned int filenameLen, UInt8 *data, unsigned int dataLen);
++static 	UInt32 	CreateDirByName(SGlob *GPtr , const UInt8 *dirName, const UInt32 parentID);
+ 
+ static 	int		BuildFolderRec( u_int16_t theMode, UInt32 theObjID, Boolean isHFSPlus, CatalogRecord * theRecPtr );
+ static 	int		BuildThreadRec( CatalogKey * theKeyPtr, CatalogRecord * theRecPtr, Boolean isHFSPlus, Boolean isDirectory );
+@@ -1222,7 +1222,7 @@ FixIllegalNames( SGlobPtr GPtr, RepairOr
+     else
+     {
+         int					myLength;
+-        u_char *			myPtr = (u_char *) oldNamePtr;
++        UInt8 *			myPtr = (UInt8 *) oldNamePtr;
+         myLength = *myPtr; // get length of old name
+         myPtr += (1 + myLength);  // bump past length of old name and old name
+         newNamePtr = (CatalogName *) myPtr;
+@@ -2651,7 +2651,7 @@ static OSErr FixOverlappingExtents(SGlob
+ 	}
+ 
+ 	/* Lookup or create damagedFiles directory */
+-	damagedDirID = CreateDirByName(GPtr, (u_char *)"DamagedFiles", kHFSRootFolderID);
++	damagedDirID = CreateDirByName(GPtr, (UInt8 *)"DamagedFiles", kHFSRootFolderID);
+ 	if (damagedDirID == 0) {
+ 		status |= S_SYMCREATE;
+ #if DEBUG_OVERLAP
+@@ -3012,8 +3012,8 @@ static OSErr CreateCorruptFileSymlink(SG
+ 	}
+ 
+ 	/* Create new file */
+-	err = CreateFileByName (GPtr, targetParentID, fileType, (u_char *)filename, 
+-							filenamelen, (u_char *)data, datalen);
++	err = CreateFileByName (GPtr, targetParentID, fileType, (UInt8 *)filename, 
++							filenamelen, (UInt8 *)data, datalen);
+ 	/* Mask error if file already exists */
+ 	if (err == EEXIST) {
+ 		err = noErr;
+@@ -3544,7 +3544,7 @@ OSErr GetFileNamePathByID(SGlobPtr GPtr,
+ 	struct fsPathString *listHeadPtr = NULL;
+ 	struct fsPathString *listTailPtr = NULL;
+ 	struct fsPathString *curPtr = NULL;
+-	u_char *filename = NULL;
++	UInt8 *filename = NULL;
+ 	size_t namelen;
+ 
+ 	if (!fullPath && !fileName) {
+@@ -3832,13 +3832,13 @@ out:
+  * 	returns zero on success, non-zero on failure.
+  *		memFullErr - Not enough memory
+  */
+-OSErr WriteDiskBlocks(SGlobPtr GPtr, UInt32 startBlock, UInt32 blockCount, u_char *buffer, int bufLen) 
++OSErr WriteDiskBlocks(SGlobPtr GPtr, UInt32 startBlock, UInt32 blockCount, UInt8 *buffer, int bufLen) 
+ {
+ 	OSErr err = noErr;
+ 	int i;
+ 	SVCB *vcb;
+ 	int drive;
+-	u_char *dataBuffer;
++	UInt8 *dataBuffer;
+ 	UInt32 sectorsPerBlock;
+ 	UInt32 sectorsInBuffer;
+ 	UInt32 ioReqCount;
+@@ -3959,7 +3959,7 @@ FixMissingThreadRecords( SGlob *GPtr )
+ 		if ( mtp->thread.parentID == 0 ) {
+ 			char 	myString[32];
+ 			if ( lostAndFoundDirID == 0 )
+-				lostAndFoundDirID = CreateDirByName( GPtr , (u_char *)"lost+found", kHFSRootFolderID);
++				lostAndFoundDirID = CreateDirByName( GPtr , (UInt8 *)"lost+found", kHFSRootFolderID);
+ 			if ( lostAndFoundDirID == 0 ) {
+ 				if ( GPtr->logLevel >= kDebugLog )
+ 					printf( "\tCould not create lost+found directory \n" );
+@@ -4144,7 +4144,7 @@ GetObjectID( CatalogRecord * theRecPtr )
+  *		memFullErr - Not enough memory
+  *		paramErr - Invalid paramter
+  */
+-OSErr CreateFileByName(SGlobPtr GPtr, UInt32 parentID, UInt16 fileType, u_char *fileName, unsigned int filenameLen, u_char *data, unsigned int dataLen)
++OSErr CreateFileByName(SGlobPtr GPtr, UInt32 parentID, UInt16 fileType, UInt8 *fileName, unsigned int filenameLen, UInt8 *data, unsigned int dataLen)
+ {	
+ 	OSErr err = noErr;
+ 	Boolean isHFSPlus;
+@@ -4378,7 +4378,7 @@ out:
+  * 	on failure, zero.
+  *  
+  */
+-UInt32 CreateDirByName(SGlob *GPtr , const u_char *dirName, const UInt32 parentID)
++UInt32 CreateDirByName(SGlob *GPtr , const UInt8 *dirName, const UInt32 parentID)
+ {
+ 	Boolean				isHFSPlus;
+ 	UInt16				recSize;
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SRepair.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SStubs.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SUtils.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SVerify1.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: SVerify2.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: VolumeBitmapCheck.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: hfs_endian.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj/dfalib: libdfa.a
+Only in diskdev_cmds-332.14/fsck_hfs.tproj: fsck_hfs
+diff -urp diskdev_cmds-332.14.orig/fsck_hfs.tproj/fsck_hfs.h diskdev_cmds-332.14/fsck_hfs.tproj/fsck_hfs.h
+--- diskdev_cmds-332.14.orig/fsck_hfs.tproj/fsck_hfs.h	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fsck_hfs.tproj/fsck_hfs.h	2017-05-19 12:47:36.868754210 +0000
+@@ -22,6 +22,11 @@
+  * @APPLE_LICENSE_HEADER_END@
+  */
+ 
++#ifdef __GLIBC__
++#include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ #include "cache.h"
+ 
+ 
+Only in diskdev_cmds-332.14/fsck_hfs.tproj: fsck_hfs.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj: strings.o
+Only in diskdev_cmds-332.14/fsck_hfs.tproj: utilities.o
+diff -urp diskdev_cmds-332.14.orig/fsck_msdos.tproj/boot.c diskdev_cmds-332.14/fsck_msdos.tproj/boot.c
+--- diskdev_cmds-332.14.orig/fsck_msdos.tproj/boot.c	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fsck_msdos.tproj/boot.c	2017-05-19 12:47:42.708976700 +0000
+@@ -54,7 +54,11 @@
+  */
+ 
+ 
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ 
+ #include <stdlib.h>
+ #include <string.h>
+diff -urp diskdev_cmds-332.14.orig/fsck_msdos.tproj/check.c diskdev_cmds-332.14/fsck_msdos.tproj/check.c
+--- diskdev_cmds-332.14.orig/fsck_msdos.tproj/check.c	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fsck_msdos.tproj/check.c	2017-05-19 12:47:41.588934030 +0000
+@@ -54,7 +54,11 @@
+  */
+ 
+ 
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ 
+ #include <stdlib.h>
+ #include <string.h>
+diff -urp diskdev_cmds-332.14.orig/fsck_msdos.tproj/dir.c diskdev_cmds-332.14/fsck_msdos.tproj/dir.c
+--- diskdev_cmds-332.14.orig/fsck_msdos.tproj/dir.c	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fsck_msdos.tproj/dir.c	2017-05-19 12:47:43.782017579 +0000
+@@ -56,7 +56,11 @@
+  */
+ 
+ 
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+diff -urp diskdev_cmds-332.14.orig/fsck_msdos.tproj/fat.c diskdev_cmds-332.14/fsck_msdos.tproj/fat.c
+--- diskdev_cmds-332.14.orig/fsck_msdos.tproj/fat.c	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fsck_msdos.tproj/fat.c	2017-05-19 12:47:38.548818214 +0000
+@@ -54,7 +54,11 @@
+  */
+ 
+ 
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ 
+ #include <stdlib.h>
+ #include <string.h>
+diff -urp diskdev_cmds-332.14.orig/fsck_msdos.tproj/fsutil.c diskdev_cmds-332.14/fsck_msdos.tproj/fsutil.c
+--- diskdev_cmds-332.14.orig/fsck_msdos.tproj/fsutil.c	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fsck_msdos.tproj/fsutil.c	2017-05-19 12:47:39.540856007 +0000
+@@ -54,7 +54,11 @@
+  * SUCH DAMAGE.
+  */
+ 
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ 
+ #include <stdio.h>
+ #include <string.h>
+diff -urp diskdev_cmds-332.14.orig/fsck_msdos.tproj/main.c diskdev_cmds-332.14/fsck_msdos.tproj/main.c
+--- diskdev_cmds-332.14.orig/fsck_msdos.tproj/main.c	2006-02-20 21:45:15.000000000 +0000
++++ diskdev_cmds-332.14/fsck_msdos.tproj/main.c	2017-05-19 12:47:40.532893800 +0000
+@@ -54,7 +54,11 @@
+  */
+ 
+ 
++#ifdef __GLIBC__
+ #include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ 
+ #include <stdlib.h>
+ #include <string.h>
+Only in diskdev_cmds-332.14/include: cdefs.h
+diff -urp diskdev_cmds-332.14.orig/newfs_hfs.tproj/makehfs.c diskdev_cmds-332.14/newfs_hfs.tproj/makehfs.c
+--- diskdev_cmds-332.14.orig/newfs_hfs.tproj/makehfs.c	2017-05-19 12:22:46.632008122 +0000
++++ diskdev_cmds-332.14/newfs_hfs.tproj/makehfs.c	2017-05-19 12:47:33.301618317 +0000
+@@ -32,10 +32,15 @@
+ #include <sys/types.h>
+ #include <sys/time.h>
+ #if LINUX
++#ifdef __GLIBC__
++#include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ #include <time.h>
+ #include "missing.h"
+ #endif
+-#include <sys/errno.h>
++//#include <sys/errno.h>
+ #include <sys/stat.h>
+ #ifdef __GLIBC__
+ #include <sys/sysctl.h>
+Only in diskdev_cmds-332.14/newfs_hfs.tproj: makehfs.c.orig
+Only in diskdev_cmds-332.14/newfs_hfs.tproj: makehfs.c.rej
+Only in diskdev_cmds-332.14/newfs_hfs.tproj: makehfs.o
+diff -urp diskdev_cmds-332.14.orig/newfs_hfs.tproj/newfs_hfs.c diskdev_cmds-332.14/newfs_hfs.tproj/newfs_hfs.c
+--- diskdev_cmds-332.14.orig/newfs_hfs.tproj/newfs_hfs.c	2017-05-19 12:22:45.882979615 +0000
++++ diskdev_cmds-332.14/newfs_hfs.tproj/newfs_hfs.c	2017-05-19 12:47:31.044532331 +0000
+@@ -39,6 +39,11 @@
+ #include <sys/param.h>
+ #include <sys/stat.h>
+ #if LINUX
++#ifdef __GLIBC__
++#include <sys/cdefs.h>
++#else
++#include "cdefs.h"
++#endif
+ #include <time.h>
+ #endif
+ 
+Only in diskdev_cmds-332.14: p.patch
+diff -urNp diskdev_cmds-332.14.orig/include/cdefs.h diskdev_cmds-332.14/include/cdefs.h
+--- diskdev_cmds-332.14.orig/include/cdefs.h	1970-01-01 00:00:00.000000000 +0000
++++ diskdev_cmds-332.14/include/cdefs.h	2017-05-19 12:42:22.234768954 +0000
+@@ -0,0 +1,40 @@
++/* Copyright (C) 2016 Yann E. MORI <yann.morin.1998 at free.fr>
++ *
++ * This file is in the Public Domain.
++ *
++ * For jurisdictions in which the Public Domain does not exist
++ * or it is not otherwise applicable, this file is licensed CC0
++ * (Creative Commons Zero).
++ */
++
++/* This file contains definitions for non-standard macros defined by
++ * glibc, but quite commonly used in packages.
++ *
++ * Because they are non-standard, musl does not define those macros.
++ * It does not provide cdefs.h either.
++ *
++ * This file is a compatibility header written from scratch, to be
++ * installed when the C library is musl.
++ *
++ * Not all macros from the glibc's cdefs.h are available, only the
++ * most commonly used ones.
++ *
++ * Please refer to the glibc documentation and source code for
++ * explanations about those macros.
++ */
++
++#ifndef BUILDROOT_SYS_CDEFS_H
++#define BUILDROOT_SYS_CDEFS_H
++
++#undef __P
++#define __P(arg) arg
++
++#ifdef __cplusplus
++#define __BEGIN_DECLS extern "C" {
++#define __END_DECLS   }
++#else
++#define __BEGIN_DECLS
++#define __END_DECLS
++#endif
++
++#endif /* ifndef BUILDROOT_SYS_CDEFS_H */

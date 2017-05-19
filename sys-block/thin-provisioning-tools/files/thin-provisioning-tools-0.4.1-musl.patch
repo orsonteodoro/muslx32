@@ -1,0 +1,219 @@
+diff -urp thin-provisioning-tools-0.4.1.orig/base/application.cc thin-provisioning-tools-0.4.1/base/application.cc
+--- thin-provisioning-tools-0.4.1.orig/base/application.cc	2014-09-04 10:52:12.000000000 +0000
++++ thin-provisioning-tools-0.4.1/base/application.cc	2017-05-19 07:40:58.087414390 +0000
+@@ -2,6 +2,7 @@
+ 
+ #include <linux/limits.h>
+ #include <string.h>
++#include <libgen.h>
+ 
+ using namespace base;
+ using namespace std;
+Only in thin-provisioning-tools-0.4.1/base: application.d
+Only in thin-provisioning-tools-0.4.1/base: application.o
+Only in thin-provisioning-tools-0.4.1/base: base64.d
+Only in thin-provisioning-tools-0.4.1/base: base64.o
+Only in thin-provisioning-tools-0.4.1/base: endian_utils.d
+Only in thin-provisioning-tools-0.4.1/base: endian_utils.o
+Only in thin-provisioning-tools-0.4.1/base: error_state.d
+Only in thin-provisioning-tools-0.4.1/base: error_state.o
+Only in thin-provisioning-tools-0.4.1/base: progress_monitor.d
+Only in thin-provisioning-tools-0.4.1/base: progress_monitor.o
+Only in thin-provisioning-tools-0.4.1/base: xml_utils.d
+Only in thin-provisioning-tools-0.4.1/base: xml_utils.o
+Only in thin-provisioning-tools-0.4.1/block-cache: block_cache.d
+Only in thin-provisioning-tools-0.4.1/block-cache: block_cache.o
+diff -urp thin-provisioning-tools-0.4.1.orig/caching/cache_check.cc thin-provisioning-tools-0.4.1/caching/cache_check.cc
+--- thin-provisioning-tools-0.4.1.orig/caching/cache_check.cc	2014-09-04 10:52:12.000000000 +0000
++++ thin-provisioning-tools-0.4.1/caching/cache_check.cc	2017-05-19 07:43:38.901567627 +0000
+@@ -202,10 +202,16 @@ namespace {
+ 		int r = ::stat(path.c_str(), &info);
+ 		if (r) {
+ 			ostringstream msg;
+-			char buffer[128], *ptr;
+-
+-			ptr = ::strerror_r(errno, buffer, sizeof(buffer));
+-			msg << path << ": " << ptr;
++			char buffer[128];
++#ifdef STRERROR_R_CHAR_P /* GNU-specific strerror_r */
++                	char *msg = strerror_r(errno, buffer, sizeof(buffer));
++                	if (msg != buffer)
++                        	strncpy(buffer, msg, sizeof(buffer));
++#else /* POSIX strerror_r variant */
++                	if (strerror_r(errno, buffer, sizeof(buffer)))
++                        	*buffer = '\0';
++#endif
++			msg << path << ": " << buffer;
+ 			throw runtime_error(msg.str());
+ 		}
+ 
+Only in thin-provisioning-tools-0.4.1/caching: cache_check.d
+Only in thin-provisioning-tools-0.4.1/caching: cache_check.o
+Only in thin-provisioning-tools-0.4.1/caching: cache_dump.d
+Only in thin-provisioning-tools-0.4.1/caching: cache_dump.o
+Only in thin-provisioning-tools-0.4.1/caching: cache_metadata_size.d
+Only in thin-provisioning-tools-0.4.1/caching: cache_metadata_size.o
+Only in thin-provisioning-tools-0.4.1/caching: cache_repair.d
+Only in thin-provisioning-tools-0.4.1/caching: cache_repair.o
+Only in thin-provisioning-tools-0.4.1/caching: cache_restore.d
+Only in thin-provisioning-tools-0.4.1/caching: cache_restore.o
+Only in thin-provisioning-tools-0.4.1/caching: hint_array.d
+Only in thin-provisioning-tools-0.4.1/caching: hint_array.o
+Only in thin-provisioning-tools-0.4.1/caching: mapping_array.d
+Only in thin-provisioning-tools-0.4.1/caching: mapping_array.o
+Only in thin-provisioning-tools-0.4.1/caching: metadata.d
+Only in thin-provisioning-tools-0.4.1/caching: metadata.o
+Only in thin-provisioning-tools-0.4.1/caching: metadata_dump.d
+Only in thin-provisioning-tools-0.4.1/caching: metadata_dump.o
+Only in thin-provisioning-tools-0.4.1/caching: restore_emitter.d
+Only in thin-provisioning-tools-0.4.1/caching: restore_emitter.o
+Only in thin-provisioning-tools-0.4.1/caching: superblock.d
+Only in thin-provisioning-tools-0.4.1/caching: superblock.o
+Only in thin-provisioning-tools-0.4.1/caching: xml_format.d
+Only in thin-provisioning-tools-0.4.1/caching: xml_format.o
+diff -urp thin-provisioning-tools-0.4.1.orig/configure.ac thin-provisioning-tools-0.4.1/configure.ac
+--- thin-provisioning-tools-0.4.1.orig/configure.ac	2014-09-04 10:52:12.000000000 +0000
++++ thin-provisioning-tools-0.4.1/configure.ac	2017-05-19 07:43:38.902567665 +0000
+@@ -42,6 +42,10 @@ AC_PROG_MAKE_SET
+ AC_PROG_MKDIR_P
+ AC_PROG_INSTALL
+ 
++################################################################
++dnl -- Checks for functions.
++AC_FUNC_STRERROR_R
++
+ ################################################################################
+ dnl -- Prefix is /usr by default, the exec_prefix default is setup later
+ AC_PREFIX_DEFAULT(/usr)
+Only in thin-provisioning-tools-0.4.1/era: era_array.d
+Only in thin-provisioning-tools-0.4.1/era: era_array.o
+diff -urp thin-provisioning-tools-0.4.1.orig/era/era_check.cc thin-provisioning-tools-0.4.1/era/era_check.cc
+--- thin-provisioning-tools-0.4.1.orig/era/era_check.cc	2014-09-04 10:52:12.000000000 +0000
++++ thin-provisioning-tools-0.4.1/era/era_check.cc	2017-05-19 07:43:38.902567665 +0000
+@@ -186,10 +186,16 @@ namespace {
+ 		int r = ::stat(path.c_str(), &info);
+ 		if (r) {
+ 			ostringstream msg;
+-			char buffer[128], *ptr;
+-
+-			ptr = ::strerror_r(errno, buffer, sizeof(buffer));
+-			msg << path << ": " << ptr;
++			char buffer[128];
++#ifdef STRERROR_R_CHAR_P /* GNU-specific strerror_r */
++                        char *msg = strerror_r(errno, buffer, sizeof(buffer));
++                        if (msg != buffer)
++                                strncpy(buffer, msg, sizeof(buffer));
++#else /* POSIX strerror_r variant */
++                        if (strerror_r(errno, buffer, sizeof(buffer)))
++                                *buffer = '\0';
++#endif
++			msg << path << ": " << buffer;
+ 			throw runtime_error(msg.str());
+ 		}
+ 
+Only in thin-provisioning-tools-0.4.1/era: era_check.d
+Only in thin-provisioning-tools-0.4.1/era: era_check.o
+Only in thin-provisioning-tools-0.4.1/era: era_detail.d
+Only in thin-provisioning-tools-0.4.1/era: era_detail.o
+Only in thin-provisioning-tools-0.4.1/era: era_dump.d
+Only in thin-provisioning-tools-0.4.1/era: era_dump.o
+Only in thin-provisioning-tools-0.4.1/era: era_invalidate.d
+Only in thin-provisioning-tools-0.4.1/era: era_invalidate.o
+Only in thin-provisioning-tools-0.4.1/era: era_restore.d
+Only in thin-provisioning-tools-0.4.1/era: era_restore.o
+Only in thin-provisioning-tools-0.4.1/era: metadata.d
+Only in thin-provisioning-tools-0.4.1/era: metadata.o
+Only in thin-provisioning-tools-0.4.1/era: metadata_dump.d
+Only in thin-provisioning-tools-0.4.1/era: metadata_dump.o
+Only in thin-provisioning-tools-0.4.1/era: restore_emitter.d
+Only in thin-provisioning-tools-0.4.1/era: restore_emitter.o
+Only in thin-provisioning-tools-0.4.1/era: superblock.d
+Only in thin-provisioning-tools-0.4.1/era: superblock.o
+Only in thin-provisioning-tools-0.4.1/era: writeset_tree.d
+Only in thin-provisioning-tools-0.4.1/era: writeset_tree.o
+Only in thin-provisioning-tools-0.4.1/era: xml_format.d
+Only in thin-provisioning-tools-0.4.1/era: xml_format.o
+Only in thin-provisioning-tools-0.4.1: main.d
+Only in thin-provisioning-tools-0.4.1: main.o
+diff -urp thin-provisioning-tools-0.4.1.orig/persistent-data/block.tcc thin-provisioning-tools-0.4.1/persistent-data/block.tcc
+--- thin-provisioning-tools-0.4.1.orig/persistent-data/block.tcc	2014-09-04 10:52:12.000000000 +0000
++++ thin-provisioning-tools-0.4.1/persistent-data/block.tcc	2017-05-19 07:43:38.902567665 +0000
+@@ -45,10 +45,17 @@ namespace {
+ 	// to exception.h
+ 	void syscall_failed(char const *call) {
+ 		char buffer[128];
+-		char *msg = strerror_r(errno, buffer, sizeof(buffer));
+ 
++#ifdef STRERROR_R_CHAR_P /* GNU-specific strerror_r */
++		char *msg = strerror_r(errno, buffer, sizeof(buffer));
++		if (msg != buffer)
++			strncpy(buffer, msg, sizeof(buffer));
++#else /* POSIX strerror_r variant */
++		if (strerror_r(errno, buffer, sizeof(buffer)))
++			*buffer = '\0';
++#endif
+ 		ostringstream out;
+-		out << "syscall '" << call << "' failed: " << msg;
++		out << "syscall '" << call << "' failed: " << buffer;
+ 		throw runtime_error(out.str());
+ 	}
+ 
+Only in thin-provisioning-tools-0.4.1/persistent-data: checksum.d
+Only in thin-provisioning-tools-0.4.1/persistent-data: checksum.o
+Only in thin-provisioning-tools-0.4.1/persistent-data/data-structures: bitset.d
+Only in thin-provisioning-tools-0.4.1/persistent-data/data-structures: bitset.o
+Only in thin-provisioning-tools-0.4.1/persistent-data/data-structures: bloom_filter.d
+Only in thin-provisioning-tools-0.4.1/persistent-data/data-structures: bloom_filter.o
+Only in thin-provisioning-tools-0.4.1/persistent-data/data-structures: btree.d
+Only in thin-provisioning-tools-0.4.1/persistent-data/data-structures: btree.o
+Only in thin-provisioning-tools-0.4.1/persistent-data: error_set.d
+Only in thin-provisioning-tools-0.4.1/persistent-data: error_set.o
+Only in thin-provisioning-tools-0.4.1/persistent-data: file_utils.d
+Only in thin-provisioning-tools-0.4.1/persistent-data: file_utils.o
+Only in thin-provisioning-tools-0.4.1/persistent-data: hex_dump.d
+Only in thin-provisioning-tools-0.4.1/persistent-data: hex_dump.o
+Only in thin-provisioning-tools-0.4.1/persistent-data/space-maps: careful_alloc.d
+Only in thin-provisioning-tools-0.4.1/persistent-data/space-maps: careful_alloc.o
+Only in thin-provisioning-tools-0.4.1/persistent-data/space-maps: disk.d
+Only in thin-provisioning-tools-0.4.1/persistent-data/space-maps: disk.o
+Only in thin-provisioning-tools-0.4.1/persistent-data/space-maps: recursive.d
+Only in thin-provisioning-tools-0.4.1/persistent-data/space-maps: recursive.o
+Only in thin-provisioning-tools-0.4.1/persistent-data: space_map.d
+Only in thin-provisioning-tools-0.4.1/persistent-data: space_map.o
+Only in thin-provisioning-tools-0.4.1/persistent-data: transaction_manager.d
+Only in thin-provisioning-tools-0.4.1/persistent-data: transaction_manager.o
+Only in thin-provisioning-tools-0.4.1: t.patch
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: device_tree.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: device_tree.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: human_readable_format.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: human_readable_format.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: mapping_tree.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: mapping_tree.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: metadata.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: metadata.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: metadata_checker.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: metadata_checker.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: metadata_dumper.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: metadata_dumper.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: restore_emitter.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: restore_emitter.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: rmap_visitor.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: rmap_visitor.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: superblock.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: superblock.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_check.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_check.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_delta.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_delta.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_dump.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_dump.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_metadata_size.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_metadata_size.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_pool.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_pool.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_repair.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_repair.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_restore.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_restore.o
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_rmap.d
+Only in thin-provisioning-tools-0.4.1/thin-provisioning: thin_rmap.o
