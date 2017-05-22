@@ -97,7 +97,7 @@ The following major packages has been fixed and emerged but not tested.
 
 package | notes
 --- | ---
-libreoffice | The one from musl overlay is broken and can't be compiled on this toolchain or configuration.
+libreoffice | i found a way to emerge it completely but without some gallery extras.  it still needs testing.
 lxde-meta | a desktop environment
 gparted | a partition manager on desktop environments.  if you use hfs, there may be higher risk of data loss.  dependencies that rely on the hfs use flag and the gparted program need to be checked since patches to dependencies were manually applied.  sys-fs/diskdev_cmds is the package in question if you are worrying about which one I might have screwed up on manually patching.
 tor | anonymous network
