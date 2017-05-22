@@ -99,7 +99,7 @@ package | notes
 --- | ---
 libreoffice | The one from musl overlay is broken and can't be compiled on this toolchain or configuration.
 lxde-meta | a desktop environment
-gparted | a partition manager
+gparted | a partition manager on desktop environments.  if you use hfs, there may be higher risk of data loss.  dependencies and program need to be checked since patches to dependencies were manually applied.
 tor | anonymous network
 privoxy | http proxy caching
 weechat | console irc
@@ -128,7 +128,6 @@ mirage | image viewer for desktop environment
 ntfs3g | for connecting to windows partitions
 thunar | file manager for desktop environment
 apache | web server
-
 
 ### Broken packages
 
