@@ -91,6 +91,15 @@ glxgears from mesa-progs |
 chrony and ntpd work | Chrony needs musl struct timex patched with musl from this overlay.
 alsa | You need to copy _.asound.rc to `/<user>/.asound.rc`
 
+### Buggy
+
+The following are may present bugs after trying to fix assembly optimizations.
+
+package | notes
+--- | ---
+libjpeg-turbo | will crash on some photos and may prevent pictures loading from the app that uses the library
+ffmpeg or firefox | It may not play some YouTube videos completely.  It will play a few seconds then stop.  It's either ffmpeg or Firefox's fault.
+
 ### Needs testing
 
 The following major packages has been fixed and emerged but not tested.
