@@ -27,7 +27,7 @@ x32 is better than x86_64 because of reduced pointer size and reduced virtual sp
 
 ### Disadvantages of the unilib muslx32 platform
 
-No binary exclusive packages work (e.g. spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
+No binary exclusive packages work (e.g. adobe flash, spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
 
 There may be alternatives to these packages.  For example Spotify with premium account allows to access their API.  You may be able to use Spotify with something like Mopidy. 
 
@@ -36,6 +36,10 @@ There may be alternatives to these packages.  For example Spotify with premium a
 Early adopters of 64 bit and older PCs and laptops
 
 Those that enjoy the challenge of fixing bugs especially assembly bugs and those related to musl.
+
+### Who should not use muslx32?
+
+Whenver there is high risk involved.  Some situations like online test taking require flash to work.  Online banking and commerce, you should not use this because the browser Firefox is outdated and hard to fix.
 
 ### Other recommendations
 
@@ -67,7 +71,7 @@ Here are some major packages listed that may be difficult to port but happen to 
 
 package | notes
 --- | ---
-firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.
+firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd.
 strace | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
 gdb | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
 X | Is for the windowing system.  You need to copy 20-nouveau.conf to etc/X11/xorg.conf.d/20-video.conf and edit it especially the Hz and the driver.  This special file loads the proper modules explicitly in the correct order instead of lazy loading them.
@@ -123,6 +127,7 @@ eog | image viewer for desktop environment
 mirage | image viewer for desktop environment
 ntfs3g | for connecting to windows partitions
 thunar | file manager for desktop environment
+apache | web server
 
 
 ### Broken packages
