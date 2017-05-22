@@ -29,6 +29,8 @@ x32 is better than x86_64 because of reduced pointer size and reduced virtual sp
 
 No binary exclusive packages work (e.g. spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
 
+There may be alternatives to these packages.  For example Spotify with premium account allows to access their API.  You may be able to use Spotify with something like Mopidy. 
+
 ### Who should use muslx32?
 
 Early adopters of 64 bit and older PCs and laptops
@@ -60,6 +62,8 @@ Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void 
 #gentoo-muslx32 on freenode
 
 ### Working packages
+
+Here are some major packages listed that may be difficult to port but happen to work.
 
 package | notes
 --- | ---
