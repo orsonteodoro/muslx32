@@ -83,6 +83,44 @@ glxgears from mesa-progs |
 chrony and ntpd work | Chrony needs musl struct timex patched with musl from this overlay.
 alsa | You need to copy _.asound.rc to `/<user>/.asound.rc`
 
+### Needs testing
+
+The following major packages has been fixed and emerged but not tested.
+
+package | notes
+--- | ---
+libreoffice | The one from musl overlay is broken and can't be compiled on this toolchain or configuration.
+lxde-meta | a desktop environment
+gparted | a partition manager
+tor | anonymous network
+privoxy | http proxy caching
+weechat | console irc
+cheese | webcam capture app
+rabbitvcs | git frontend like tortoise git
+xarchiver | gui archiving frontend
+physlock | console locking program
+actkbd | configure custom hotkeys
+cryptsetup | for managing dm-crypt/luks encrypted volumes
+obs-studio | for live streaming on twitch and youtube gaming
+inkscape | for vector drawing
+nginx | web server
+mariadb | sql database server
+php | server side scripting language
+ncftp | ftp client
+audacious | music player for desktop environments
+evince | pdf viewer
+networkmanager | for conveniently connecting to wifi routers
+audacity | wav editor
+vlc | video player
+p7zip | 7zip compression
+wireshark | for debugging networking
+pm-utils | suspending or hibernating computer
+eog | image viewer for desktop environment
+mirage | image viewer for desktop environment
+ntfs3g | for connecting to windows partitions
+thunar | file manager for desktop environment
+
+
 ### Broken packages
 
 (Do not use the ebuild and associated patches from this overlay if broken if you are planning to fix it.  My personal patches may add more complications so do it from scratch again): 
@@ -102,8 +140,8 @@ mono | It is for C#.  The patches from PLD Linux are incomplete.  Details of the
 nodejs | It depends on v8.  v8 doesn't support x32.
 import (from imagematick) | It cannot take a screenshot use imlib2 instead.
 wine | It's broken and never supported x32.  x86 (win32/win16) may never be supported but x86_64 based windows apps may be supported.  Problems and immaturity of musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 assembly instructions and same registers which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produced with the microsoft toolchain.
-libreoffice | The one from musl overlay is broken and can't be compiled on this toolchain or configuration.
 clang | Clang 3.7 does work with compiling a hello world program, but it still broken when used as system-wide compiler.  It failed with a simple program like gnome-calculator.  https://llvm.org/bugs/show_bug.cgi?id=13666 at comment 3 needs to be fixed first.  This ebuild will compile clang to the end even though the bug report says otherwise because we can skip over compiling atomic.c and gcc_personality_v0.c.
+keepass | it requires mono. use keepassx instead.
 
 ### Instructions for creating the muslx32 toolchain
 
