@@ -83,7 +83,6 @@ DEPEND="${COMMON_DEPEND}
 			dev-python/pygobject:3[${PYTHON_USEDEP}]')
 	)
 "
-REQUIRED_USE="elibc_musl? ( abi_x86_x32? ( !introspection ) )"
 
 python_check_deps() {
 	if use test; then
@@ -138,8 +137,6 @@ src_prepare() {
 		epatch "${FILESDIR}"/musl-basic.patch
 		epatch "${FILESDIR}"/musl-dlopen-configure-ac.patch
 		epatch "${FILESDIR}"/musl-network-support.patch
-
-		#epatch "${FILESDIR}"/${PN}-1.4.4-musl.patch
 
 		#adapted from https://bugs.openvz.org/secure/attachment/16804/vzctl_define-func-strndupa.patch
 		epatch "${FILESDIR}"/${PN}-1.4.4-musl-strndupa-1.patch

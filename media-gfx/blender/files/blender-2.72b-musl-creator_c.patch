@@ -1,0 +1,31 @@
+diff -urp blender-2.72b.orig/source/creator/creator.c blender-2.72b/source/creator/creator.c
+--- blender-2.72b.orig/source/creator/creator.c	2017-05-21 07:57:20.396100722 +0000
++++ blender-2.72b/source/creator/creator.c	2017-05-21 08:03:15.934822908 +0000
+@@ -479,7 +479,9 @@ static int set_fpe(int UNUSED(argc), con
+ 	signal(SIGFPE, fpe_handler);
+ 
+ # if defined(__linux__) && defined(__GNUC__)
++#   ifdef __GLIBC__
+ 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
++#   endif
+ # endif /* defined(__linux__) && defined(__GNUC__) */
+ # if defined(OSX_SSE_FPE)
+ 	/* OSX uses SSE for floating point by default, so here 
+@@ -501,6 +503,7 @@ static int set_fpe(int UNUSED(argc), con
+ /* Unix */
+ static void blender_crash_handler_backtrace(FILE *fp)
+ {
++#  if defined(__GLIBC__)
+ #define SIZE 100
+ 	void *buffer[SIZE];
+ 	int nptrs;
+@@ -519,6 +522,7 @@ static void blender_crash_handler_backtr
+ 
+ 	free(strings);
+ #undef SIZE
++#  endif
+ }
+ 
+ #elif defined(_MSC_VER)
+Only in blender-2.72b/source/creator: creator.c.orig
+Only in blender-2.72b/source/creator: creator.c.rej

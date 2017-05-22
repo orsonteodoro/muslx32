@@ -50,7 +50,9 @@ DEPEND="${RDEPEND}
 src_prepare() {
 	default
 	addpredict /dev # Prevent sandbox violations bug #570624
-        epatch "${FILESDIR}"/${PN}-1.8.3-yadif-x32.patch
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+	        epatch "${FILESDIR}"/${PN}-1.8.3-yadif-x32.patch
+	fi
 }
 
 multilib_src_configure() {

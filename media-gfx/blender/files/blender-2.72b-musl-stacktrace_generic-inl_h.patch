@@ -1,0 +1,34 @@
+diff -urp blender-2.72b.orig/extern/libmv/third_party/glog/src/stacktrace_generic-inl.h blender-2.72b/extern/libmv/third_party/glog/src/stacktrace_generic-inl.h
+--- blender-2.72b.orig/extern/libmv/third_party/glog/src/stacktrace_generic-inl.h	2017-05-21 08:45:21.691966324 +0000
++++ blender-2.72b/extern/libmv/third_party/glog/src/stacktrace_generic-inl.h	2017-05-21 08:47:35.220243093 +0000
+@@ -43,6 +43,7 @@ int GetStackTrace(void** result, int max
+   void * stack[kStackLength];
+   int size;
+ 
++#ifdef __GLIBC__
+   size = backtrace(stack, kStackLength);
+   skip_count++;  // we want to skip the current frame as well
+   int result_count = size - skip_count;
+@@ -52,6 +53,9 @@ int GetStackTrace(void** result, int max
+     result_count = max_depth;
+   for (int i = 0; i < result_count; i++)
+     result[i] = stack[i + skip_count];
++#else
++  int result_count = 0;
++#endif
+ 
+   return result_count;
+ }
+diff -urp blender-2.72b.orig/extern/libmv/third_party/glog/src/stacktrace_generic-inl.h blender-2.72b/extern/libmv/third_party/glog/src/stacktrace_generic-inl.h
+--- blender-2.72b.orig/extern/libmv/third_party/glog/src/stacktrace_generic-inl.h	2017-05-21 08:54:13.587924527 +0000
++++ blender-2.72b/extern/libmv/third_party/glog/src/stacktrace_generic-inl.h	2017-05-21 09:01:07.156975509 +0000
+@@ -33,7 +33,9 @@
+ // This can cause a deadlock in HeapProfiler.
++#ifdef __GLIBC__
+ #include <execinfo.h>
++#endif
+ #include <string.h>
+ #include "stacktrace.h"
+ 
+ _START_GOOGLE_NAMESPACE_
+ 

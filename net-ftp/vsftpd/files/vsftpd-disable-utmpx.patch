@@ -1,0 +1,70 @@
+source: http://lists.busybox.net/pipermail/buildroot/2014-September/106257.html
+
+This was modeled after a similar option for Dropbear.
+
+The utmpx code is automatically disabled when compiling with musl,
+to avoid a build error due to WTMPX_FILE being undefined. Note that
+musl has an empty utmpx implementation, so no functionality is lost
+by not calling it.
+
+Signed-off-by: Maarten ter Huurne <maarten at treewalker.org>
+---
+Note that previously the utmpx code was being built, so this patch
+changes the default behavior. I think this is not a problem because
+most systems would not have a valid utmpx file, but it might be worth
+mentioning in the release notes.
+
+ package/vsftpd/Config.in                        | 12 ++++++
+ package/vsftpd/vsftpd-0001-utmpx-builddef.patch | 49 +++++++++++++++++++++++++
+ package/vsftpd/vsftpd.mk                        |  8 ++++
+ 3 files changed, 69 insertions(+)
+ create mode 100644 package/vsftpd/vsftpd-0001-utmpx-builddef.patch
+
+diff --git a/package/vsftpd/Config.in b/package/vsftpd/Config.in
+index 0cc8880..464d6f2 100644
+
+--
+
+diff -urp vsftpd-3.0.2.orig/builddefs.h vsftpd-3.0.2/builddefs.h
+--- vsftpd-3.0.2.orig/builddefs.h	2017-05-20 19:13:56.629971544 +0000
++++ vsftpd-3.0.2/builddefs.h	2017-05-20 19:15:34.986826390 +0000
+@@ -4,6 +4,7 @@
+ #undef VSF_BUILD_TCPWRAPPERS
+ #define VSF_BUILD_PAM
+ #undef VSF_BUILD_SSL
++#define VSF_BUILD_UTMPX
+ 
+ #endif /* VSF_BUILDDEFS_H */
+ 
+Only in vsftpd-3.0.2: package
+diff -urp vsftpd-3.0.2.orig/sysdeputil.c vsftpd-3.0.2/sysdeputil.c
+--- vsftpd-3.0.2.orig/sysdeputil.c	2017-05-20 19:13:56.863980718 +0000
++++ vsftpd-3.0.2/sysdeputil.c	2017-05-20 19:15:34.988826468 +0000
+@@ -1160,7 +1160,7 @@ vsf_sysutil_recv_fd(int sock_fd)
+ 
+ #endif /* !VSF_SYSDEP_NEED_OLD_FD_PASSING */
+ 
+-#ifndef VSF_SYSDEP_HAVE_UTMPX
++#if !defined(VSF_BUILD_UTMPX) || !defined(VSF_SYSDEP_HAVE_UTMPX)
+ 
+ void
+ vsf_insert_uwtmp(const struct mystr* p_user_str,
+@@ -1175,7 +1175,7 @@ vsf_remove_uwtmp(void)
+ {
+ }
+ 
+-#else /* !VSF_SYSDEP_HAVE_UTMPX */
++#else /* !VSF_BUILD_UTMPX || !VSF_SYSDEP_HAVE_UTMPX */
+ 
+ /* IMHO, the pam_unix module REALLY should be doing this in its SM component */
+ /* Statics */
+@@ -1240,7 +1240,7 @@ vsf_remove_uwtmp(void)
+   updwtmpx(WTMPX_FILE, &s_utent);
+ }
+ 
+-#endif /* !VSF_SYSDEP_HAVE_UTMPX */
++#endif /* !VSF_BUILD_UTMPX || !VSF_SYSDEP_HAVE_UTMPX */
+ 
+ void
+ vsf_set_die_if_parent_dies()
+Only in vsftpd-3.0.2: sysdeputil.c.orig

@@ -1,0 +1,14 @@
+diff -urp blender-2.72b.orig/source/creator/creator.c blender-2.72b/source/creator/creator.c
+--- blender-2.72b.orig/source/creator/creator.c	2014-10-21 12:08:11.000000000 +0000
++++ blender-2.72b/source/creator/creator.c	2017-05-21 06:39:03.821843045 +0000
+@@ -50,7 +50,9 @@
+ 
+ /* for backtrace */
+ #if defined(__linux__) || defined(__APPLE__)
+-#  include <execinfo.h>
++#  if defined(__GLIBC__)
++#    include <execinfo.h>
++#  endif
+ #elif defined(_MSV_VER)
+ #  include <DbgHelp.h>
+ #endif

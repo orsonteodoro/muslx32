@@ -294,10 +294,6 @@ pkg_pretend() {
 }
 
 pkg_setup() {
-        if [[ "${CHOST}" =~ "muslx32" ]] ; then
-                ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
-        fi
-
 	java-pkg-opt-2_pkg_setup
 	kde4-base_pkg_setup
 	python-single-r1_pkg_setup
@@ -421,10 +417,6 @@ src_configure() {
 			java_opts+=" --with-rhino-jar=$(java-pkg_getjar rhino-1.6 js.jar)"
 	fi
 
-	if [[ "${CHOST}" =~ "muslx32" ]]; then
-		gallery+=" --without-galleries" #segfault gengal.bin
-	fi
-
 	# system headers/libs/...: enforce using system packages
 	# --enable-cairo: ensure that cairo is always required
 	# --enable-graphite: disabling causes build breakages
@@ -537,6 +529,11 @@ src_compile() {
 
 	local target
 	use test && target="build" || target="build-nocheck"
+
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		#gengal.bin arrows.done workaround
+		sed -i -e "s|export WITH_GALLERY_BUILD=TRUE|export WITH_GALLERY_BUILD=|g" "${S}"/config_host.mk || die
+	fi
 
 	# this is not a proper make script
 	make ${target} || die

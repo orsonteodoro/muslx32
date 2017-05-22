@@ -1,0 +1,122 @@
+source: http://lists.openembedded.org/pipermail/openembedded-core/2015-April/103496.html
+
+From: Mariano Lopez <mariano.lopez at linux.intel.com>
+
+Add autoconf test for detect when build is x32 ABI this enables to
+test into purgatory Makefile to avoid use -mcmodel=large flag in CC.
+
+Add ELFCLASS read and syscall number into kexec, see patch.
+
+[YOCTO #7419]
+
+Signed-off-by: Aníbal Limón <anibal.limon at linux.intel.com>
+Signed-off-by: Mariano Lopez <mariano.lopez at linux.intel.com>
+
+
+x86_64: Add support to build kexec-tools with x32 ABI
+
+Summary of changes,
+
+configure.ac: Add test for detect x32 ABI.
+purgatory/arch/x86_64/Makefile: Not use mcmodel large when
+	x32 ABI is set.
+kexec/arch/x86_64/kexec-elf-rel-x86_64.c: When x32 ABI is set
+	use ELFCLASS32 instead of ELFCLASS64.
+kexec/kexec-syscall.h: Add correct syscall number for x32 ABI.
+
+Upstream-Status: Submitted
+
+Signed-off-by: Aníbal Limón <anibal.limon at linux.intel.com>
+Signed-off-by: Mariano Lopez <mariano.lopez at linux.intel.com>
+
+---
+ configure.ac                             | 9 +++++++++
+ kexec/arch/x86_64/kexec-elf-rel-x86_64.c | 4 ++++
+ kexec/kexec-syscall.h                    | 4 ++++
+ purgatory/arch/x86_64/Makefile           | 4 +++-
+ 4 files changed, 20 insertions(+), 1 deletion(-)
+
+
+--
+
+diff -urp kexec-tools-2.0.4.orig/configure.ac kexec-tools-2.0.4/configure.ac
+--- kexec-tools-2.0.4.orig/configure.ac	2013-03-19 01:44:46.000000000 +0000
++++ kexec-tools-2.0.4/configure.ac	2017-05-22 09:19:19.293694196 +0000
+@@ -8,6 +8,7 @@ AC_INIT(kexec-tools, 2.0.4)
+ AC_CONFIG_AUX_DIR(./config)
+ AC_CONFIG_HEADERS([include/config.h])
+ AC_LANG(C)
++AC_PROG_CC
+ 
+ AC_DEFINE_UNQUOTED(PACKAGE_DATE, "`date '+%d %B %Y'`",
+ 		[Define to the release date of this package])
+@@ -47,6 +48,15 @@ case $target_cpu in
+ 		;;
+ 	ia64|x86_64|alpha )
+ 		ARCH="$target_cpu"
++
++		dnl ---Test for x32 ABI in x86_64
++		if test "x$ARCH" = "xx86_64" ; then
++			AC_EGREP_CPP(x32_test,
++			[#if defined(__x86_64__) && defined (__ILP32__)
++				x32_test
++			#endif
++			], SUBARCH='x32', SUBARCH='64')
++		fi
+ 		;;
+ 	* )
+ 		AC_MSG_ERROR([unsupported architecture $target_cpu])
+@@ -92,9 +102,6 @@ AC_ARG_WITH([booke],
+ 
+ dnl ---Programs
+ dnl To specify a different compiler, just 'export CC=/path/to/compiler'
+-
+-AC_PROG_CC
+-
+ if test "${build}" != "${host}" ; then
+ 	AC_CHECK_PROGS(BUILD_CC, [${build_alias}-gcc ${build}-gcc gcc])
+ else
+Only in kexec-tools-2.0.4: configure.ac.orig
+diff -urp kexec-tools-2.0.4.orig/kexec/arch/x86_64/kexec-elf-rel-x86_64.c kexec-tools-2.0.4/kexec/arch/x86_64/kexec-elf-rel-x86_64.c
+--- kexec-tools-2.0.4.orig/kexec/arch/x86_64/kexec-elf-rel-x86_64.c	2012-06-27 00:16:43.000000000 +0000
++++ kexec-tools-2.0.4/kexec/arch/x86_64/kexec-elf-rel-x86_64.c	2017-05-22 09:19:19.292694157 +0000
+@@ -8,7 +8,11 @@ int machine_verify_elf_rel(struct mem_eh
+ 	if (ehdr->ei_data != ELFDATA2LSB) {
+ 		return 0;
+ 	}
++#ifdef __ILP32__
++	if (ehdr->ei_class != ELFCLASS32) {
++#else
+ 	if (ehdr->ei_class != ELFCLASS64) {
++#endif
+ 		return 0;
+ 	}
+ 	if (ehdr->e_machine != EM_X86_64) {
+diff -urp kexec-tools-2.0.4.orig/kexec/kexec-syscall.h kexec-tools-2.0.4/kexec/kexec-syscall.h
+--- kexec-tools-2.0.4.orig/kexec/kexec-syscall.h	2013-03-05 01:51:39.000000000 +0000
++++ kexec-tools-2.0.4/kexec/kexec-syscall.h	2017-05-22 09:19:19.292694157 +0000
+@@ -31,8 +31,12 @@
+ #define __NR_kexec_load		268
+ #endif
+ #ifdef __x86_64__
++#ifdef __ILP32__
++#define __NR_kexec_load		528
++#else
+ #define __NR_kexec_load		246
+ #endif
++#endif
+ #ifdef __s390x__
+ #define __NR_kexec_load		277
+ #endif
+Only in kexec-tools-2.0.4: meta
+diff -urp kexec-tools-2.0.4.orig/purgatory/arch/x86_64/Makefile kexec-tools-2.0.4/purgatory/arch/x86_64/Makefile
+--- kexec-tools-2.0.4.orig/purgatory/arch/x86_64/Makefile	2012-11-21 00:15:59.000000000 +0000
++++ kexec-tools-2.0.4/purgatory/arch/x86_64/Makefile	2017-05-22 09:19:19.292694157 +0000
+@@ -23,4 +23,6 @@ x86_64_PURGATORY_SRCS += purgatory/arch/
+ x86_64_PURGATORY_SRCS += purgatory/arch/i386/vga.c
+ x86_64_PURGATORY_SRCS += purgatory/arch/i386/pic.c
+ 
+-x86_64_PURGATORY_EXTRA_CFLAGS = -mcmodel=large
++ifeq ($(SUBARCH),64)
++        x86_64_PURGATORY_EXTRA_CFLAGS = -mcmodel=large
++endif

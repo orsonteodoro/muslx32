@@ -35,7 +35,7 @@ src_configure() {
 	gnome2_src_configure --disable-unversioned
 }
 
-src_compile() {
+src_compile() { #function added by muslx32 overlay
 	emake version.h || die
 	gnome2_src_compile
 }
