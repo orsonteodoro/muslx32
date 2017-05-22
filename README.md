@@ -39,7 +39,7 @@ Those that enjoy the challenge of fixing bugs especially assembly bugs and those
 
 ### Who should not use muslx32?
 
-Whenver there is high risk involved.  Some situations like online test taking require flash to work.  Online banking and commerce, you should not use this because the browser Firefox is outdated and hard to fix.
+Whenver there is high risk involved.  Some situations like online test taking require flash to work.  Online banking and commerce or online shopping, you should not use this because the browser Firefox is outdated and hard to fix.
 
 ### Other recommendations
 
