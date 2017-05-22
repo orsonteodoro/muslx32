@@ -71,7 +71,7 @@ Here are some major packages listed that may be difficult to port but happen to 
 
 package | notes
 --- | ---
-firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd.
+firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd or partition with amd64 x86 and firefox updated continously.
 strace | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
 gdb | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
 X | Is for the windowing system.  You need to copy 20-nouveau.conf to etc/X11/xorg.conf.d/20-video.conf and edit it especially the Hz and the driver.  This special file loads the proper modules explicitly in the correct order instead of lazy loading them.
