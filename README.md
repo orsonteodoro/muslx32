@@ -150,6 +150,7 @@ import (from imagematick) | It cannot take a screenshot use imlib2 instead.
 wine | It's broken and never supported x32.  x86 (win32/win16) may never be supported but x86_64 based windows apps may be supported.  Problems and immaturity of musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 assembly instructions and same registers which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produced with the microsoft toolchain.
 clang | Clang 3.7 does work with compiling a hello world program, but it still broken when used as system-wide compiler.  It failed with a simple program like gnome-calculator.  https://llvm.org/bugs/show_bug.cgi?id=13666 at comment 3 needs to be fixed first.  This ebuild will compile clang to the end even though the bug report says otherwise because we can skip over compiling atomic.c and gcc_personality_v0.c.
 keepass | it requires mono. use keepassx instead.
+cinnamon and gnome-light | this is not supported because muslx32 uses edev and cinnamon or gnome-light requires systemd.  you will need to also edit those packages yourself.  use xfce4-meta or lxde-meta as an alternative.
 
 ### Instructions for creating the muslx32 toolchain
 
