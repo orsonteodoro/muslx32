@@ -162,6 +162,10 @@ keepass | it requires mono. use keepassx instead.
 cinnamon and gnome-light | this is not supported because muslx32 uses edev and cinnamon or gnome-light requires systemd.  you will need to also edit those packages yourself.  use xfce4-meta or lxde-meta as an alternative.
 xmonad and ghc | there is no x32 abi ghc so it won't work unless we crosscompile/crossbuild it describe by https://gentoohaskell.wordpress.com/2017/04/15/ghc-as-a-cross-compiler-update/. 
 
+### Notes
+
+sys-kernel/genkernel contains subdir_mount use flag only found in this overlay.  This will allow you to keep both the crossdev toolchain and the crossdev profile on the same partition and keep everything in-place.  Add subdir_mount=/usr/x86_64-pc-linux-muslx32 to your kernel parameters to your bootloader and both root= and real_root= point to your partition (e.g. /dev/sda15).  We keep the crossdev toolchain so we can compile ghc cross compiler and to fix musl just in case.  This also prevents any file transfer human mistakes from the old documentation, which ask you to move everything from the root into a trash folder (`/mnt/<foldername>/trash`) and pull everything from `/mnt/<foldername>/trash/usr/x86_64-pc-linux-muslx32` into the root of the partition /mnt/<foldername>.
+
 ### Instructions for creating the muslx32 toolchain
 
 You need the muslx32toolkit below.  It has convenience scripts to build stage3 and stage4 images.  You can build the images using your existing Gentoo installation.  It can fully automate building from crossdev toolchain, to stage 3 image, to stage 4 image, and finally to stage 4 extras.
