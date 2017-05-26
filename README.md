@@ -160,6 +160,7 @@ wine | It's broken and never supported x32.  x86 (win32/win16) may never be supp
 clang | Clang 3.7 does work with compiling a hello world program, but it still broken when used as system-wide compiler.  It failed with a simple program like gnome-calculator.  https://llvm.org/bugs/show_bug.cgi?id=13666 at comment 3 needs to be fixed first.  This ebuild will compile clang to the end even though the bug report says otherwise because we can skip over compiling atomic.c and gcc_personality_v0.c.
 keepass | it requires mono. use keepassx instead.
 cinnamon and gnome-light | this is not supported because muslx32 uses edev and cinnamon or gnome-light requires systemd.  you will need to also edit those packages yourself.  use xfce4-meta or lxde-meta as an alternative.
+xmonad and ghc | there is no x32 abi ghc so it won't work unless we crosscompile/crossbuild it describe by https://gentoohaskell.wordpress.com/2017/04/15/ghc-as-a-cross-compiler-update/. 
 
 ### Instructions for creating the muslx32 toolchain
 
