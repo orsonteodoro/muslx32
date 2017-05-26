@@ -1,0 +1,50 @@
+diff -urp libidn2-0.16.orig/src/idn2.c libidn2-0.16/src/idn2.c
+--- libidn2-0.16.orig/src/idn2.c	2017-01-14 15:06:09.000000000 +0000
++++ libidn2-0.16/src/idn2.c	2017-05-25 05:45:26.177681051 +0000
+@@ -31,7 +31,11 @@
+ #include <unistr.h>
+ 
+ /* Gnulib headers. */
++#ifdef __GLIBC__
+ #include "error.h"
++#else
++#include <err.h>
++#endif
+ #include "gettext.h"
+ #define _(String) dgettext (PACKAGE, String)
+ #include "progname.h"
+@@ -161,7 +165,11 @@ process_input (char *readbuf, int flags)
+       free (output);
+     }
+   else
++#ifdef __GLIBC__
+     error (EXIT_FAILURE, 0, "%s: %s",
++#else
++    err (EXIT_FAILURE, 0, "%s: %s",
++#endif
+ 	   args_info.register_given ? "register" : "lookup",
+ 	   idn2_strerror (rc));
+ }
+@@ -222,7 +230,11 @@ main (int argc, char *argv[])
+     }
+ 
+   if (ferror (stdin))
++#ifdef __GLIBC__
+     error (EXIT_FAILURE, errno, "%s", _("input error"));
++#else
++    err (EXIT_FAILURE, errno, "%s", _("input error"));
++#endif
+ 
+   cmdline_parser_free (&args_info);
+ 
+diff -urp libidn2-0.16.orig/tr46map.c libidn2-0.16/tr46map.c
+--- libidn2-0.16.orig/tr46map.c	2017-01-14 15:06:09.000000000 +0000
++++ libidn2-0.16/tr46map.c	2017-05-25 05:40:17.303576641 +0000
+@@ -30,6 +30,7 @@
+ #include <stdint.h>
+ #include <stdlib.h>		/* bsearch */
+ #include <string.h>		/* memset */
++#include <sys/types.h>
+ 
+ #include "tr46map_data.c"
+ 

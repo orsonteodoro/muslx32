@@ -1,0 +1,40 @@
+source: https://github.com/openwrt/packages/blob/master/utils/screen/patches/200-musl-compat.patch
+--
+
+diff -urp screen-4.4.0.orig/configure.ac screen-4.4.0/configure.ac
+--- screen-4.4.0.orig/configure.ac	2017-05-26 01:10:33.328700667 +0000
++++ screen-4.4.0/configure.ac	2017-05-26 01:18:27.948111269 +0000
+@@ -202,16 +202,6 @@ AC_EGREP_CPP(yes,
+ #endif
+ ], LIBS="$LIBS -lsocket -linet";seqptx=1)
+ 
+-oldlibs="$LIBS"
+-LIBS="$LIBS -lelf"
+-AC_CHECKING(SVR4)
+-AC_TRY_LINK([#include <utmpx.h>
+-],,
+-[AC_CHECK_HEADER(dwarf.h, AC_DEFINE(SVR4) AC_DEFINE(BUGGYGETLOGIN),
+-[AC_CHECK_HEADER(elf.h, AC_DEFINE(SVR4) AC_DEFINE(BUGGYGETLOGIN))])]
+-,LIBS="$oldlibs")
+-AC_CHECK_HEADERS([stropts.h string.h strings.h])
+-
+ AC_CHECKING(for Solaris 2.x)
+ AC_EGREP_CPP(yes,
+ [#if defined(SVR4) && defined(sun)
+diff -urp screen-4.4.0.orig/utmp.c screen-4.4.0/utmp.c
+--- screen-4.4.0.orig/utmp.c	2016-06-19 19:41:03.000000000 +0000
++++ screen-4.4.0/utmp.c	2017-05-26 01:18:42.891661403 +0000
+@@ -33,12 +33,12 @@
+ #include "config.h"
+ #include "screen.h"
+ #include "extern.h"
++#include "os.h"
+ 
+ #ifdef HAVE_UTEMPTER
+ #include <utempter.h>
+ #endif
+ 
+-
+ extern struct display *display;
+ #ifdef CAREFULUTMP
+ extern struct win *windows;

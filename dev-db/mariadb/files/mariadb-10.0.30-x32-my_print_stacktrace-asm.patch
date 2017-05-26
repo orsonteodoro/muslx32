@@ -1,0 +1,17 @@
+--- mysql.orig/mysys/stacktrace.c	2017-03-06 20:04:33.000000000 +0000
++++ mysql/mysys/stacktrace.c	2017-05-25 17:51:45.514499019 +0000
+@@ -344,12 +344,12 @@ void my_print_stacktrace(uchar* stack_bo
+   LINT_INIT(fp);
+ 
+ 
+-#ifdef __i386__
++#if defined(__i386__) || (defined(__x86_64__) && defined(__ILP32__))
+   __asm __volatile__ ("movl %%ebp,%0"
+ 		      :"=r"(fp)
+ 		      :"r"(fp));
+ #endif
+-#ifdef __x86_64__
++#if defined(__x86_64__) && !defined(__ILP32__)
+   __asm __volatile__ ("movq %%rbp,%0"
+ 		      :"=r"(fp)
+ 		      :"r"(fp));

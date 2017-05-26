@@ -41,8 +41,10 @@ pkg_setup() {
 	DEFAULTS_DIR="${EPREFIX}"/usr/share/X11/app-defaults
 }
 
-src_prepare() {
-	epatch "${FILESDIR}"/${PN}-320-musl.patch
+src_prepare() { #function added by muslx32 overlay
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		epatch "${FILESDIR}"/${PN}-320-musl.patch
+	fi
 }
 
 src_configure() {
@@ -51,7 +53,9 @@ src_configure() {
 	# something sane like pkg-config or ncurses5-config and stops guessing libs
 	# Everything gets linked against ncurses anyways, so don't shout
 	append-libs $(pkg-config --libs ncurses)
-	append-cppflags -D_POSIX_SOURCE
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		append-cppflags -D_POSIX_SOURCE
+	fi
 
 	econf \
 		--libdir="${EPREFIX}"/etc \

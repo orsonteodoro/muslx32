@@ -44,8 +44,6 @@ src_prepare() {
 	cat "${ROOT}"/usr/share/aclocal/pkg.m4 >>"${S}"/aclocal.m4 || die "Could not append pkg.m4"
 	if [[ "${CHOST}" =~ "muslx32" ]] ; then
 		epatch "${FILESDIR}"/0001-fix-compilation-under-musl.patch
-		epatch "${FILESDIR}"/dmraid-1.0.0-unknown-type-daddr_t.patch
-		epatch "${FILESDIR}"/dmraid-1.0.0-unknown-type-dev_t.patch
 	fi
 	epatch_user
 	eautoreconf
