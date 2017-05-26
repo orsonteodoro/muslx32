@@ -164,7 +164,7 @@ xmonad and ghc | there is no x32 abi ghc so it won't work unless we crosscompile
 
 ### Notes
 
-sys-kernel/genkernel contains subdir_mount use flag only found in this overlay.  This will allow you to keep both the crossdev toolchain and the crossdev profile on the same partition and keep everything in-place.  Add subdir_mount=/usr/x86_64-pc-linux-muslx32 to your kernel parameters to your bootloader and both root= and real_root= point to your partition (e.g. /dev/sda15).  We keep the crossdev toolchain so we can compile ghc cross compiler and to fix musl just in case.  This also prevents any file transfer human mistakes from the old documentation, which ask you to move everything from the root into a trash folder (`/mnt/<foldername>/trash`) and pull everything from `/mnt/<foldername>/trash/usr/x86_64-pc-linux-muslx32` into the root of the partition /mnt/<foldername>.
+sys-kernel/genkernel contains subdir_mount use flag and custom patch only found in this overlay.  This will allow you to keep both the crossdev toolchain and the crossdev profile on the same partition and keep everything in-place.  Add subdir_mount=/usr/x86_64-pc-linux-muslx32 to your kernel parameters to your bootloader and both root= and real_root= point to your partition (e.g. /dev/sda15).  We keep the crossdev toolchain so we can compile ghc cross compiler and to fix musl just in case.  This also prevents any file transfer human mistakes from the old documentation, which ask you to move everything from the root into a trash folder (`/mnt/<foldername>/trash`) and pull everything from `/mnt/<foldername>/trash/usr/x86_64-pc-linux-muslx32` into the root of the partition /mnt/<foldername>.
 
 ### Instructions for creating the muslx32 toolchain
 
