@@ -71,25 +71,26 @@ Here are some major packages listed that may be difficult to port but happen to 
 
 package | notes
 --- | ---
-firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd or partition with amd64 x86 and firefox updated continously.
 strace | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
 gdb | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
 X | Is for the windowing system.  You need to copy 20-nouveau.conf to etc/X11/xorg.conf.d/20-video.conf and edit it especially the Hz and the driver.  This special file loads the proper modules explicitly in the correct order instead of lazy loading them.
 wpa_supplicant | Is for WIFI support
-xf86-video-nouveau |
-xf86-video-ati |
+xf86-video-nouveau | Works on Geforce2 MX
+xf86-video-ati | Works if it doesn't pull proprietary drivers such as opencl drivers.
 mplayer | 
 mpd |
-geany |
-dwm |
-xfce4 |
+geany | Programmer's IDE
+dwm | Tiled based window manager.
+xfce4 | Does show desktop.  May possibly not log off first time but it fixes itself.
 aterm | Works only from this overlay
 xfce4-terminal |
-gimp |
-xscreensaver |
-glxgears from mesa-progs |
+gimp | Can draw
+xscreensaver | Opengl screen savers tested working.
+mesa-progs | Provides glxgears to check if opengl is working.
 chrony and ntpd work | Chrony needs musl struct timex patched with musl from this overlay.
 alsa | You need to copy _.asound.rc to `/<user>/.asound.rc`
+gnu screen | Allows to copy and paste and have multiple apps run in each virtual terminal
+links | A terminal web browser
 
 ### Buggy
 
@@ -106,7 +107,6 @@ The following major packages has been fixed and emerged but not tested.
 
 package | notes
 --- | ---
-libreoffice | i found a way to emerge it completely but without some gallery extras.  it still needs testing.
 lxde-meta | a desktop environment
 gparted | a partition manager on desktop environments.  if you use hfs, there may be higher risk of data loss.  dependencies that rely on the hfs use flag and the gparted program need to be checked since patches to dependencies were manually applied.  sys-fs/diskdev_cmds is the package in question if you are worrying about which one I might have screwed up on manually patching.
 tor | anonymous network
@@ -161,6 +161,9 @@ clang | Clang 3.7 does work with compiling a hello world program, but it still b
 keepass | it requires mono. use keepassx instead.
 cinnamon and gnome-light | this is not supported because muslx32 uses edev and cinnamon or gnome-light requires systemd.  you will need to also edit those packages yourself.  use xfce4-meta or lxde-meta as an alternative.
 xmonad and ghc | there is no x32 abi ghc so it won't work unless we crosscompile/crossbuild it describe by https://gentoohaskell.wordpress.com/2017/04/15/ghc-as-a-cross-compiler-update/. 
+firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd or partition with amd64 x86 and firefox updated continously.  Currently broken.  Shows window cannot get on web sites or crashes.
+libreoffice | i found a way to emerge it completely but without some gallery extras.  loads splash but crashes.
+
 
 ### Notes
 
