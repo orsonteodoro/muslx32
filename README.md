@@ -71,26 +71,40 @@ Here are some major packages listed that may be difficult to port but happen to 
 
 package | notes
 --- | ---
-strace | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
-gdb | Is for debugging from this overlay.  It depends on musl from this overlay since bits/user.h is broken in musl.
-X | Is for the windowing system.  You need to copy 20-nouveau.conf to etc/X11/xorg.conf.d/20-video.conf and edit it especially the Hz and the driver.  This special file loads the proper modules explicitly in the correct order instead of lazy loading them.
-wpa_supplicant | Is for WIFI support
+strace | It depends on musl from this overlay since bits/user.h is broken in musl.
+gdb | It depends on musl from this overlay since bits/user.h is broken in musl.
+X | You need to copy configs/20-video.conf from muslx32toolkit to etc/X11/xorg.conf.d/20-video.conf and edit it especially the Hz and the driver.  This special file loads the proper modules explicitly in the correct order instead of lazy loading them.  DRI3 set to 1 breaks opengl so you may need to set it to 0.
+wpa_supplicant | Works as expected.  Untested GUI if any.
 xf86-video-nouveau | Works on Geforce2 MX
-xf86-video-ati | Works if it doesn't pull proprietary drivers such as opencl drivers.
-mplayer | 
-mpd |
-geany | Programmer's IDE
+xf86-video-ati | Works if it doesn't pull proprietary drivers such as opencl (AMDAPP) or AMDGPU(-PRO) drivers.
+mplayer | Works when streaming radio
+mpd | Should work from past experience
+geany | Works showing IDE.
 dwm | Tiled based window manager.
 xfce4 | Does show desktop.  May possibly not log off first time but it fixes itself.
-aterm | Works only from this overlay
-xfce4-terminal |
-gimp | Can draw
+aterm | Works only from this overlay.
+xfce4-terminal | Works as expected.
+gimp | Can draw with basic shapes.
 xscreensaver | Opengl screen savers tested working.
-mesa-progs | Provides glxgears to check if opengl is working.
-chrony and ntpd work | Chrony needs musl struct timex patched with musl from this overlay.
-alsa | You need to copy _.asound.rc to `/<user>/.asound.rc`
+mesa-progs | Glxgears works on working opengl.
+chrony and ntpd | Chrony needs musl struct timex patched with musl from this overlay.
+alsa | You may need to copy _.asound.rc to `/<user>/.asound.rc` to get sound working for Firefox.  It works without .asound.rc with mplayer.
 gnu screen | Allows to copy and paste and have multiple apps run in each virtual terminal
-links | A terminal web browser
+links | Works when downloading and viewing pages
+lxde-meta | Works on load and with menu lanucher
+evince | Works showing pdf
+inkscape | Works when drawing basic shapes.
+wireshark | Works when displaying when opening pcap.  Untested for capturing. 
+audacious | Works when playing mp3
+pidgin | Works with aim
+GPicView | Showed picture without segfault.
+gucharmap | Works showing characters
+PCManFM | Works viewing directory
+vlc | Works when playing video
+keepassx | Works but needs qtcore and qtgui patch applied to properly display folders.
+leafpad | Works on save and load file
+emacs | May be slow loading but it should work.  Tested under chroot but not native.
+vi | It should work.  Tested under chroot but not native.
 
 ### Buggy
 
@@ -100,6 +114,7 @@ package | notes
 --- | ---
 libjpeg-turbo | will crash on some photos and may prevent pictures loading from the app that uses the library like for feh.
 ffmpeg or firefox | It may not play some YouTube videos completely.  It will play a few seconds then stop.  It's either ffmpeg or Firefox's fault.  The debugger said ffmpeg from what I recall.
+audacity | wav editor
 
 ### Needs testing
 
@@ -107,33 +122,20 @@ The following major packages has been fixed and emerged but not tested.
 
 package | notes
 --- | ---
-lxde-meta | a desktop environment
-gparted | a partition manager on desktop environments.  if you use hfs, there may be higher risk of data loss.  dependencies that rely on the hfs use flag and the gparted program need to be checked since patches to dependencies were manually applied.  sys-fs/diskdev_cmds is the package in question if you are worrying about which one I might have screwed up on manually patching.
 tor | anonymous network
 privoxy | http proxy caching
 weechat | console irc
-cheese | webcam capture app
 rabbitvcs | git frontend like tortoise git
 xarchiver | gui archiving frontend
 physlock | console locking program
 actkbd | configure custom hotkeys
 cryptsetup | for managing dm-crypt/luks encrypted volumes
-obs-studio | for live streaming on twitch and youtube gaming
-inkscape | for vector drawing
 nginx | web server
 mariadb | sql database server
 php | server side scripting language
 ncftp | ftp client
-audacious | music player for desktop environments
-evince | pdf viewer
-networkmanager | for conveniently connecting to wifi routers
-audacity | wav editor
-vlc | video player
 p7zip | 7zip compression
-wireshark | for debugging networking
 pm-utils | suspending or hibernating computer
-eog | image viewer for desktop environment
-mirage | image viewer for desktop environment
 ntfs3g | for connecting to windows partitions
 thunar | file manager for desktop environment
 apache | web server
@@ -154,15 +156,21 @@ evdev | Semi broken and quirky; dev permissions need to be manually set or devic
 grub2-install | It doesn't work natively in x32 use lilo.  you can still install grub from amd64 profile or partiton.
 xterm | It works in root but not as user
 mono | It is for C#.  The patches from PLD Linux are incomplete.  Details of the patch can be found on https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html for what needs to be done.  From my previous attempt, the fix is not trivial which PLD would suggest.
-nodejs | It depends on v8.  v8 doesn't support x32.
+nodejs | V8 JavaScript engine, which it is based off of, doesn't support x32.
 import (from imagematick) | It cannot take a screenshot use imlib2 instead.
 wine | It's broken and never supported x32.  x86 (win32/win16) may never be supported but x86_64 based windows apps may be supported.  Problems and immaturity of musl may prevent it be ported to muslx32.  win32 uses x86 calling conventions which make it possibly impossible to support.  x32 uses x86_64 assembly instructions and same registers which makes it easier to port but porting may not go well and limit to programs compiled with the wine toolchain than those produced with the microsoft toolchain.
 clang | Clang 3.7 does work with compiling a hello world program, but it still broken when used as system-wide compiler.  It failed with a simple program like gnome-calculator.  https://llvm.org/bugs/show_bug.cgi?id=13666 at comment 3 needs to be fixed first.  This ebuild will compile clang to the end even though the bug report says otherwise because we can skip over compiling atomic.c and gcc_personality_v0.c.
-keepass | it requires mono. use keepassx instead.
-cinnamon and gnome-light | this is not supported because muslx32 uses edev and cinnamon or gnome-light requires systemd.  you will need to also edit those packages yourself.  use xfce4-meta or lxde-meta as an alternative.
-xmonad and ghc | there is no x32 abi ghc so it won't work unless we crosscompile/crossbuild it describe by https://gentoohaskell.wordpress.com/2017/04/15/ghc-as-a-cross-compiler-update/. 
+keepass | It requires mono.  Use keepassx instead but you may need to convert your key files first.
+cinnamon and gnome-light | This is not supported because muslx32 uses edev and cinnamon or gnome-light requires systemd.  If you decide to emerge it, you will need to also edit those packages yourself to support any musl or x32 bugs.  Use xfce4-meta or lxde-meta as an alternative.
+xmonad and ghc | There is no x32 abi ghc so it won't work unless we crosscompile/crossbuild it describe by https://gentoohaskell.wordpress.com/2017/04/15/ghc-as-a-cross-compiler-update/. 
 firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd or partition with amd64 x86 and firefox updated continously.  Currently broken.  Shows window cannot get on web sites or crashes.
-libreoffice | i found a way to emerge it completely but without some gallery extras.  loads splash but crashes.
+libreoffice | Loads splash but crashes.
+gparted | If you use hfs, there may be higher risk of data loss.  dependencies that rely on the hfs use flag and the gparted program need to be checked since patches to dependencies were manually applied.  sys-fs/diskdev_cmds is the package in question if you are worrying about which one I might have screwed up on manually patching. it shows some partitions on other drives but didn't show all paritions on 2TB drive and some other drives.
+obs-studio | Segfaults on start.
+cheese | It could not detect webcam.  Either the package or library or kernel driver is broken.  It shows limited gui.
+networkmanager | It complains when trying to run daemon.
+eog | Segfaults.  It could be library problem.  Use GPicView instead.
+mirage | Segfaults.  It could be library problem. Use GPicView instead.
 
 
 ### Notes
