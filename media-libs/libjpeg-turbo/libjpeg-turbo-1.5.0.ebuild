@@ -65,7 +65,13 @@ multilib_src_configure() {
 	else
 		myconf+=( --without-java )
 	fi
-	#[[ ${ABI} == "x32" ]] && myconf+=( --without-simd ) #420239
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		if ! use experimental ; then
+			myconf+=( --without-simd )
+		fi
+	else
+		[[ ${ABI} == "x32" ]] && myconf+=( --without-simd ) #420239
+	fi
 
 	# Force /bin/bash until upstream generates a new version. #533902
 	CONFIG_SHELL=/bin/bash \
