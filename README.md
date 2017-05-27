@@ -99,12 +99,14 @@ audacious | Works when playing mp3
 pidgin | Works with aim
 GPicView | Showed picture without segfault.
 gucharmap | Works showing characters
-PCManFM | Works viewing directory
+PCManFM | Works viewing directory.
 vlc | Works when playing video
 keepassx | Works but needs qtcore and qtgui patch applied to properly display folders.
 leafpad | Works on save and load file
 emacs | May be slow loading but it should work.  Tested under chroot but not native.
 vi | It should work.  Tested under chroot but not native.
+blender | Works on quick run.  Not fully tested.
+
 
 ### Buggy
 
