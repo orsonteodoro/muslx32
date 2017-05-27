@@ -1,18 +1,14 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 EAPI=5
-
 inherit eutils qt4-build-multilib
 
 DESCRIPTION="The GUI module for the Qt toolkit"
 SRC_URI+=" https://dev.gentoo.org/~pesa/patches/${PN}-systemtrayicon-plugin-system.patch"
 
-if [[ ${QT4_BUILD_TYPE} == live ]]; then
-	KEYWORDS="alpha arm hppa ia64 ppc ppc64 sparc"
-else
-	KEYWORDS="alpha amd64 arm ~arm64 hppa ia64 ~mips ppc ppc64 sparc x86 ~amd64-fbsd ~x86-fbsd"
+if [[ ${QT4_BUILD_TYPE} == release ]]; then
+	KEYWORDS="alpha amd64 ~arm ~arm64 hppa ~ia64 ~mips ppc ppc64 sparc x86 ~amd64-fbsd ~x86-fbsd"
 fi
 
 IUSE="+accessibility cups egl +glib gtkstyle mng nas nis qt3support tiff trace xinerama +xv"
@@ -71,13 +67,8 @@ PDEPEND="
 PATCHES=(
 	"${DISTDIR}/${PN}-systemtrayicon-plugin-system.patch" # bug 503880
 	"${FILESDIR}/${PN}-4.7.3-cups.patch" # bug 323257
-	"${FILESDIR}/${PN}-4.8.5-cleanlooks-floating-point-exception.patch" # bug 507124
 	"${FILESDIR}/${PN}-4.8.5-disable-gtk-theme-check.patch" # bug 491226
-	"${FILESDIR}/${PN}-4.8.5-dont-crash-on-broken-GIF-images.patch" # bug 508984
 	"${FILESDIR}/${PN}-4.8.5-qclipboard-delay.patch" # bug 514968
-	"${FILESDIR}/${PN}-4.8.5-CVE-2015-0295.patch" # bug 541972
-	"${FILESDIR}/${PN}-4.8.6-CVE-2015-1858.patch" # bug 546174 - also covers CVE-2015-1859
-	"${FILESDIR}/${PN}-4.8.6-CVE-2015-1860.patch" # bug 546174
 )
 
 QT4_TARGET_DIRECTORIES="

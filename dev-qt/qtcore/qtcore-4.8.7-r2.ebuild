@@ -1,21 +1,26 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 EAPI=5
-
 inherit qt4-build-multilib
 
 DESCRIPTION="Cross-platform application development framework"
-KEYWORDS="amd64 arm ~mips ppc x86"
-IUSE="+glib iconv icu qt3support ssl"
+
+if [[ ${QT4_BUILD_TYPE} == release ]]; then
+	KEYWORDS="~alpha amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~sparc ~x86 ~amd64-fbsd ~x86-fbsd"
+fi
+
+IUSE="+glib iconv icu libressl qt3support ssl"
 
 DEPEND="
 	>=sys-libs/zlib-1.2.8-r1[${MULTILIB_USEDEP}]
 	glib? ( dev-libs/glib:2[${MULTILIB_USEDEP}] )
 	iconv? ( >=virtual/libiconv-0-r2[${MULTILIB_USEDEP}] )
 	icu? ( dev-libs/icu:=[${MULTILIB_USEDEP}] )
-	ssl? ( >=dev-libs/openssl-1.0.1h-r2:0[${MULTILIB_USEDEP}] )
+	ssl? (
+		!libressl? ( >=dev-libs/openssl-1.0.1h-r2:0[${MULTILIB_USEDEP}] )
+		libressl? ( dev-libs/libressl:=[${MULTILIB_USEDEP}] )
+	)
 "
 RDEPEND="${DEPEND}"
 PDEPEND="
@@ -29,10 +34,10 @@ MULTILIB_WRAPPED_HEADERS=(
 )
 
 PATCHES=(
-	"${FILESDIR}/${PN}-4.8.5-moc-boost-lexical-cast.patch"
 	"${FILESDIR}/${PN}-4.8.5-honor-ExcludeSocketNotifiers-in-glib-event-loop.patch" # bug 514968
 	"${FILESDIR}/${PN}-4.8.5-qeventdispatcher-recursive.patch" # bug 514968
-	"${FILESDIR}/${PN}-4.8.6-QNAM-corruptions-fix.patch" # bug 548622
+	"${FILESDIR}/${PN}-4.8.6-moc-boost-1.60.patch" # bug 556104
+	"${FILESDIR}/${PN}-4.8.7-libressl.patch" # bug 584796
 	"${FILESDIR}/${PN}-4.8.7-fix-socklent-for-musl.patch"
 )
 

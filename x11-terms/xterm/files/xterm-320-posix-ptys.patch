@@ -1,0 +1,23 @@
+diff -urp xterm-320.orig/main.c xterm-320/main.c
+--- xterm-320.orig/main.c	2017-05-27 05:07:38.027857224 +0000
++++ xterm-320/main.c	2017-05-27 05:08:50.427856065 +0000
+@@ -2628,7 +2628,7 @@ get_pty(int *pty, char *from GCC_UNUSED)
+ 
+ #if defined(USE_OPENPTY)
+     result = openpty(pty, &opened_tty, ttydev, NULL, NULL);
+-#elif defined(HAVE_POSIX_OPENPT) && defined(HAVE_PTSNAME) && defined(HAVE_GRANTPT_PTY_ISATTY)
++#elif defined(HAVE_POSIX_OPENPT) && defined(HAVE_PTSNAME)
+     if ((*pty = posix_openpt(O_RDWR)) >= 0) {
+ 	char *name = ptsname(*pty);
+ 	if (name != 0) {
+@@ -3708,7 +3708,7 @@ spawnXTerm(XtermWidget xw)
+ 	    /*
+ 	     * now in child process
+ 	     */
+-#if defined(_POSIX_SOURCE) || defined(SVR4) || defined(__convex__) || defined(__SCO__) || defined(__QNX__)
++#if defined(_POSIX_VERSION) || defined(SVR4) || defined(__convex__) || defined(__SCO__) || defined(__QNX__)
+ 	    int pgrp = setsid();	/* variable may not be used... */
+ #else
+ 	    int pgrp = getpid();
+Only in xterm-320: main.c.orig
+Only in xterm-320: main.c.rej

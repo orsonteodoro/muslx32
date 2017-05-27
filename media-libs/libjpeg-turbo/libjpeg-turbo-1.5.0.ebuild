@@ -14,7 +14,7 @@ SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz
 LICENSE="BSD IJG"
 SLOT="0"
 KEYWORDS="alpha amd64 arm ~arm64 hppa ia64 ~m68k ~mips ppc ppc64 ~s390 ~sh sparc x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~arm-linux ~x86-linux ~x64-macos ~x86-macos"
-IUSE="java static-libs"
+IUSE="java static-libs experimental"
 
 ASM_DEPEND="|| ( dev-lang/nasm dev-lang/yasm )"
 COMMON_DEPEND="!media-libs/jpeg:0
@@ -35,15 +35,19 @@ MULTILIB_WRAPPED_HEADERS=( /usr/include/jconfig.h )
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-1.2.0-x32.patch #420239
-	"${FILESDIR}"/${PN}-1.5.0-ilp32-registers.patch
-	"${FILESDIR}"/${PN}-1.5.0-x32-pointer.patch
-	"${FILESDIR}"/${PN}-1.5.0-x32-64-bit-putbuffer.patch
-	"${FILESDIR}"/${PN}-1.5.0-x32-32-bit-pointers-1.patch
-	"${FILESDIR}"/${PN}-1.5.0-x32-32-bit-pointers-2.patch
 )
 
 src_prepare() {
 	default
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		if use experimental ; then
+			epatch "${FILESDIR}"/${PN}-1.5.0-ilp32-registers.patch
+			epatch "${FILESDIR}"/${PN}-1.5.0-x32-pointer.patch
+			epatch "${FILESDIR}"/${PN}-1.5.0-x32-64-bit-putbuffer.patch
+			epatch "${FILESDIR}"/${PN}-1.5.0-x32-32-bit-pointers-1.patch
+			epatch "${FILESDIR}"/${PN}-1.5.0-x32-32-bit-pointers-2.patch
+		fi
+	fi
 
 	elibtoolize
 
