@@ -71,6 +71,7 @@ Here are some major packages listed that may be difficult to port but happen to 
 
 package | notes
 --- | ---
+firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd or partition with amd64 x86 and firefox updated continously.
 strace | It depends on musl from this overlay since bits/user.h is broken in musl.
 gdb | It depends on musl from this overlay since bits/user.h is broken in musl.
 X | You need to copy configs/20-video.conf from muslx32toolkit to etc/X11/xorg.conf.d/20-video.conf and edit it especially the Hz and the driver.  This special file loads the proper modules explicitly in the correct order instead of lazy loading them.  DRI3 set to 1 breaks opengl so you may need to set it to 0.
@@ -110,7 +111,7 @@ blender | Works on quick run.  Not fully tested.
 
 ### Buggy
 
-The following are may present bugs after trying to fix assembly optimizations.  Disabling use flags (mmx,sse,sse2) and some patches may fix the problem.
+The following are may present bugs after trying to fix assembly optimizations.  Disabling use flags (mmx,sse,sse2) and some patches may fix the problem.  By default, these fixes are disabled.  You can test them by using the experimental use flag.
 
 package | notes
 --- | ---
@@ -165,7 +166,6 @@ clang | Clang 3.7 does work with compiling a hello world program, but it still b
 keepass | It requires mono.  Use keepassx instead but you may need to convert your key files first.
 cinnamon and gnome-light | This is not supported because muslx32 uses edev and cinnamon or gnome-light requires systemd.  If you decide to emerge it, you will need to also edit those packages yourself to support any musl or x32 bugs.  Use xfce4-meta or lxde-meta as an alternative.
 xmonad and ghc | There is no x32 abi ghc so it won't work unless we crosscompile/crossbuild it describe by https://gentoohaskell.wordpress.com/2017/04/15/ghc-as-a-cross-compiler-update/. 
-firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd or partition with amd64 x86 and firefox updated continously.  Currently broken.  Shows window cannot get on web sites or crashes.
 libreoffice | Loads splash but crashes.
 gparted | If you use hfs, there may be higher risk of data loss.  dependencies that rely on the hfs use flag and the gparted program need to be checked since patches to dependencies were manually applied.  sys-fs/diskdev_cmds is the package in question if you are worrying about which one I might have screwed up on manually patching. it shows some partitions on other drives but didn't show all paritions on 2TB drive and some other drives.
 obs-studio | Segfaults on start.
