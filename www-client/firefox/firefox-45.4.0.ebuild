@@ -43,6 +43,7 @@ KEYWORDS="~alpha amd64 ~arm ~arm64 ~ia64 ppc ppc64 x86 ~amd64-linux ~x86-linux"
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="bindist hardened +hwaccel pgo selinux +gmp-autoupdate test"
+REQUIRED_USE="elibc_musl? ( abi_x86_x32? ( system-libvpx !jit )  )"
 RESTRICT="!bindist? ( bindist )"
 
 # More URIs appended below...
@@ -66,7 +67,6 @@ DEPEND="${RDEPEND}
 		virtual/opengl )
 	x86? ( ${ASM_DEPEND}
 		virtual/opengl )"
-REQUIRED_USE="elibc_musl? ( abi_x86_x32? ( system-libvpx )  )"
 
 # No source releases for alpha|beta
 if [[ ${PV} =~ alpha ]]; then
@@ -135,6 +135,9 @@ src_prepare() {
 	# Allow user to apply any additional patches without modifing ebuild
 	eapply_user
 
+	#fix http2/http1 bug
+	epatch "${FILESDIR}"/curve-ff.patch
+
 	if [[ "${CHOST}" =~ "muslx32" ]] ; then
 		if [[ "${CHOST}" =~ "musl" ]]; then
 			sed -i "s|#include <sys/cdefs.h>|#include <sys/types.h>|g" ./security/sandbox/chromium/sandbox/linux/seccomp-bpf/linux_seccomp.h || die "musl patch failed"
@@ -147,8 +150,13 @@ src_prepare() {
 			epatch "${FILESDIR}"/${PN}-38.8.0-dont-use-amd64-ycbcr-on-x32.patch #2
 			epatch "${FILESDIR}"/${PN}-38.8.0-fix-non-__lp64__-for-x32.patch
 			epatch "${FILESDIR}"/${PN}-34.0-disable-breakpad-on-x32.patch
+				#this indented line below is mutually exclusive to jit set
 				epatch "${FILESDIR}"/${PN}-34.0-no-jit-on-x32.patch #renable
-			epatch "${FILESDIR}"/${PN}-45.2.0-disable-jpegturbo-optimizations-on-x32.patch #works temporary disable
+			if use system-jpeg ; then
+				epatch "${FILESDIR}"/${PN}-45.2.0-enable-jpegturbo-optimizations-on-x32.patch #doesn't work if system-jpeg is disabled
+			else
+				epatch "${FILESDIR}"/${PN}-45.2.0-disable-jpegturbo-optimizations-on-x32.patch #testing
+			fi
 			#epatch "${FILESDIR}"/${PN}-45.2-memory_mapped_file.patch
 			#epatch "${FILESDIR}"/${PN}-45.2.0-linux_syscall_support_h.patch
 			#epatch "${FILESDIR}"/${PN}-45.2.0-elf_core_dump_h.patch
@@ -161,6 +169,7 @@ src_prepare() {
 			epatch "${FILESDIR}"/${PN}-45.2.0-x32-structs64.patch
 			epatch "${FILESDIR}"/${PN}-47.0.1-xpcom-x32.patch
 			epatch "${FILESDIR}"/${PN}-47.0.1-disable-hw-intel-aes.patch
+				#the indented set is trying to fix jit... still broken
 				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-1.patch #enable for punbox64 have punbox64
 				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-2.patch #asmjs padding #required for jit
 
@@ -168,7 +177,7 @@ src_prepare() {
 
 				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-nunbox32-1.patch
 				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-nunbox32-2.patch
-			epatch "${FILESDIR}"/${PN}-45.4.0-event-size-symbol-rename.patch
+			epatch "${FILESDIR}"/${PN}-45.4.0-event-size-symbol-rename.patch #for >=libevent-2.1.8
 		fi
 	fi
 

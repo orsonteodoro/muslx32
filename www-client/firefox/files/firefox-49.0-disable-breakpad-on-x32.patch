@@ -38,15 +38,3 @@ diff -urp firefox-49.0.orig/toolkit/crashreporter/google-breakpad/src/third_part
       defined(__mips__) || defined(__PPC__) || defined(__ARM_EABI__) || \
       defined(__aarch64__)) \
    && (defined(__linux) || defined(__ANDROID__))
-diff -urp firefox-49.0.orig/toolkit/moz.configure firefox-49.0/toolkit/moz.configure
---- firefox-49.0.orig/toolkit/moz.configure	2016-09-05 13:12:56.000000000 -0700
-+++ firefox-49.0/toolkit/moz.configure	2016-09-28 09:24:46.892922357 -0700
-@@ -39,6 +39,8 @@ imply_option('--enable-profiling', jprof
- def sps_profiler(target):
-     if target.os == 'Android':
-         return target.cpu in ('arm', 'x86')
-+    elif target.kernel == 'Linux' and (target.raw_os.endswith("muslx32") or target.raw_os.endswith("gnux32")):
-+        return False
-     elif target.kernel == 'Linux':
-         return target.cpu in ('x86', 'x86_64')
-     return target.os in ('OSX', 'WINNT')

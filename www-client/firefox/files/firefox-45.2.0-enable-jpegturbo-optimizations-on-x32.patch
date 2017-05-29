@@ -10,7 +10,7 @@ diff -ur firefox-45.2.0esr.orig/configure.in firefox-45.2.0esr/configure.in
 -    fi
 +    case "$target" in
 +    *-gnux32 | *-muslx32)
-+      # yasm doesn't support elfx32.
++      LIBJPEG_TURBO_ASFLAGS="-f elfx32 -rnasm -pnasm -D__x86_64__ -DPIC -DELF"
 +      ;;
 +    *)
 +      if $CC -E -dM -</dev/null | grep -q __ELF__; then
