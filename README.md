@@ -129,7 +129,6 @@ package | notes
 --- | ---
 tor | anonymous network
 privoxy | http proxy caching
-weechat | console irc
 rabbitvcs | git frontend like tortoise git
 actkbd | configure custom hotkeys
 cryptsetup | for managing dm-crypt/luks encrypted volumes
@@ -171,8 +170,8 @@ cheese | It could not detect webcam.  Either the package or library or kernel dr
 networkmanager | It complains when trying to run daemon.
 eog | Segfaults.  It could be library problem.  Use GPicView instead.
 mirage | Segfaults.  It could be library problem. Use GPicView instead.
-physlock | runtime problem: physlock: /dev/null/utmp: Not a directory
-
+physlock | Runtime problem: physlock: /dev/null/utmp: Not a directory
+weechat | Connecting to server problem.  Use hexchat instead.  It says: sending data to server: error 9 Bad file descriptor
 
 ### Notes
 
