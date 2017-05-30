@@ -111,7 +111,7 @@ audacity | wav editor
 
 ### Buggy
 
-The following are may present bugs after trying to fix assembly optimizations.  Disabling use flags (mmx,sse,sse2) and some patches may fix the problem.  By default, these fixes are disabled.  You can test them by using the experimental use flag.
+The following are may present bugs after trying to fix assembly optimizations.  Disabling use flags (mmx,sse,sse2) and some patches may fix the problem.  By default, these fixes are disabled.  You can test them by using the experimental use flag.  These packages work okay without problems with the experimental simd fixes disabled.
 
 package | notes
 --- | ---
