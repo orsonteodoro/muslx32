@@ -79,9 +79,26 @@ fi
 pkg_setup() {
         if [[ "${CHOST}" =~ "muslx32" ]] ; then
                 ewarn "this ebuild doesn't work for muslx32.  it is left for ebuild developers to work on it."
-		ewarn "fix 49.0 before fixing 52.1"
-		ewarn "emerge to see if the bug went away"
-		eerror "still needs patching.  tested 20170528. remove eerror and digest to continue"
+		ewarn "reason: segfaults.  fix javascript bug.  fix 49.0 before fixing 52.1."
+		if [[ "${MUSLX32_OVERLAY_DEVELOPER}" != "1" ]] ; then
+			eerror "add MUSLX32_OVERLAY_DEVELOPER=1 to /etc/portage/make.conf to continue emerging broken package."
+			die
+		fi
+#Thread 1 "firefox" received signal SIGSEGV, Segmentation fault.
+#0xe8b65d38 in PseudoStack::push (this=0xffffcfff, aName=0xeede4ed0 "Startup::XRE_Main", aCategory=js::ProfileEntry::Category::OTHER, aStackAddress=0xffffc000, aCopy=false, line=4560)
+#    at /var/tmp/portage/www-client/firefox-52.1.0-r1/work/firefox-52.1.0esr/ff/dist/include/PseudoStack.h:263
+#263	    if (size_t(mStackPointer) >= mozilla::ArrayLength(mStack)) {
+#(gdb) bt
+#0  0xe8b65d38 in PseudoStack::push (this=0xffffcfff, aName=0xeede4ed0 "Startup::XRE_Main", aCategory=js::ProfileEntry::Category::OTHER, aStackAddress=0xffffc000, aCopy=false, line=4560)
+#    at /var/tmp/portage/www-client/firefox-52.1.0-r1/work/firefox-52.1.0esr/ff/dist/include/PseudoStack.h:263
+#1  0xe8b6605b in mozilla_sampler_call_enter (aInfo=0xeede4ed0 "Startup::XRE_Main", aCategory=js::ProfileEntry::Category::OTHER, aFrameAddress=0xffffc000, aCopy=false, line=4560)
+#    at /var/tmp/portage/www-client/firefox-52.1.0-r1/work/firefox-52.1.0esr/ff/dist/include/GeckoProfilerImpl.h:489
+#2  0xe8b65f9a in mozilla::SamplerStackFrameRAII::SamplerStackFrameRAII (this=0xffffc000, aInfo=0xeede4ed0 "Startup::XRE_Main", aCategory=js::ProfileEntry::Category::OTHER, line=4560)
+#    at /var/tmp/portage/www-client/firefox-52.1.0-r1/work/firefox-52.1.0esr/ff/dist/include/GeckoProfilerImpl.h:422
+#3  0xecfd9481 in XREMain::XRE_main (this=0xffffc060, argc=1, argv=0xffffd354, aAppData=0xffffd1f0) at /var/tmp/portage/www-client/firefox-52.1.0-r1/work/firefox-52.1.0esr/toolkit/xre/nsAppRunner.cpp:4559
+#4  0xecfd9a3f in XRE_main (argc=1, argv=0xffffd354, aAppData=0xffffd1f0, aFlags=0) at /var/tmp/portage/www-client/firefox-52.1.0-r1/work/firefox-52.1.0esr/toolkit/xre/nsAppRunner.cpp:4712
+#5  0x56558f1f in do_main (argc=1, argv=0xffffd354, envp=0xffffd35c, xreDirectory=0x56795890) at /var/tmp/portage/www-client/firefox-52.1.0-r1/work/firefox-52.1.0esr/browser/app/nsBrowserApp.cpp:282
+#6  0x5655928f in main (argc=1, argv=0xffffd354, envp=0xffffd35c) at /var/tmp/portage/www-client/firefox-52.1.0-r1/work/firefox-52.1.0esr/browser/app/nsBrowserApp.cpp:415
         fi
 	moz_pkgsetup
 
@@ -232,6 +249,13 @@ src_prepare() {
 			epatch "${FILESDIR}"/${PN}-52.1.0-x32-SYS_getrandom.patch
 			epatch "${FILESDIR}"/${PN}-52.1.0-musl-define-mmap.patch
 			epatch "${FILESDIR}"/${PN}-52.1.0-x32-structs64-2.patch #test ##
+		fi
+
+		if use debug ; then
+			#using use debug will run out of memory for ld
+			#https://bugzilla.mozilla.org/show_bug.cgi?id=1094653
+			append-ldflags -Wl,--reduce-memory-overheads
+			append-ldflags -Wl,--no-keep-memory
 		fi
 	fi
 

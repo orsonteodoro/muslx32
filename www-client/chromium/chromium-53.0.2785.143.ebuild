@@ -158,23 +158,14 @@ For other desktop environments, try one of the following:
 src_unpack() {
         if [[ "${CHOST}" =~ "muslx32" ]] ; then
                 ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+		ewarn "reason: does not load any webpages at all"
+                if [[ "${MUSLX32_OVERLAY_DEVELOPER}" != "1" ]] ; then
+                        eerror "add MUSLX32_OVERLAY_DEVELOPER=1 to /etc/portage/make.conf to continue emerging broken package."
+                        die
+                fi
         fi
 
 	unpack "${A}"
-
-if false; then #prior to code review... old
-	einfo "Downloading working v8 for x32..."
-	#need missing x32 v8 generator files
-	#https://codereview.chromium.org/18014003/#ps51001
-        #https://github.com/fenghaitao/v8/tree/x32
-        EGIT_REPO_URI="https://github.com/fenghaitao/v8.git"
-        #EGIT_BRANCH="x32"
-        EGIT_BRANCH="master"
-	EGIT_CHECKOUT_DIR="${WORKDIR}/${P}/v8-remote"
-        EGIT_COMMIT="7d97a2bf1ad05c58ebf0edabe3832eb9c0c788ef"
-        git-r3_fetch
-        git-r3_checkout
-fi
 }
 
 pkg_pretend() {
@@ -217,33 +208,23 @@ src_prepare() {
 
 	if [[ "${CHOST}" =~ "muslx32" ]]; then
 		append-cppflags -D__SIZEOF_POINTER__=4
-		epatch "${FILESDIR}"/${PN}-51.0.2704.103-musl1.patch
-		epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-1.patch
-		epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-2.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-3.patch #there is no 52.0.2743.116-x32-{2,1}.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-4.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-5.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-6.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-7.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-8.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-9.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-10.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-11.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-12.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-13.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-14.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-15.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-16.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-17.patch
-		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-18.patch
-		epatch "${FILESDIR}"/${PN}-53.0.2785.143-x32-19.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-20.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-21.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-22.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-23.patch
-		#epatch "${FILESDIR}"/${PN}-52.0.2743.116-v8-x32-24.patch
-		#epatch "${FILESDIR}"/${PN}-53.0.2785.143-x32-23.patch
+		epatch "${FILESDIR}"/${PN}-51.0.2704.103-musl1.patch #musl workarounds
+		epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-1.patch #mx32 cflag/ldflag
+		epatch "${FILESDIR}"/${PN}-51.0.2704.103-x32-2.patch #mx32 cflag
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-4.patch #blink_heap.gypi asm
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-9.patch #libjpeg-turbo yasm
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-10.patch #use_seccomp_bpf 1
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-11.patch #libjpeg-turbo
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-12.patch #libjpeg-turbo nosimd
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-13.patch #webrtc
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-14.patch #media_yasm
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-15.patch #libvpx
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-16.patch #libvpx
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-17.patch #openmax_dl
+		epatch "${FILESDIR}"/${PN}-52.0.2743.116-x32-18.patch #libvpx
+		epatch "${FILESDIR}"/${PN}-53.0.2785.143-x32-19.patch #texture_compressor_etc1_sse
 
+		#fixes v8... it uses git bisect to undo broken packages up to 5.3.332.40.  it has passed all the v8 unit tests.
 		epatch "${FILESDIR}"/v8-5.3.332.40.good.patch
 
 		#from alpine linux
@@ -252,34 +233,11 @@ src_prepare() {
 		epatch "${FILESDIR}"/${PN}-53.0.2785.143-x32-wtf-allocator.patch
 	fi
 
-
 	EPATCH_SOURCE="${FILESDIR}/musl" EPATCH_SUFFIX="patch" \
 	EPATCH_MULTI_MSG="Applying musl patches ..." epatch
 
 	EPATCH_SOURCE="${FILESDIR}/musl2" EPATCH_SUFFIX="patch" \
 	EPATCH_MULTI_MSG="Applying musl2 patches ..." epatch
-
-if false; then
-	if [[ "${CHOST}" =~ "muslx32" ]]; then
-		mv v8 v8.old || die "error moving broken x32 v8"
-		mv v8-remote v8 || die "error moving fixed x32 v8"
-		einfo "Finding files that reference new v8..."
-		FILES=$(grep -l -r -e "v8/src/v8.gyp" ./)
-		einfo "Patching files to reference old v8 for x32 support..."
-		for f in $FILES; do
-			einfo "$f patched."
-			sed -i "s|src/v8.gyp|tools/gyp/v8.gyp|g" $f
-		done
-		epatch "${FILESDIR}"/chromium-52.0.2743.116-v8-alt-x32-1.patch
-		epatch "${FILESDIR}"/chromium-52.0.2743.116-v8-alt-x32-2.patch
-		epatch "${FILESDIR}"/chromium-52.0.2743.116-v8-alt-x32-3.patch
-		epatch "${FILESDIR}"/chromium-52.0.2743.116-v8-alt-x32-4.patch
-		#epatch "${FILESDIR}"/chromium-52.0.2743.116-v8-alt-x32-5.patch
-		#epatch "${FILESDIR}"/chromium-52.0.2743.116-v8-alt-x32-6.patch
-		cp -a v8{.old,}/src/third_party/fdlibm || die "copying fdlibm failed"
-		cp -a v8{.old,}/src/third_party/valgrind || die "copying valgrind failed"
-	fi
-fi
 
 	epatch_user
 

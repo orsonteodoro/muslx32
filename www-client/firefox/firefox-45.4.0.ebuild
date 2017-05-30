@@ -179,6 +179,13 @@ src_prepare() {
 				#epatch "${FILESDIR}"/${PN}-45.2.0-jit-x32-nunbox32-2.patch
 			epatch "${FILESDIR}"/${PN}-45.4.0-event-size-symbol-rename.patch #for >=libevent-2.1.8
 		fi
+
+		if use debug ; then
+			#using use debug will run out of memory for ld
+			#https://bugzilla.mozilla.org/show_bug.cgi?id=1094653
+			append-ldflags -Wl,--reduce-memory-overheads
+			append-ldflags -Wl,--no-keep-memory
+		fi
 	fi
 
 	# Enable gnomebreakpad

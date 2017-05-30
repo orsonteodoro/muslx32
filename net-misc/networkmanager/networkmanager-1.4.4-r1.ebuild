@@ -106,6 +106,10 @@ sysfs_deprecated_check() {
 }
 
 pkg_pretend() {
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		ewarn "possibly broken on muslx32"
+		ewarn "reason:  daemon is broken at runtime"
+	fi
 	if use kernel_linux; then
 		get_version
 		if linux_config_exists; then

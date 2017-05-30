@@ -67,6 +67,11 @@ S=${WORKDIR}
 pkg_setup() {
         if [[ "${CHOST}" =~ "muslx32" ]] ; then
                 ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+		ewarn "reason: broken x32 javascript support"
+                if [[ "${MUSLX32_OVERLAY_DEVELOPER}" != "1" ]] ; then
+                        eerror "add MUSLX32_OVERLAY_DEVELOPER=1 to /etc/portage/make.conf to continue emerging broken package."
+                        die
+                fi
         fi
 
 	python-any-r1_pkg_setup

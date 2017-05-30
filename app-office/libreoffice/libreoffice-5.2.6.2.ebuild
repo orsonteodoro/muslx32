@@ -289,6 +289,15 @@ pkg_pretend() {
 }
 
 pkg_setup() {
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		ewarn "broken package"
+		ewarn "reason: shows splash but segfaults at runtime"
+                if [[ "${MUSLX32_OVERLAY_DEVELOPER}" != "1" ]] ; then
+                        eerror "add MUSLX32_OVERLAY_DEVELOPER=1 to /etc/portage/make.conf to continue emerging broken package."
+                        die
+                fi
+	fi
+
 	java-pkg-opt-2_pkg_setup
 	kde4-base_pkg_setup
 	python-single-r1_pkg_setup
