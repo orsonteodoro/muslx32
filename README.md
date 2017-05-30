@@ -108,7 +108,8 @@ emacs | May be slow loading but it should work.  Tested under chroot but not nat
 vi | It should work.  Tested under chroot but not native.
 blender | Works on quick run.  Not fully tested.
 audacity | wav editor
-ncftp | works when connecting to public ftp server and downloading file
+ncftp | Works when connecting to public ftp server and downloading file
+thunar | Works when traversing folders
 
 ### Buggy
 
@@ -138,7 +139,6 @@ php | server side scripting language
 p7zip | 7zip compression
 pm-utils | suspending or hibernating computer
 ntfs3g | for connecting to windows partitions
-thunar | file manager for desktop environment
 apache | web server
 
 ### Broken packages
