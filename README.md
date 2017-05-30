@@ -108,6 +108,7 @@ emacs | May be slow loading but it should work.  Tested under chroot but not nat
 vi | It should work.  Tested under chroot but not native.
 blender | Works on quick run.  Not fully tested.
 audacity | wav editor
+ncftp | works when connecting to public ftp server and downloading file
 
 ### Buggy
 
@@ -134,7 +135,6 @@ cryptsetup | for managing dm-crypt/luks encrypted volumes
 nginx | web server
 mariadb | sql database server
 php | server side scripting language
-ncftp | ftp client
 p7zip | 7zip compression
 pm-utils | suspending or hibernating computer
 ntfs3g | for connecting to windows partitions
