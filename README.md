@@ -110,6 +110,7 @@ blender | Works on quick run.  Not fully tested.
 audacity | wav editor
 ncftp | Works when connecting to public ftp server and downloading file
 thunar | Works when traversing folders
+xarchiver | Works when decompressing zip files
 
 ### Buggy
 
@@ -130,7 +131,6 @@ tor | anonymous network
 privoxy | http proxy caching
 weechat | console irc
 rabbitvcs | git frontend like tortoise git
-xarchiver | gui archiving frontend
 actkbd | configure custom hotkeys
 cryptsetup | for managing dm-crypt/luks encrypted volumes
 nginx | web server
