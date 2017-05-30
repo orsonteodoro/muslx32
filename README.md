@@ -88,7 +88,7 @@ xfce4-terminal | Works as expected.
 gimp | Can draw with basic shapes.
 xscreensaver | Opengl screen savers tested working.
 mesa-progs | Glxgears works on working opengl.
-chrony and ntpd | Chrony needs musl struct timex patched with musl from this overlay.
+chrony and ntpd | Chrony needs musl struct timex patched with musl from this overlay.  don't forget to grab the timezone-data package and set /etc/timezone.
 alsa | You may need to copy _.asound.rc to `/<user>/.asound.rc` to get sound working for Firefox.  It works without .asound.rc with mplayer.
 gnu screen | Allows to copy and paste and have multiple apps run in each virtual terminal
 links | Works when downloading and viewing pages
@@ -107,7 +107,7 @@ leafpad | Works on save and load file
 emacs | May be slow loading but it should work.  Tested under chroot but not native.
 vi | It should work.  Tested under chroot but not native.
 blender | Works on quick run.  Not fully tested.
-
+audacity | wav editor
 
 ### Buggy
 
@@ -117,7 +117,6 @@ package | notes
 --- | ---
 libjpeg-turbo | will crash on some photos and may prevent pictures loading from the app that uses the library like for feh.
 ffmpeg or firefox | It may not play some YouTube videos completely.  It will play a few seconds then stop.  It's either ffmpeg or Firefox's fault.  The debugger said ffmpeg from what I recall.
-audacity | wav editor
 
 ### Needs testing
 
