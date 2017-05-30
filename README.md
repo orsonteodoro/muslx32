@@ -29,7 +29,9 @@ x32 is better than x86_64 because of reduced pointer size and reduced virtual sp
 
 No binary exclusive packages work (e.g. adobe flash, spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
 
-There may be alternatives to these packages.  For example Spotify with premium account allows to access their API.  You may be able to use Spotify with something like Mopidy. 
+There may be alternatives to these packages.  For example Spotify with premium account allows to access their API.  You may be able to use Spotify with something like Mopidy.
+
+For Adobe Flash try using Shumway Firefox addon.  It may or not work for some content.
 
 ### Who should use muslx32?
 
