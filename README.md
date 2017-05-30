@@ -129,7 +129,6 @@ privoxy | http proxy caching
 weechat | console irc
 rabbitvcs | git frontend like tortoise git
 xarchiver | gui archiving frontend
-physlock | console locking program
 actkbd | configure custom hotkeys
 cryptsetup | for managing dm-crypt/luks encrypted volumes
 nginx | web server
@@ -172,6 +171,7 @@ cheese | It could not detect webcam.  Either the package or library or kernel dr
 networkmanager | It complains when trying to run daemon.
 eog | Segfaults.  It could be library problem.  Use GPicView instead.
 mirage | Segfaults.  It could be library problem. Use GPicView instead.
+physlock | runtime problem: physlock: /dev/null/utmp: Not a directory
 
 
 ### Notes
