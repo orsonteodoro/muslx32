@@ -115,7 +115,7 @@ apache | Works on localhost
 php | Shows phpinfo for apache.  php-fpm segfaults with nginx and doesn't show phpinfo()
 phpmyadmin | Shows database tables and rows
 mariadb | Tested with phpmyadmin
-nginx | Shows it works
+nginx | Shows "it works!"
 
 ### Buggy
 
