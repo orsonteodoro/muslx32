@@ -81,7 +81,7 @@ xf86-video-ati | Works if it doesn't pull proprietary drivers such as opencl (AM
 mplayer | Works when streaming radio
 mpd | Should work from past experience
 geany | Works showing IDE.
-dwm | Tiled based window manager.
+dwm and dmenu | Works as expected.  Moving windows to other virtual desktops.  Dmenu loads menu immediate but not functioning at one instance after hours of use and cannot be loaded without killing X.
 xfce4 | Does show desktop.  May possibly not log off first time but it fixes itself.
 aterm | Works only from this overlay.
 xfce4-terminal | Works as expected.
