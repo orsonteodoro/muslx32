@@ -107,7 +107,7 @@ leafpad | Works on save and load file
 emacs | May be slow loading but it should work.  Tested under chroot but not native.
 vi | It should work.  Tested under chroot but not native.
 blender | Works on quick run.  Not fully tested.
-audacity | wav editor
+audacity | Shows interface and plays sound
 ncftp | Works when connecting to public ftp server and downloading file
 thunar | Works when traversing folders
 xarchiver | Works when decompressing zip files
