@@ -111,6 +111,10 @@ audacity | wav editor
 ncftp | Works when connecting to public ftp server and downloading file
 thunar | Works when traversing folders
 xarchiver | Works when decompressing zip files
+apache | Works on localhost
+php | Shows phpinfo
+phpmyadmin | Shows database tables and rows
+mariadb | Tested with phpmyadmin
 
 ### Buggy
 
@@ -133,12 +137,9 @@ rabbitvcs | git frontend like tortoise git
 actkbd | configure custom hotkeys
 cryptsetup | for managing dm-crypt/luks encrypted volumes
 nginx | web server
-mariadb | sql database server
-php | server side scripting language
 p7zip | 7zip compression
 pm-utils | suspending or hibernating computer
 ntfs3g | for connecting to windows partitions
-apache | web server
 
 ### Broken packages
 
