@@ -112,9 +112,10 @@ ncftp | Works when connecting to public ftp server and downloading file
 thunar | Works when traversing folders
 xarchiver | Works when decompressing zip files
 apache | Works on localhost
-php | Shows phpinfo
+php | Shows phpinfo for apache.  php-fpm segfaults with nginx and doesn't show phpinfo()
 phpmyadmin | Shows database tables and rows
 mariadb | Tested with phpmyadmin
+nginx | Shows it works
 
 ### Buggy
 
@@ -136,7 +137,6 @@ privoxy | http proxy caching
 rabbitvcs | git frontend like tortoise git
 actkbd | configure custom hotkeys
 cryptsetup | for managing dm-crypt/luks encrypted volumes
-nginx | web server
 p7zip | 7zip compression
 pm-utils | suspending or hibernating computer
 ntfs3g | for connecting to windows partitions
