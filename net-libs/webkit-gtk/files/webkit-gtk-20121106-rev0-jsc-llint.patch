@@ -1,0 +1,2582 @@
+source: https://bug-99153-attachments.webkit.org/attachment.cgi?id=169626&action=diff&format=raw&headers=1
+submitter: Yuqiang Xian
+bug report: https://bugs.webkit.org/show_bug.cgi?id=99153
+
+--
+
+
+--- Source/JavaScriptCore/llint/LLIntData.cpp	(revision 131899)
++++ Source/JavaScriptCore/llint/LLIntData.cpp	(working copy)
+@@ -107,7 +107,7 @@ void Data::performAssertions(JSGlobalDat
+     ASSERT(MasqueradesAsUndefined == 1);
+     ASSERT(ImplementsHasInstance == 2);
+     ASSERT(ImplementsDefaultHasInstance == 8);
+-#if USE(JSVALUE64)
++#if CPU(X86_64) && !CPU(X32)
+     ASSERT(&globalData.heap.allocatorForObjectWithoutDestructor(JSObject::allocationSize(INLINE_STORAGE_CAPACITY)) - &globalData.heap.firstAllocatorWithoutDestructors() == 1);
+ #else
+     ASSERT(&globalData.heap.allocatorForObjectWithoutDestructor(JSObject::allocationSize(INLINE_STORAGE_CAPACITY)) - &globalData.heap.firstAllocatorWithoutDestructors() == 3);
+--- Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h	(revision 131899)
++++ Source/JavaScriptCore/llint/LLIntOfflineAsmConfig.h	(working copy)
+@@ -37,6 +37,7 @@ 
+ #define OFFLINE_ASM_X86 0
+ #define OFFLINE_ASM_ARMv7 0
+ #define OFFLINE_ASM_X86_64 0
++#define OFFLINE_ASM_X32 0
+ #define OFFLINE_ASM_ARMv7s 0
+ 
+ #else // !ENABLE(LLINT_C_LOOP)
+@@ -61,7 +62,13 @@ 
+ #define OFFLINE_ASM_ARMv7 0
+ #endif
+ 
+-#if CPU(X86_64)
++#if CPU(X86_64) && CPU(X32)
++#define OFFLINE_ASM_X32 1
++#else
++#define OFFLINE_ASM_X32 0
++#endif
++
++#if CPU(X86_64) && !CPU(X32)
+ #define OFFLINE_ASM_X86_64 1
+ #else
+ #define OFFLINE_ASM_X86_64 0
+--- Source/JavaScriptCore/llint/LLIntSlowPaths.h	(revision 131899)
++++ Source/JavaScriptCore/llint/LLIntSlowPaths.h	(working copy)
+@@ -43,22 +43,22 @@ namespace LLInt {
+ // 'extern "C"') needs to be POD; hence putting any constructors into it could cause either compiler
+ // warnings, or worse, a change in the ABI used to return these types.
+ struct SlowPathReturnType {
+-    void* a;
+-    ExecState* b;
++    int64_t a;
++    int64_t b;
+ };
+ 
+ inline SlowPathReturnType encodeResult(void* a, ExecState* b)
+ {
+     SlowPathReturnType result;
+-    result.a = a;
+-    result.b = b;
++    result.a = reinterpret_cast<uintptr_t>(a);
++    result.b = reinterpret_cast<uintptr_t>(b);
+     return result;
+ }
+ 
+ inline void decodeResult(SlowPathReturnType result, void*& a, ExecState*& b)
+ {
+-    a = result.a;
+-    b = result.b;
++    a = reinterpret_cast<void*>(result.a);
++    b = reinterpret_cast<ExecState*>(result.b);
+ }
+ 
+ #else // USE(JSVALUE32_64)
+--- Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	(revision 131899)
++++ Source/JavaScriptCore/llint/LowLevelInterpreter64.asm	(working copy)
+@@ -33,25 +33,41 @@ const ValueUndefined  = TagBitTypeOther 
+ const ValueNull       = TagBitTypeOther
+ 
+ # Utilities.
++macro jumpToInstruction()
++    if X32
++        jmp [PB, PC, 4]
++    else
++        jmp [PB, PC, 8]
++    end
++end
++
+ macro dispatch(advance)
+     addp advance, PC
+-    jmp [PB, PC, 8]
++    jumpToInstruction()
+ end
+ 
+ macro dispatchInt(advance)
+     addi advance, PC
+-    jmp [PB, PC, 8]
++    jumpToInstruction()
++end
++
++macro dispatchIntIndirect(offset)
++    if X32
++        dispatchInt(offset * 4[PB, PC, 4])
++    else
++        dispatchInt(offset * 8[PB, PC, 8])
++    end
+ end
+ 
+ macro dispatchAfterCall()
+     loadi ArgumentCount + TagOffset[cfr], PC
+     loadp CodeBlock[cfr], PB
+     loadp CodeBlock::m_instructions[PB], PB
+-    jmp [PB, PC, 8]
++    jumpToInstruction()
+ end
+ 
+ macro cCall2(function, arg1, arg2)
+-    if X86_64
++    if X86_64 or X32
+         move arg1, t5
+         move arg2, t4
+         call function
+@@ -64,7 +80,7 @@ end
+ 
+ # This barely works. arg3 and arg4 should probably be immediates.
+ macro cCall4(function, arg1, arg2, arg3, arg4)
+-    if X86_64
++    if X86_64 or X32
+         move arg1, t5
+         move arg2, t4
+         move arg3, t1
+@@ -78,7 +94,11 @@ macro cCall4(function, arg1, arg2, arg3,
+ end
+ 
+ macro prepareStateForCCall()
+-    leap [PB, PC, 8], PC
++    if X32
++        leap [PB, PC, 4], PC
++    else
++        leap [PB, PC, 8], PC
++    end
+     move PB, t3
+ end
+ 
+@@ -87,7 +107,11 @@ macro restoreStateAfterCCall()
+     move t1, cfr
+     move t3, PB
+     subp PB, PC
+-    urshiftp 3, PC
++    if X32
++        urshiftp 2, PC
++    else
++        urshiftp 3, PC
++    end
+ end
+ 
+ macro callSlowPath(slowPath)
+@@ -137,24 +161,24 @@ end
+ # Index and value must be different registers. Index may be clobbered.
+ macro loadConstantOrVariable(index, value)
+     bpgteq index, FirstConstantRegisterIndex, .constant
+-    loadp [cfr, index, 8], value
++    loadq [cfr, index, 8], value
+     jmp .done
+ .constant:
+     loadp CodeBlock[cfr], value
+     loadp CodeBlock::m_constantRegisters + VectorBufferOffset[value], value
+     subp FirstConstantRegisterIndex, index
+-    loadp [value, index, 8], value
++    loadq [value, index, 8], value
+ .done:
+ end
+ 
+ macro loadConstantOrVariableInt32(index, value, slow)
+     loadConstantOrVariable(index, value)
+-    bpb value, tagTypeNumber, slow
++    bqb value, tagTypeNumber, slow
+ end
+ 
+ macro loadConstantOrVariableCell(index, value, slow)
+     loadConstantOrVariable(index, value)
+-    btpnz value, tagMask, slow
++    btqnz value, tagMask, slow
+ end
+ 
+ macro writeBarrier(value)
+@@ -163,7 +187,7 @@ end
+ 
+ macro valueProfile(value, profile)
+     if VALUE_PROFILER
+-        storep value, ValueProfile::m_buckets[profile]
++        storeq value, ValueProfile::m_buckets[profile]
+     end
+ end
+ 
+@@ -200,7 +224,7 @@ _llint_op_enter:
+     move ValueUndefined, t0
+ .opEnterLoop:
+     subi 1, t2
+-    storep t0, [cfr, t2, 8]
++    storeq t0, [cfr, t2, 8]
+     btinz t2, .opEnterLoop
+ .opEnterDone:
+     dispatch(1)
+@@ -208,8 +232,8 @@ _llint_op_enter:
+ 
+ _llint_op_create_activation:
+     traceExecution()
+-    loadis 8[PB, PC, 8], t0
+-    bpneq [cfr, t0, 8], ValueEmpty, .opCreateActivationDone
++    loadisFromInstruction(1, t0)
++    bqneq [cfr, t0, 8], ValueEmpty, .opCreateActivationDone
+     callSlowPath(_llint_slow_path_create_activation)
+ .opCreateActivationDone:
+     dispatch(2)
+@@ -217,15 +241,15 @@ _llint_op_create_activation:
+ 
+ _llint_op_init_lazy_reg:
+     traceExecution()
+-    loadis 8[PB, PC, 8], t0
+-    storep ValueEmpty, [cfr, t0, 8]
++    loadisFromInstruction(1, t0)
++    storeq ValueEmpty, [cfr, t0, 8]
+     dispatch(2)
+ 
+ 
+ _llint_op_create_arguments:
+     traceExecution()
+-    loadis 8[PB, PC, 8], t0
+-    bpneq [cfr, t0, 8], ValueEmpty, .opCreateArgumentsDone
++    loadisFromInstruction(1, t0)
++    bqneq [cfr, t0, 8], ValueEmpty, .opCreateArgumentsDone
+     callSlowPath(_llint_slow_path_create_arguments)
+ .opCreateArgumentsDone:
+     dispatch(2)
+@@ -237,8 +261,8 @@ _llint_op_create_this:
+     loadp JSFunction::m_cachedInheritorID[t0], t2
+     btpz t2, .opCreateThisSlow
+     allocateBasicJSObject(JSFinalObjectSizeClassIndex, t2, t0, t1, t3, .opCreateThisSlow)
+-    loadis 8[PB, PC, 8], t1
+-    storep t0, [cfr, t1, 8]
++    loadisFromInstruction(1, t1)
++    storeq t0, [cfr, t1, 8]
+     dispatch(2)
+ 
+ .opCreateThisSlow:
+@@ -248,12 +272,12 @@ _llint_op_create_this:
+ 
+ _llint_op_convert_this:
+     traceExecution()
+-    loadis 8[PB, PC, 8], t0
+-    loadp [cfr, t0, 8], t0
+-    btpnz t0, tagMask, .opConvertThisSlow
++    loadisFromInstruction(1, t0)
++    loadq [cfr, t0, 8], t0
++    btqnz t0, tagMask, .opConvertThisSlow
+     loadp JSCell::m_structure[t0], t0
+     bbb Structure::m_typeInfo + TypeInfo::m_type[t0], ObjectType, .opConvertThisSlow
+-    loadp 16[PB, PC, 8], t1
++    loadpFromInstruction(2, t1)
+     valueProfile(t0, t1)
+     dispatch(3)
+ 
+@@ -268,8 +292,8 @@ _llint_op_new_object:
+     loadp CodeBlock::m_globalObject[t0], t0
+     loadp JSGlobalObject::m_emptyObjectStructure[t0], t1
+     allocateBasicJSObject(JSFinalObjectSizeClassIndex, t1, t0, t2, t3, .opNewObjectSlow)
+-    loadis 8[PB, PC, 8], t1
+-    storep t0, [cfr, t1, 8]
++    loadisFromInstruction(1, t1)
++    storeq t0, [cfr, t1, 8]
+     dispatch(2)
+ 
+ .opNewObjectSlow:
+@@ -279,22 +303,22 @@ _llint_op_new_object:
+ 
+ _llint_op_mov:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t1
+-    loadis 8[PB, PC, 8], t0
++    loadisFromInstruction(2, t1)
++    loadisFromInstruction(1, t0)
+     loadConstantOrVariable(t1, t2)
+-    storep t2, [cfr, t0, 8]
++    storeq t2, [cfr, t0, 8]
+     dispatch(3)
+ 
+ 
+ _llint_op_not:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t0
+-    loadis 8[PB, PC, 8], t1
++    loadisFromInstruction(2, t0)
++    loadisFromInstruction(1, t1)
+     loadConstantOrVariable(t0, t2)
+-    xorp ValueFalse, t2
+-    btpnz t2, ~1, .opNotSlow
+-    xorp ValueTrue, t2
+-    storep t2, [cfr, t1, 8]
++    xorq ValueFalse, t2
++    btqnz t2, ~1, .opNotSlow
++    xorq ValueTrue, t2
++    storeq t2, [cfr, t1, 8]
+     dispatch(3)
+ 
+ .opNotSlow:
+@@ -304,14 +328,14 @@ _llint_op_not:
+ 
+ macro equalityComparison(integerComparison, slowPath)
+     traceExecution()
+-    loadis 24[PB, PC, 8], t0
+-    loadis 16[PB, PC, 8], t2
+-    loadis 8[PB, PC, 8], t3
++    loadisFromInstruction(3, t0)
++    loadisFromInstruction(2, t2)
++    loadisFromInstruction(1, t3)
+     loadConstantOrVariableInt32(t0, t1, .slow)
+     loadConstantOrVariableInt32(t2, t0, .slow)
+     integerComparison(t0, t1, t0)
+-    orp ValueFalse, t0
+-    storep t0, [cfr, t3, 8]
++    orq ValueFalse, t0
++    storeq t0, [cfr, t3, 8]
+     dispatch(4)
+ 
+ .slow:
+@@ -332,9 +356,9 @@ _llint_op_neq:
+ 
+ 
+ macro equalNullComparison()
+-    loadis 16[PB, PC, 8], t0
+-    loadp [cfr, t0, 8], t0
+-    btpnz t0, tagMask, .immediate
++    loadisFromInstruction(2, t0)
++    loadq [cfr, t0, 8], t0
++    btqnz t0, tagMask, .immediate
+     loadp JSCell::m_structure[t0], t2
+     btbnz Structure::m_typeInfo + TypeInfo::m_flags[t2], MasqueradesAsUndefined, .masqueradesAsUndefined
+     move 0, t0
+@@ -345,48 +369,48 @@ macro equalNullComparison()
+     cpeq Structure::m_globalObject[t2], t0, t0
+     jmp .done
+ .immediate:
+-    andp ~TagBitUndefined, t0
+-    cpeq t0, ValueNull, t0
++    andq ~TagBitUndefined, t0
++    cqeq t0, ValueNull, t0
+ .done:
+ end
+ 
+ _llint_op_eq_null:
+     traceExecution()
+     equalNullComparison()
+-    loadis 8[PB, PC, 8], t1
+-    orp ValueFalse, t0
+-    storep t0, [cfr, t1, 8]
++    loadisFromInstruction(1, t1)
++    orq ValueFalse, t0
++    storeq t0, [cfr, t1, 8]
+     dispatch(3)
+ 
+ 
+ _llint_op_neq_null:
+     traceExecution()
+     equalNullComparison()
+-    loadis 8[PB, PC, 8], t1
+-    xorp ValueTrue, t0
+-    storep t0, [cfr, t1, 8]
++    loadisFromInstruction(1, t1)
++    xorq ValueTrue, t0
++    storeq t0, [cfr, t1, 8]
+     dispatch(3)
+ 
+ 
+ macro strictEq(equalityOperation, slowPath)
+     traceExecution()
+-    loadis 24[PB, PC, 8], t0
+-    loadis 16[PB, PC, 8], t2
++    loadisFromInstruction(3, t0)
++    loadisFromInstruction(2, t2)
+     loadConstantOrVariable(t0, t1)
+     loadConstantOrVariable(t2, t0)
+     move t0, t2
+-    orp t1, t2
+-    btpz t2, tagMask, .slow
+-    bpaeq t0, tagTypeNumber, .leftOK
+-    btpnz t0, tagTypeNumber, .slow
++    orq t1, t2
++    btqz t2, tagMask, .slow
++    bqaeq t0, tagTypeNumber, .leftOK
++    btqnz t0, tagTypeNumber, .slow
+ .leftOK:
+-    bpaeq t1, tagTypeNumber, .rightOK
+-    btpnz t1, tagTypeNumber, .slow
++    bqaeq t1, tagTypeNumber, .rightOK
++    btqnz t1, tagTypeNumber, .slow
+ .rightOK:
+     equalityOperation(t0, t1, t0)
+-    loadis 8[PB, PC, 8], t1
+-    orp ValueFalse, t0
+-    storep t0, [cfr, t1, 8]
++    loadisFromInstruction(1, t1)
++    orq ValueFalse, t0
++    storeq t0, [cfr, t1, 8]
+     dispatch(4)
+ 
+ .slow:
+@@ -396,24 +420,24 @@ end
+ 
+ _llint_op_stricteq:
+     strictEq(
+-        macro (left, right, result) cpeq left, right, result end,
++        macro (left, right, result) cqeq left, right, result end,
+         _llint_slow_path_stricteq)
+ 
+ 
+ _llint_op_nstricteq:
+     strictEq(
+-        macro (left, right, result) cpneq left, right, result end,
++        macro (left, right, result) cqneq left, right, result end,
+         _llint_slow_path_nstricteq)
+ 
+ 
+ macro preOp(arithmeticOperation, slowPath)
+     traceExecution()
+-    loadis 8[PB, PC, 8], t0
+-    loadp [cfr, t0, 8], t1
+-    bpb t1, tagTypeNumber, .slow
++    loadisFromInstruction(1, t0)
++    loadq [cfr, t0, 8], t1
++    bqb t1, tagTypeNumber, .slow
+     arithmeticOperation(t1, .slow)
+-    orp tagTypeNumber, t1
+-    storep t1, [cfr, t0, 8]
++    orq tagTypeNumber, t1
++    storeq t1, [cfr, t0, 8]
+     dispatch(2)
+ 
+ .slow:
+@@ -435,16 +459,16 @@ _llint_op_pre_dec:
+ 
+ macro postOp(arithmeticOperation, slowPath)
+     traceExecution()
+-    loadis 16[PB, PC, 8], t0
+-    loadis 8[PB, PC, 8], t1
+-    loadp [cfr, t0, 8], t2
++    loadisFromInstruction(2, t0)
++    loadisFromInstruction(1, t1)
++    loadq [cfr, t0, 8], t2
+     bieq t0, t1, .done
+-    bpb t2, tagTypeNumber, .slow
++    bqb t2, tagTypeNumber, .slow
+     move t2, t3
+     arithmeticOperation(t3, .slow)
+-    orp tagTypeNumber, t3
+-    storep t2, [cfr, t1, 8]
+-    storep t3, [cfr, t0, 8]
++    orq tagTypeNumber, t3
++    storeq t2, [cfr, t1, 8]
++    storeq t3, [cfr, t0, 8]
+ .done:
+     dispatch(3)
+ 
+@@ -467,13 +491,13 @@ _llint_op_post_dec:
+ 
+ _llint_op_to_jsnumber:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t0
+-    loadis 8[PB, PC, 8], t1
++    loadisFromInstruction(2, t0)
++    loadisFromInstruction(1, t1)
+     loadConstantOrVariable(t0, t2)
+-    bpaeq t2, tagTypeNumber, .opToJsnumberIsImmediate
+-    btpz t2, tagTypeNumber, .opToJsnumberSlow
++    bqaeq t2, tagTypeNumber, .opToJsnumberIsImmediate
++    btqz t2, tagTypeNumber, .opToJsnumberSlow
+ .opToJsnumberIsImmediate:
+-    storep t2, [cfr, t1, 8]
++    storeq t2, [cfr, t1, 8]
+     dispatch(3)
+ 
+ .opToJsnumberSlow:
+@@ -483,19 +507,19 @@ _llint_op_to_jsnumber:
+ 
+ _llint_op_negate:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t0
+-    loadis 8[PB, PC, 8], t1
++    loadisFromInstruction(2, t0)
++    loadisFromInstruction(1, t1)
+     loadConstantOrVariable(t0, t2)
+-    bpb t2, tagTypeNumber, .opNegateNotInt
++    bqb t2, tagTypeNumber, .opNegateNotInt
+     btiz t2, 0x7fffffff, .opNegateSlow
+     negi t2
+-    orp tagTypeNumber, t2
+-    storep t2, [cfr, t1, 8]
++    orq tagTypeNumber, t2
++    storeq t2, [cfr, t1, 8]
+     dispatch(3)
+ .opNegateNotInt:
+-    btpz t2, tagTypeNumber, .opNegateSlow
+-    xorp 0x8000000000000000, t2
+-    storep t2, [cfr, t1, 8]
++    btqz t2, tagTypeNumber, .opNegateSlow
++    xorq 0x8000000000000000, t2
++    storeq t2, [cfr, t1, 8]
+     dispatch(3)
+ 
+ .opNegateSlow:
+@@ -504,47 +528,47 @@ _llint_op_negate:
+ 
+ 
+ macro binaryOpCustomStore(integerOperationAndStore, doubleOperation, slowPath)
+-    loadis 24[PB, PC, 8], t0
+-    loadis 16[PB, PC, 8], t2
++    loadisFromInstruction(3, t0)
++    loadisFromInstruction(2, t2)
+     loadConstantOrVariable(t0, t1)
+     loadConstantOrVariable(t2, t0)
+-    bpb t0, tagTypeNumber, .op1NotInt
+-    bpb t1, tagTypeNumber, .op2NotInt
+-    loadis 8[PB, PC, 8], t2
++    bqb t0, tagTypeNumber, .op1NotInt
++    bqb t1, tagTypeNumber, .op2NotInt
++    loadisFromInstruction(1, t2)
+     integerOperationAndStore(t1, t0, .slow, t2)
+     dispatch(5)
+ 
+ .op1NotInt:
+     # First operand is definitely not an int, the second operand could be anything.
+-    btpz t0, tagTypeNumber, .slow
+-    bpaeq t1, tagTypeNumber, .op1NotIntOp2Int
+-    btpz t1, tagTypeNumber, .slow
+-    addp tagTypeNumber, t1
+-    fp2d t1, ft1
++    btqz t0, tagTypeNumber, .slow
++    bqaeq t1, tagTypeNumber, .op1NotIntOp2Int
++    btqz t1, tagTypeNumber, .slow
++    addq tagTypeNumber, t1
++    fq2d t1, ft1
+     jmp .op1NotIntReady
+ .op1NotIntOp2Int:
+     ci2d t1, ft1
+ .op1NotIntReady:
+-    loadis 8[PB, PC, 8], t2
+-    addp tagTypeNumber, t0
+-    fp2d t0, ft0
++    loadisFromInstruction(1, t2)
++    addq tagTypeNumber, t0
++    fq2d t0, ft0
+     doubleOperation(ft1, ft0)
+-    fd2p ft0, t0
+-    subp tagTypeNumber, t0
+-    storep t0, [cfr, t2, 8]
++    fd2q ft0, t0
++    subq tagTypeNumber, t0
++    storeq t0, [cfr, t2, 8]
+     dispatch(5)
+ 
+ .op2NotInt:
+     # First operand is definitely an int, the second is definitely not.
+-    loadis 8[PB, PC, 8], t2
+-    btpz t1, tagTypeNumber, .slow
++    loadisFromInstruction(1, t2)
++    btqz t1, tagTypeNumber, .slow
+     ci2d t0, ft0
+-    addp tagTypeNumber, t1
+-    fp2d t1, ft1
++    addq tagTypeNumber, t1
++    fq2d t1, ft1
+     doubleOperation(ft1, ft0)
+-    fd2p ft0, t0
+-    subp tagTypeNumber, t0
+-    storep t0, [cfr, t2, 8]
++    fd2q ft0, t0
++    subq tagTypeNumber, t0
++    storeq t0, [cfr, t2, 8]
+     dispatch(5)
+ 
+ .slow:
+@@ -556,8 +580,8 @@ macro binaryOp(integerOperation, doubleO
+     binaryOpCustomStore(
+         macro (left, right, slow, index)
+             integerOperation(left, right, slow)
+-            orp tagTypeNumber, right
+-            storep right, [cfr, index, 8]
++            orq tagTypeNumber, right
++            storeq right, [cfr, index, 8]
+         end,
+         doubleOperation, slowPath)
+ end
+@@ -581,8 +605,8 @@ _llint_op_mul:
+             bilt left, 0, slow
+             bilt right, 0, slow
+         .done:
+-            orp tagTypeNumber, t3
+-            storep t3, [cfr, index, 8]
++            orq tagTypeNumber, t3
++            storeq t3, [cfr, index, 8]
+         end,
+         macro (left, right) muld left, right end,
+         _llint_slow_path_mul)
+@@ -613,24 +637,24 @@ _llint_op_div:
+             cdqi
+             idivi t3
+             btinz t1, slow
+-            orp tagTypeNumber, t0
+-            storep t0, [cfr, index, 8]
++            orq tagTypeNumber, t0
++            storeq t0, [cfr, index, 8]
+         end,
+         macro (left, right) divd left, right end,
+         _llint_slow_path_div)
+ 
+ 
+ macro bitOp(operation, slowPath, advance)
+-    loadis 24[PB, PC, 8], t0
+-    loadis 16[PB, PC, 8], t2
+-    loadis 8[PB, PC, 8], t3
++    loadisFromInstruction(3, t0)
++    loadisFromInstruction(2, t2)
++    loadisFromInstruction(1, t3)
+     loadConstantOrVariable(t0, t1)
+     loadConstantOrVariable(t2, t0)
+-    bpb t0, tagTypeNumber, .slow
+-    bpb t1, tagTypeNumber, .slow
++    bqb t0, tagTypeNumber, .slow
++    bqb t1, tagTypeNumber, .slow
+     operation(t1, t0, .slow)
+-    orp tagTypeNumber, t0
+-    storep t0, [cfr, t3, 8]
++    orq tagTypeNumber, t0
++    storeq t0, [cfr, t3, 8]
+     dispatch(advance)
+ 
+ .slow:
+@@ -691,7 +715,7 @@ _llint_op_bitor:
+ 
+ _llint_op_check_has_instance:
+     traceExecution()
+-    loadis 24[PB, PC, 8], t1
++    loadisFromInstruction(3, t1)
+     loadConstantOrVariableCell(t1, t0, .opCheckHasInstanceSlow)
+     loadp JSCell::m_structure[t0], t0
+     btbz Structure::m_typeInfo + TypeInfo::m_flags[t0], ImplementsDefaultHasInstance, .opCheckHasInstanceSlow
+@@ -705,26 +729,26 @@ _llint_op_check_has_instance:
+ _llint_op_instanceof:
+     traceExecution()
+     # Actually do the work.
+-    loadis 24[PB, PC, 8], t0
+-    loadis 8[PB, PC, 8], t3
++    loadisFromInstruction(3, t0)
++    loadisFromInstruction(1, t3)
+     loadConstantOrVariableCell(t0, t1, .opInstanceofSlow)
+     loadp JSCell::m_structure[t1], t2
+     bbb Structure::m_typeInfo + TypeInfo::m_type[t2], ObjectType, .opInstanceofSlow
+-    loadis 16[PB, PC, 8], t0
++    loadisFromInstruction(2, t0)
+     loadConstantOrVariableCell(t0, t2, .opInstanceofSlow)
+     
+     # Register state: t1 = prototype, t2 = value
+     move 1, t0
+ .opInstanceofLoop:
+     loadp JSCell::m_structure[t2], t2
+-    loadp Structure::m_prototype[t2], t2
+-    bpeq t2, t1, .opInstanceofDone
+-    btpz t2, tagMask, .opInstanceofLoop
++    loadq Structure::m_prototype[t2], t2
++    bqeq t2, t1, .opInstanceofDone
++    btqz t2, tagMask, .opInstanceofLoop
+ 
+     move 0, t0
+ .opInstanceofDone:
+-    orp ValueFalse, t0
+-    storep t0, [cfr, t3, 8]
++    orq ValueFalse, t0
++    storeq t0, [cfr, t3, 8]
+     dispatch(4)
+ 
+ .opInstanceofSlow:
+@@ -734,65 +758,65 @@ _llint_op_instanceof:
+ 
+ _llint_op_is_undefined:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t1
+-    loadis 8[PB, PC, 8], t2
++    loadisFromInstruction(2, t1)
++    loadisFromInstruction(1, t2)
+     loadConstantOrVariable(t1, t0)
+-    btpz t0, tagMask, .opIsUndefinedCell
+-    cpeq t0, ValueUndefined, t3
+-    orp ValueFalse, t3
+-    storep t3, [cfr, t2, 8]
++    btqz t0, tagMask, .opIsUndefinedCell
++    cqeq t0, ValueUndefined, t3
++    orq ValueFalse, t3
++    storeq t3, [cfr, t2, 8]
+     dispatch(3)
+ .opIsUndefinedCell:
+     loadp JSCell::m_structure[t0], t0
+     btbnz Structure::m_typeInfo + TypeInfo::m_flags[t0], MasqueradesAsUndefined, .masqueradesAsUndefined
+     move ValueFalse, t1
+-    storep t1, [cfr, t2, 8]
++    storeq t1, [cfr, t2, 8]
+     dispatch(3)
+ .masqueradesAsUndefined:
+     loadp CodeBlock[cfr], t1
+     loadp CodeBlock::m_globalObject[t1], t1
+     cpeq Structure::m_globalObject[t0], t1, t3
+-    orp ValueFalse, t3
+-    storep t3, [cfr, t2, 8]
++    orq ValueFalse, t3
++    storeq t3, [cfr, t2, 8]
+     dispatch(3)
+ 
+ 
+ _llint_op_is_boolean:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t1
+-    loadis 8[PB, PC, 8], t2
++    loadisFromInstruction(2, t1)
++    loadisFromInstruction(1, t2)
+     loadConstantOrVariable(t1, t0)
+-    xorp ValueFalse, t0
+-    tpz t0, ~1, t0
+-    orp ValueFalse, t0
+-    storep t0, [cfr, t2, 8]
++    xorq ValueFalse, t0
++    tqz t0, ~1, t0
++    orq ValueFalse, t0
++    storeq t0, [cfr, t2, 8]
+     dispatch(3)
+ 
+ 
+ _llint_op_is_number:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t1
+-    loadis 8[PB, PC, 8], t2
++    loadisFromInstruction(2, t1)
++    loadisFromInstruction(1, t2)
+     loadConstantOrVariable(t1, t0)
+-    tpnz t0, tagTypeNumber, t1
+-    orp ValueFalse, t1
+-    storep t1, [cfr, t2, 8]
++    tqnz t0, tagTypeNumber, t1
++    orq ValueFalse, t1
++    storeq t1, [cfr, t2, 8]
+     dispatch(3)
+ 
+ 
+ _llint_op_is_string:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t1
+-    loadis 8[PB, PC, 8], t2
++    loadisFromInstruction(2, t1)
++    loadisFromInstruction(1, t2)
+     loadConstantOrVariable(t1, t0)
+-    btpnz t0, tagMask, .opIsStringNotCell
++    btqnz t0, tagMask, .opIsStringNotCell
+     loadp JSCell::m_structure[t0], t0
+     cbeq Structure::m_typeInfo + TypeInfo::m_type[t0], StringType, t1
+-    orp ValueFalse, t1
+-    storep t1, [cfr, t2, 8]
++    orq ValueFalse, t1
++    storeq t1, [cfr, t2, 8]
+     dispatch(3)
+ .opIsStringNotCell:
+-    storep ValueFalse, [cfr, t2, 8]
++    storeq ValueFalse, [cfr, t2, 8]
+     dispatch(3)
+ 
+ 
+@@ -800,7 +824,7 @@ macro loadPropertyAtVariableOffsetKnownN
+     assert(macro (ok) bigteq propertyOffsetAsPointer, firstOutOfLineOffset, ok end)
+     negp propertyOffsetAsPointer
+     loadp JSObject::m_butterfly[objectAndStorage], objectAndStorage
+-    loadp (firstOutOfLineOffset - 2) * 8[objectAndStorage, propertyOffsetAsPointer, 8], value
++    loadq (firstOutOfLineOffset - 2) * 8[objectAndStorage, propertyOffsetAsPointer, 8], value
+ end
+ 
+ macro loadPropertyAtVariableOffset(propertyOffsetAsInt, objectAndStorage, value)
+@@ -812,28 +836,28 @@ macro loadPropertyAtVariableOffset(prope
+ .isInline:
+     addp sizeof JSObject - (firstOutOfLineOffset - 2) * 8, objectAndStorage
+ .ready:
+-    loadp (firstOutOfLineOffset - 2) * 8[objectAndStorage, propertyOffsetAsInt, 8], value
++    loadq (firstOutOfLineOffset - 2) * 8[objectAndStorage, propertyOffsetAsInt, 8], value
+ end
+ 
+ _llint_op_init_global_const:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t1
+-    loadp 8[PB, PC, 8], t0
++    loadisFromInstruction(2, t1)
++    loadpFromInstruction(1, t0)
+     loadConstantOrVariable(t1, t2)
+     writeBarrier(t2)
+-    storep t2, [t0]
++    storeq t2, [t0]
+     dispatch(3)
+ 
+ 
+ _llint_op_init_global_const_check:
+     traceExecution()
+-    loadp 24[PB, PC, 8], t2
+-    loadis 16[PB, PC, 8], t1
+-    loadp 8[PB, PC, 8], t0
++    loadpFromInstruction(3, t2)
++    loadisFromInstruction(2, t1)
++    loadpFromInstruction(1, t0)
+     btbnz [t2], .opInitGlobalConstCheckSlow
+     loadConstantOrVariable(t1, t2)
+     writeBarrier(t2)
+-    storep t2, [t0]
++    storeq t2, [t0]
+     dispatch(5)
+ .opInitGlobalConstCheckSlow:
+     callSlowPath(_llint_slow_path_init_global_const_check)
+@@ -846,19 +870,19 @@ macro getById(getPropertyStorage)
+     # ping-ponging is free. At best we get lucky and the get_by_id will continue
+     # to take fast path on the new cache. At worst we take slow path, which is what
+     # we would have been doing anyway.
+-    loadis 16[PB, PC, 8], t0
+-    loadp 32[PB, PC, 8], t1
++    loadisFromInstruction(2, t0)
++    loadpFromInstruction(4, t1)
+     loadConstantOrVariableCell(t0, t3, .opGetByIdSlow)
+-    loadis 40[PB, PC, 8], t2
++    loadisFromInstruction(5, t2)
+     getPropertyStorage(
+         t3,
+         t0,
+         macro (propertyStorage, scratch)
+             bpneq JSCell::m_structure[t3], t1, .opGetByIdSlow
+-            loadis 8[PB, PC, 8], t1
+-            loadp [propertyStorage, t2], scratch
+-            storep scratch, [cfr, t1, 8]
+-            loadp 64[PB, PC, 8], t1
++            loadisFromInstruction(1, t1)
++            loadq [propertyStorage, t2], scratch
++            storeq scratch, [cfr, t1, 8]
++            loadpFromInstruction(8, t1)
+             valueProfile(scratch, t1)
+             dispatch(9)
+         end)
+@@ -878,21 +902,21 @@ _llint_op_get_by_id_out_of_line:
+ 
+ _llint_op_get_array_length:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t0
+-    loadp 32[PB, PC, 8], t1
++    loadisFromInstruction(2, t0)
++    loadpFromInstruction(4, t1)
+     loadConstantOrVariableCell(t0, t3, .opGetArrayLengthSlow)
+     loadp JSCell::m_structure[t3], t2
+     arrayProfile(t2, t1, t0)
+     btiz t2, IsArray, .opGetArrayLengthSlow
+     btiz t2, IndexingShapeMask, .opGetArrayLengthSlow
+-    loadis 8[PB, PC, 8], t1
+-    loadp 64[PB, PC, 8], t2
++    loadisFromInstruction(1, t1)
++    loadpFromInstruction(8, t2)
+     loadp JSObject::m_butterfly[t3], t0
+     loadi -sizeof IndexingHeader + IndexingHeader::m_publicLength[t0], t0
+     bilt t0, 0, .opGetArrayLengthSlow
+-    orp tagTypeNumber, t0
++    orq tagTypeNumber, t0
+     valueProfile(t0, t2)
+-    storep t0, [cfr, t1, 8]
++    storeq t0, [cfr, t1, 8]
+     dispatch(9)
+ 
+ .opGetArrayLengthSlow:
+@@ -902,13 +926,13 @@ _llint_op_get_array_length:
+ 
+ _llint_op_get_arguments_length:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t0
+-    loadis 8[PB, PC, 8], t1
+-    btpnz [cfr, t0, 8], .opGetArgumentsLengthSlow
++    loadisFromInstruction(2, t0)
++    loadisFromInstruction(1, t1)
++    btqnz [cfr, t0, 8], .opGetArgumentsLengthSlow
+     loadi ArgumentCount + PayloadOffset[cfr], t2
+     subi 1, t2
+-    orp tagTypeNumber, t2
+-    storep t2, [cfr, t1, 8]
++    orq tagTypeNumber, t2
++    storeq t2, [cfr, t1, 8]
+     dispatch(4)
+ 
+ .opGetArgumentsLengthSlow:
+@@ -918,19 +942,19 @@ _llint_op_get_arguments_length:
+ 
+ macro putById(getPropertyStorage)
+     traceExecution()
+-    loadis 8[PB, PC, 8], t3
+-    loadp 32[PB, PC, 8], t1
++    loadisFromInstruction(1, t3)
++    loadpFromInstruction(4, t1)
+     loadConstantOrVariableCell(t3, t0, .opPutByIdSlow)
+-    loadis 24[PB, PC, 8], t2
++    loadisFromInstruction(3, t2)
+     getPropertyStorage(
+         t0,
+         t3,
+         macro (propertyStorage, scratch)
+             bpneq JSCell::m_structure[t0], t1, .opPutByIdSlow
+-            loadis 40[PB, PC, 8], t1
++            loadisFromInstruction(5, t1)
+             loadConstantOrVariable(t2, scratch)
+             writeBarrier(t0)
+-            storep scratch, [propertyStorage, t1]
++            storeq scratch, [propertyStorage, t1]
+             dispatch(9)
+         end)
+ end
+@@ -949,13 +973,13 @@ _llint_op_put_by_id_out_of_line:
+ 
+ macro putByIdTransition(additionalChecks, getPropertyStorage)
+     traceExecution()
+-    loadis 8[PB, PC, 8], t3
+-    loadp 32[PB, PC, 8], t1
++    loadisFromInstruction(1, t3)
++    loadpFromInstruction(4, t1)
+     loadConstantOrVariableCell(t3, t0, .opPutByIdSlow)
+-    loadis 24[PB, PC, 8], t2
++    loadisFromInstruction(3, t2)
+     bpneq JSCell::m_structure[t0], t1, .opPutByIdSlow
+     additionalChecks(t1, t3)
+-    loadis 40[PB, PC, 8], t1
++    loadisFromInstruction(5, t1)
+     getPropertyStorage(
+         t0,
+         t3,
+@@ -963,8 +987,8 @@ macro putByIdTransition(additionalChecks
+             addp t1, propertyStorage, t3
+             loadConstantOrVariable(t2, t1)
+             writeBarrier(t1)
+-            storep t1, [t3]
+-            loadp 48[PB, PC, 8], t1
++            storeq t1, [t3]
++            loadpFromInstruction(6, t1)
+             storep t1, JSCell::m_structure[t0]
+             dispatch(9)
+         end)
+@@ -975,17 +999,17 @@ end
+ 
+ macro structureChainChecks(oldStructure, scratch)
+     const protoCell = oldStructure    # Reusing the oldStructure register for the proto
+-    loadp 56[PB, PC, 8], scratch
++    loadpFromInstruction(7, scratch)
+     assert(macro (ok) btpnz scratch, ok end)
+     loadp StructureChain::m_vector[scratch], scratch
+     assert(macro (ok) btpnz scratch, ok end)
+-    bpeq Structure::m_prototype[oldStructure], ValueNull, .done
++    bqeq Structure::m_prototype[oldStructure], ValueNull, .done
+ .loop:
+-    loadp Structure::m_prototype[oldStructure], protoCell
++    loadq Structure::m_prototype[oldStructure], protoCell
+     loadp JSCell::m_structure[protoCell], oldStructure
+     bpneq oldStructure, [scratch], .opPutByIdSlow
+     addp 8, scratch
+-    bpneq Structure::m_prototype[oldStructure], ValueNull, .loop
++    bqneq Structure::m_prototype[oldStructure], ValueNull, .loop
+ .done:
+ end
+ 
+@@ -1007,12 +1031,12 @@ _llint_op_put_by_id_transition_normal_ou
+ 
+ _llint_op_get_by_val:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t2
++    loadisFromInstruction(2, t2)
+     loadConstantOrVariableCell(t2, t0, .opGetByValSlow)
+     loadp JSCell::m_structure[t0], t2
+-    loadp 32[PB, PC, 8], t3
++    loadpFromInstruction(4, t3)
+     arrayProfile(t2, t3, t1)
+-    loadis 24[PB, PC, 8], t3
++    loadisFromInstruction(3, t3)
+     loadConstantOrVariableInt32(t3, t1, .opGetByValSlow)
+     sxi2p t1, t1
+     loadp JSObject::m_butterfly[t0], t3
+@@ -1020,22 +1044,22 @@ _llint_op_get_by_val:
+     bineq t2, ContiguousShape, .opGetByValNotContiguous
+ 
+     biaeq t1, -sizeof IndexingHeader + IndexingHeader::m_publicLength[t3], .opGetByValSlow
+-    loadis 8[PB, PC, 8], t0
+-    loadp [t3, t1, 8], t2
+-    btpz t2, .opGetByValSlow
++    loadisFromInstruction(1, t0)
++    loadq [t3, t1, 8], t2
++    btqz t2, .opGetByValSlow
+     jmp .opGetByValDone
+ 
+ .opGetByValNotContiguous:
+     subi ArrayStorageShape, t2
+     bia t2, SlowPutArrayStorageShape - ArrayStorageShape, .opGetByValSlow
+     biaeq t1, -sizeof IndexingHeader + IndexingHeader::m_vectorLength[t3], .opGetByValSlow
+-    loadis 8[PB, PC, 8], t0
+-    loadp ArrayStorage::m_vector[t3, t1, 8], t2
+-    btpz t2, .opGetByValSlow
++    loadisFromInstruction(1, t0)
++    loadq ArrayStorage::m_vector[t3, t1, 8], t2
++    btqz t2, .opGetByValSlow
+ 
+ .opGetByValDone:
+-    storep t2, [cfr, t0, 8]
+-    loadp 40[PB, PC, 8], t0
++    storeq t2, [cfr, t0, 8]
++    loadpFromInstruction(5, t0)
+     valueProfile(t2, t0)
+     dispatch(6)
+ 
+@@ -1048,19 +1072,19 @@ _llint_op_get_argument_by_val:
+     # FIXME: At some point we should array profile this. Right now it isn't necessary
+     # since the DFG will never turn a get_argument_by_val into a GetByVal.
+     traceExecution()
+-    loadis 16[PB, PC, 8], t0
+-    loadis 24[PB, PC, 8], t1
+-    btpnz [cfr, t0, 8], .opGetArgumentByValSlow
++    loadisFromInstruction(2, t0)
++    loadisFromInstruction(3, t1)
++    btqnz [cfr, t0, 8], .opGetArgumentByValSlow
+     loadConstantOrVariableInt32(t1, t2, .opGetArgumentByValSlow)
+     addi 1, t2
+     loadi ArgumentCount + PayloadOffset[cfr], t1
+     biaeq t2, t1, .opGetArgumentByValSlow
+     negi t2
+     sxi2p t2, t2
+-    loadis 8[PB, PC, 8], t3
+-    loadp 32[PB, PC, 8], t1
+-    loadp ThisArgumentOffset[cfr, t2, 8], t0
+-    storep t0, [cfr, t3, 8]
++    loadisFromInstruction(1, t3)
++    loadpFromInstruction(4, t1)
++    loadq ThisArgumentOffset[cfr, t2, 8], t0
++    storeq t0, [cfr, t3, 8]
+     valueProfile(t0, t1)
+     dispatch(6)
+ 
+@@ -1071,19 +1095,19 @@ _llint_op_get_argument_by_val:
+ 
+ _llint_op_get_by_pname:
+     traceExecution()
+-    loadis 24[PB, PC, 8], t1
++    loadisFromInstruction(3, t1)
+     loadConstantOrVariable(t1, t0)
+-    loadis 32[PB, PC, 8], t1
++    loadisFromInstruction(4, t1)
+     assertNotConstant(t1)
+-    bpneq t0, [cfr, t1, 8], .opGetByPnameSlow
+-    loadis 16[PB, PC, 8], t2
+-    loadis 40[PB, PC, 8], t3
++    bqneq t0, [cfr, t1, 8], .opGetByPnameSlow
++    loadisFromInstruction(2, t2)
++    loadisFromInstruction(5, t3)
+     loadConstantOrVariableCell(t2, t0, .opGetByPnameSlow)
+     assertNotConstant(t3)
+-    loadp [cfr, t3, 8], t1
++    loadq [cfr, t3, 8], t1
+     loadp JSCell::m_structure[t0], t2
+     bpneq t2, JSPropertyNameIterator::m_cachedStructure[t1], .opGetByPnameSlow
+-    loadis 48[PB, PC, 8], t3
++    loadisFromInstruction(6, t3)
+     loadi PayloadOffset[cfr, t3, 8], t3
+     subi 1, t3
+     biaeq t3, JSPropertyNameIterator::m_numCacheableSlots[t1], .opGetByPnameSlow
+@@ -1092,8 +1116,8 @@ _llint_op_get_by_pname:
+     subi JSPropertyNameIterator::m_cachedStructureInlineCapacity[t1], t3
+ .opGetByPnameInlineProperty:
+     loadPropertyAtVariableOffset(t3, t0, t0)
+-    loadis 8[PB, PC, 8], t1
+-    storep t0, [cfr, t1, 8]
++    loadisFromInstruction(1, t1)
++    storeq t0, [cfr, t1, 8]
+     dispatch(7)
+ 
+ .opGetByPnameSlow:
+@@ -1103,12 +1127,12 @@ _llint_op_get_by_pname:
+ 
+ _llint_op_put_by_val:
+     traceExecution()
+-    loadis 8[PB, PC, 8], t0
++    loadisFromInstruction(1, t0)
+     loadConstantOrVariableCell(t0, t1, .opPutByValSlow)
+     loadp JSCell::m_structure[t1], t2
+-    loadp 32[PB, PC, 8], t3
++    loadpFromInstruction(4, t3)
+     arrayProfile(t2, t3, t0)
+-    loadis 16[PB, PC, 8], t0
++    loadisFromInstruction(2, t0)
+     loadConstantOrVariableInt32(t0, t3, .opPutByValSlow)
+     sxi2p t3, t3
+     loadp JSObject::m_butterfly[t1], t0
+@@ -1117,16 +1141,16 @@ _llint_op_put_by_val:
+     
+     biaeq t3, -sizeof IndexingHeader + IndexingHeader::m_publicLength[t0], .opPutByValContiguousOutOfBounds
+ .opPutByValContiguousStoreResult:
+-    loadis 24[PB, PC, 8], t2
++    loadisFromInstruction(3, t2)
+     loadConstantOrVariable(t2, t1)
+     writeBarrier(t1)
+-    storep t1, [t0, t3, 8]
++    storeq t1, [t0, t3, 8]
+     dispatch(5)
+ 
+ .opPutByValContiguousOutOfBounds:
+     biaeq t3, -sizeof IndexingHeader + IndexingHeader::m_vectorLength[t0], .opPutByValSlow
+     if VALUE_PROFILER
+-        loadp 32[PB, PC, 8], t2
++        loadpFromInstruction(4, t2)
+         storeb 1, ArrayProfile::m_mayStoreToHole[t2]
+     end
+     addi 1, t3, t2
+@@ -1136,17 +1160,17 @@ _llint_op_put_by_val:
+ .opPutByValNotContiguous:
+     bineq t2, ArrayStorageShape, .opPutByValSlow
+     biaeq t3, -sizeof IndexingHeader + IndexingHeader::m_vectorLength[t0], .opPutByValSlow
+-    btpz ArrayStorage::m_vector[t0, t3, 8], .opPutByValArrayStorageEmpty
++    btqz ArrayStorage::m_vector[t0, t3, 8], .opPutByValArrayStorageEmpty
+ .opPutByValArrayStorageStoreResult:
+-    loadis 24[PB, PC, 8], t2
++    loadisFromInstruction(3, t2)
+     loadConstantOrVariable(t2, t1)
+     writeBarrier(t1)
+-    storep t1, ArrayStorage::m_vector[t0, t3, 8]
++    storeq t1, ArrayStorage::m_vector[t0, t3, 8]
+     dispatch(5)
+ 
+ .opPutByValArrayStorageEmpty:
+     if VALUE_PROFILER
+-        loadp 32[PB, PC, 8], t1
++        loadpFromInstruction(4, t1)
+         storeb 1, ArrayProfile::m_mayStoreToHole[t1]
+     end
+     addi 1, ArrayStorage::m_numValuesInVector[t0]
+@@ -1162,24 +1186,24 @@ _llint_op_put_by_val:
+ 
+ _llint_op_loop:
+     traceExecution()
+-    dispatchInt(8[PB, PC, 8])
++    dispatchIntIndirect(1)
+ 
+ 
+ _llint_op_jmp:
+     traceExecution()
+-    dispatchInt(8[PB, PC, 8])
++    dispatchIntIndirect(1)
+ 
+ 
+ macro jumpTrueOrFalse(conditionOp, slow)
+-    loadis 8[PB, PC, 8], t1
++    loadisFromInstruction(1, t1)
+     loadConstantOrVariable(t1, t0)
+-    xorp ValueFalse, t0
+-    btpnz t0, -1, .slow
++    xorq ValueFalse, t0
++    btqnz t0, -1, .slow
+     conditionOp(t0, .target)
+     dispatch(3)
+ 
+ .target:
+-    dispatchInt(16[PB, PC, 8])
++    dispatchIntIndirect(2)
+ 
+ .slow:
+     callSlowPath(slow)
+@@ -1188,19 +1212,19 @@ end
+ 
+ 
+ macro equalNull(cellHandler, immediateHandler)
+-    loadis 8[PB, PC, 8], t0
++    loadisFromInstruction(1, t0)
+     assertNotConstant(t0)
+-    loadp [cfr, t0, 8], t0
+-    btpnz t0, tagMask, .immediate
++    loadq [cfr, t0, 8], t0
++    btqnz t0, tagMask, .immediate
+     loadp JSCell::m_structure[t0], t2
+     cellHandler(t2, Structure::m_typeInfo + TypeInfo::m_flags[t2], .target)
+     dispatch(3)
+ 
+ .target:
+-    dispatch(16[PB, PC, 8])
++    dispatchIntIndirect(2)
+ 
+ .immediate:
+-    andp ~TagBitUndefined, t0
++    andq ~TagBitUndefined, t0
+     immediateHandler(t0, .target)
+     dispatch(3)
+ end
+@@ -1215,7 +1239,7 @@ _llint_op_jeq_null:
+             bpeq Structure::m_globalObject[structure], t0, target
+ .notMasqueradesAsUndefined:
+         end,
+-        macro (value, target) bpeq value, ValueNull, target end)
++        macro (value, target) bqeq value, ValueNull, target end)
+ 
+ 
+ _llint_op_jneq_null:
+@@ -1227,58 +1251,62 @@ _llint_op_jneq_null:
+             loadp CodeBlock::m_globalObject[t0], t0
+             bpneq Structure::m_globalObject[structure], t0, target
+         end,
+-        macro (value, target) bpneq value, ValueNull, target end)
++        macro (value, target) bqneq value, ValueNull, target end)
+ 
+ 
+ _llint_op_jneq_ptr:
+     traceExecution()
+-    loadis 8[PB, PC, 8], t0
+-    loadi 16[PB, PC, 8], t1
++    loadisFromInstruction(1, t0)
++    loadisFromInstruction(2, t1)
+     loadp CodeBlock[cfr], t2
+     loadp CodeBlock::m_globalObject[t2], t2
+-    loadp JSGlobalObject::m_specialPointers[t2, t1, 8], t1
++    if X32
++        loadp JSGlobalObject::m_specialPointers[t2, t1, 4], t1
++    else
++        loadp JSGlobalObject::m_specialPointers[t2, t1, 8], t1
++    end
+     bpneq t1, [cfr, t0, 8], .opJneqPtrTarget
+     dispatch(4)
+ 
+ .opJneqPtrTarget:
+-    dispatchInt(24[PB, PC, 8])
++    dispatchIntIndirect(3)
+ 
+ 
+ macro compare(integerCompare, doubleCompare, slowPath)
+-    loadis 8[PB, PC, 8], t2
+-    loadis 16[PB, PC, 8], t3
++    loadisFromInstruction(1, t2)
++    loadisFromInstruction(2, t3)
+     loadConstantOrVariable(t2, t0)
+     loadConstantOrVariable(t3, t1)
+-    bpb t0, tagTypeNumber, .op1NotInt
+-    bpb t1, tagTypeNumber, .op2NotInt
++    bqb t0, tagTypeNumber, .op1NotInt
++    bqb t1, tagTypeNumber, .op2NotInt
+     integerCompare(t0, t1, .jumpTarget)
+     dispatch(4)
+ 
+ .op1NotInt:
+-    btpz t0, tagTypeNumber, .slow
+-    bpb t1, tagTypeNumber, .op1NotIntOp2NotInt
++    btqz t0, tagTypeNumber, .slow
++    bqb t1, tagTypeNumber, .op1NotIntOp2NotInt
+     ci2d t1, ft1
+     jmp .op1NotIntReady
+ .op1NotIntOp2NotInt:
+-    btpz t1, tagTypeNumber, .slow
+-    addp tagTypeNumber, t1
+-    fp2d t1, ft1
++    btqz t1, tagTypeNumber, .slow
++    addq tagTypeNumber, t1
++    fq2d t1, ft1
+ .op1NotIntReady:
+-    addp tagTypeNumber, t0
+-    fp2d t0, ft0
++    addq tagTypeNumber, t0
++    fq2d t0, ft0
+     doubleCompare(ft0, ft1, .jumpTarget)
+     dispatch(4)
+ 
+ .op2NotInt:
+     ci2d t0, ft0
+-    btpz t1, tagTypeNumber, .slow
+-    addp tagTypeNumber, t1
+-    fp2d t1, ft1
++    btqz t1, tagTypeNumber, .slow
++    addq tagTypeNumber, t1
++    fq2d t1, ft1
+     doubleCompare(ft0, ft1, .jumpTarget)
+     dispatch(4)
+ 
+ .jumpTarget:
+-    dispatchInt(24[PB, PC, 8])
++    dispatchIntIndirect(3)
+ 
+ .slow:
+     callSlowPath(slowPath)
+@@ -1288,15 +1316,15 @@ end
+ 
+ _llint_op_switch_imm:
+     traceExecution()
+-    loadis 24[PB, PC, 8], t2
+-    loadis 8[PB, PC, 8], t3
++    loadisFromInstruction(3, t2)
++    loadisFromInstruction(1, t3)
+     loadConstantOrVariable(t2, t1)
+     loadp CodeBlock[cfr], t2
+     loadp CodeBlock::m_rareData[t2], t2
+     muli sizeof SimpleJumpTable, t3    # FIXME: would be nice to peephole this!
+     loadp CodeBlock::RareData::m_immediateSwitchJumpTables + VectorBufferOffset[t2], t2
+     addp t3, t2
+-    bpb t1, tagTypeNumber, .opSwitchImmNotInt
++    bqb t1, tagTypeNumber, .opSwitchImmNotInt
+     subi SimpleJumpTable::min[t2], t1
+     biaeq t1, SimpleJumpTable::branchOffsets + VectorSizeOffset[t2], .opSwitchImmFallThrough
+     loadp SimpleJumpTable::branchOffsets + VectorBufferOffset[t2], t3
+@@ -1305,9 +1333,9 @@ _llint_op_switch_imm:
+     dispatch(t1)
+ 
+ .opSwitchImmNotInt:
+-    btpnz t1, tagTypeNumber, .opSwitchImmSlow   # Go slow if it's a double.
++    btqnz t1, tagTypeNumber, .opSwitchImmSlow   # Go slow if it's a double.
+ .opSwitchImmFallThrough:
+-    dispatchInt(16[PB, PC, 8])
++    dispatchIntIndirect(2)
+ 
+ .opSwitchImmSlow:
+     callSlowPath(_llint_slow_path_switch_imm)
+@@ -1316,15 +1344,15 @@ _llint_op_switch_imm:
+ 
+ _llint_op_switch_char:
+     traceExecution()
+-    loadis 24[PB, PC, 8], t2
+-    loadis 8[PB, PC, 8], t3
++    loadisFromInstruction(3, t2)
++    loadisFromInstruction(1, t3)
+     loadConstantOrVariable(t2, t1)
+     loadp CodeBlock[cfr], t2
+     loadp CodeBlock::m_rareData[t2], t2
+     muli sizeof SimpleJumpTable, t3
+     loadp CodeBlock::RareData::m_characterSwitchJumpTables + VectorBufferOffset[t2], t2
+     addp t3, t2
+-    btpnz t1, tagMask, .opSwitchCharFallThrough
++    btqnz t1, tagMask, .opSwitchCharFallThrough
+     loadp JSCell::m_structure[t1], t0
+     bbneq Structure::m_typeInfo + TypeInfo::m_type[t0], StringType, .opSwitchCharFallThrough
+     bineq JSString::m_length[t1], 1, .opSwitchCharFallThrough
+@@ -1345,7 +1373,7 @@ _llint_op_switch_char:
+     dispatch(t1)
+ 
+ .opSwitchCharFallThrough:
+-    dispatchInt(16[PB, PC, 8])
++    dispatchIntIndirect(2)
+ 
+ .opSwitchOnRope:
+     callSlowPath(_llint_slow_path_switch_char)
+@@ -1354,9 +1382,10 @@ _llint_op_switch_char:
+ 
+ _llint_op_new_func:
+     traceExecution()
+-    btiz 24[PB, PC, 8], .opNewFuncUnchecked
+-    loadis 8[PB, PC, 8], t1
+-    btpnz [cfr, t1, 8], .opNewFuncDone
++    loadisFromInstruction(3, t2)
++    btiz t2, .opNewFuncUnchecked
++    loadisFromInstruction(1, t1)
++    btqnz [cfr, t1, 8], .opNewFuncDone
+ .opNewFuncUnchecked:
+     callSlowPath(_llint_slow_path_new_func)
+ .opNewFuncDone:
+@@ -1365,32 +1394,32 @@ _llint_op_new_func:
+ 
+ macro arrayProfileForCall()
+     if VALUE_PROFILER
+-        loadis 24[PB, PC, 8], t3
+-        loadp ThisArgumentOffset[cfr, t3, 8], t0
+-        btpnz t0, tagMask, .done
++        loadisFromInstruction(3, t3)
++        loadq ThisArgumentOffset[cfr, t3, 8], t0
++        btqnz t0, tagMask, .done
+         loadp JSCell::m_structure[t0], t0
+-        loadp 40[PB, PC, 8], t1
++        loadpFromInstruction(5, t1)
+         storep t0, ArrayProfile::m_lastSeenStructure[t1]
+     .done:
+     end
+ end
+ 
+ macro doCall(slowPath)
+-    loadis 8[PB, PC, 8], t0
+-    loadp 32[PB, PC, 8], t1
++    loadisFromInstruction(1, t0)
++    loadpFromInstruction(4, t1)
+     loadp LLIntCallLinkInfo::callee[t1], t2
+     loadConstantOrVariable(t0, t3)
+-    bpneq t3, t2, .opCallSlow
+-    loadis 24[PB, PC, 8], t3
++    bqneq t3, t2, .opCallSlow
++    loadisFromInstruction(3, t3)
+     addi 6, PC
+     lshifti 3, t3
+     addp cfr, t3
+     loadp JSFunction::m_scope[t2], t0
+-    storep t2, Callee[t3]
+-    storep t0, ScopeChain[t3]
+-    loadis 16 - 48[PB, PC, 8], t2
++    storeq t2, Callee[t3]
++    storeq t0, ScopeChain[t3]
++    loadisFromInstruction(-4, t2)
+     storei PC, ArgumentCount + TagOffset[cfr]
+-    storep cfr, CallerFrame[t3]
++    storeq cfr, CallerFrame[t3]
+     storei t2, ArgumentCount + PayloadOffset[t3]
+     move t3, cfr
+     callTargetFunction(t1)
+@@ -1402,8 +1431,8 @@ end
+ 
+ _llint_op_tear_off_activation:
+     traceExecution()
+-    loadis 8[PB, PC, 8], t0
+-    btpz [cfr, t0, 8], .opTearOffActivationNotCreated
++    loadisFromInstruction(1, t0)
++    btqz [cfr, t0, 8], .opTearOffActivationNotCreated
+     callSlowPath(_llint_slow_path_tear_off_activation)
+ .opTearOffActivationNotCreated:
+     dispatch(2)
+@@ -1411,9 +1440,9 @@ _llint_op_tear_off_activation:
+ 
+ _llint_op_tear_off_arguments:
+     traceExecution()
+-    loadis 8[PB, PC, 8], t0
++    loadisFromInstruction(1, t0)
+     subi 1, t0   # Get the unmodifiedArgumentsRegister
+-    btpz [cfr, t0, 8], .opTearOffArgumentsNotCreated
++    btqz [cfr, t0, 8], .opTearOffArgumentsNotCreated
+     callSlowPath(_llint_slow_path_tear_off_arguments)
+ .opTearOffArgumentsNotCreated:
+     dispatch(3)
+@@ -1422,15 +1451,15 @@ _llint_op_tear_off_arguments:
+ _llint_op_ret:
+     traceExecution()
+     checkSwitchToJITForEpilogue()
+-    loadis 8[PB, PC, 8], t2
++    loadisFromInstruction(1, t2)
+     loadConstantOrVariable(t2, t0)
+     doReturn()
+ 
+ 
+ _llint_op_call_put_result:
+-    loadis 8[PB, PC, 8], t2
+-    loadp 16[PB, PC, 8], t3
+-    storep t0, [cfr, t2, 8]
++    loadisFromInstruction(1, t2)
++    loadpFromInstruction(2, t3)
++    storeq t0, [cfr, t2, 8]
+     valueProfile(t0, t3)
+     traceExecution()
+     dispatch(3)
+@@ -1439,29 +1468,29 @@ _llint_op_call_put_result:
+ _llint_op_ret_object_or_this:
+     traceExecution()
+     checkSwitchToJITForEpilogue()
+-    loadis 8[PB, PC, 8], t2
++    loadisFromInstruction(1, t2)
+     loadConstantOrVariable(t2, t0)
+-    btpnz t0, tagMask, .opRetObjectOrThisNotObject
++    btqnz t0, tagMask, .opRetObjectOrThisNotObject
+     loadp JSCell::m_structure[t0], t2
+     bbb Structure::m_typeInfo + TypeInfo::m_type[t2], ObjectType, .opRetObjectOrThisNotObject
+     doReturn()
+ 
+ .opRetObjectOrThisNotObject:
+-    loadis 16[PB, PC, 8], t2
++    loadisFromInstruction(2, t2)
+     loadConstantOrVariable(t2, t0)
+     doReturn()
+ 
+ 
+ _llint_op_to_primitive:
+     traceExecution()
+-    loadis 16[PB, PC, 8], t2
+-    loadis 8[PB, PC, 8], t3
++    loadisFromInstruction(2, t2)
++    loadisFromInstruction(1, t3)
+     loadConstantOrVariable(t2, t0)
+-    btpnz t0, tagMask, .opToPrimitiveIsImm
++    btqnz t0, tagMask, .opToPrimitiveIsImm
+     loadp JSCell::m_structure[t0], t2
+     bbneq Structure::m_typeInfo + TypeInfo::m_type[t2], StringType, .opToPrimitiveSlowCase
+ .opToPrimitiveIsImm:
+-    storep t0, [cfr, t3, 8]
++    storeq t0, [cfr, t3, 8]
+     dispatch(3)
+ 
+ .opToPrimitiveSlowCase:
+@@ -1471,38 +1500,38 @@ _llint_op_to_primitive:
+ 
+ _llint_op_next_pname:
+     traceExecution()
+-    loadis 24[PB, PC, 8], t1
+-    loadis 32[PB, PC, 8], t2
++    loadisFromInstruction(3, t1)
++    loadisFromInstruction(4, t2)
+     assertNotConstant(t1)
+     assertNotConstant(t2)
+     loadi PayloadOffset[cfr, t1, 8], t0
+     bieq t0, PayloadOffset[cfr, t2, 8], .opNextPnameEnd
+-    loadis 40[PB, PC, 8], t2
++    loadisFromInstruction(5, t2)
+     assertNotConstant(t2)
+     loadp [cfr, t2, 8], t2
+     loadp JSPropertyNameIterator::m_jsStrings[t2], t3
+-    loadp [t3, t0, 8], t3
++    loadq [t3, t0, 8], t3
+     addi 1, t0
+     storei t0, PayloadOffset[cfr, t1, 8]
+-    loadis 8[PB, PC, 8], t1
+-    storep t3, [cfr, t1, 8]
+-    loadis 16[PB, PC, 8], t3
++    loadisFromInstruction(1, t1)
++    storeq t3, [cfr, t1, 8]
++    loadisFromInstruction(2, t3)
+     assertNotConstant(t3)
+-    loadp [cfr, t3, 8], t3
++    loadq [cfr, t3, 8], t3
+     loadp JSCell::m_structure[t3], t1
+     bpneq t1, JSPropertyNameIterator::m_cachedStructure[t2], .opNextPnameSlow
+     loadp JSPropertyNameIterator::m_cachedPrototypeChain[t2], t0
+     loadp StructureChain::m_vector[t0], t0
+     btpz [t0], .opNextPnameTarget
+ .opNextPnameCheckPrototypeLoop:
+-    bpeq Structure::m_prototype[t1], ValueNull, .opNextPnameSlow
+-    loadp Structure::m_prototype[t1], t2
++    bqeq Structure::m_prototype[t1], ValueNull, .opNextPnameSlow
++    loadq Structure::m_prototype[t1], t2
+     loadp JSCell::m_structure[t2], t1
+     bpneq t1, [t0], .opNextPnameSlow
+     addp 8, t0
+     btpnz [t0], .opNextPnameCheckPrototypeLoop
+ .opNextPnameTarget:
+-    dispatchInt(48[PB, PC, 8])
++    dispatchIntIndirect(6)
+ 
+ .opNextPnameEnd:
+     dispatch(7)
+@@ -1525,11 +1554,15 @@ _llint_op_catch:
+     loadp JITStackFrame::globalData[sp], t3
+     loadp JSGlobalData::targetInterpreterPCForThrow[t3], PC
+     subp PB, PC
+-    urshiftp 3, PC
+-    loadp JSGlobalData::exception[t3], t0
+-    storep 0, JSGlobalData::exception[t3]
+-    loadis 8[PB, PC, 8], t2
+-    storep t0, [cfr, t2, 8]
++    if X32
++        urshiftp 2, PC
++    else
++        urshiftp 3, PC
++    end
++    loadq JSGlobalData::exception[t3], t0
++    storeq 0, JSGlobalData::exception[t3]
++    loadisFromInstruction(1, t2)
++    storeq t0, [cfr, t2, 8]
+     traceExecution()
+     dispatch(2)
+ 
+@@ -1537,9 +1570,9 @@ _llint_op_catch:
+ _llint_op_end:
+     traceExecution()
+     checkSwitchToJITForEpilogue()
+-    loadis 8[PB, PC, 8], t0
++    loadisFromInstruction(1, t0)
+     assertNotConstant(t0)
+-    loadp [cfr, t0, 8], t0
++    loadq [cfr, t0, 8], t0
+     doReturn()
+ 
+ 
+@@ -1561,12 +1594,12 @@ _llint_throw_during_call_trampoline:
+ 
+ macro nativeCallTrampoline(executableOffsetToFunction)
+     storep 0, CodeBlock[cfr]
+-    if X86_64
++    if X86_64 or X32
+         loadp JITStackFrame::globalData + 8[sp], t0
+         storep cfr, JSGlobalData::topCallFrame[t0]
+         loadp CallerFrame[cfr], t0
+-        loadp ScopeChain[t0], t1
+-        storep t1, ScopeChain[cfr]
++        loadq ScopeChain[t0], t1
++        storeq t1, ScopeChain[cfr]
+         peek 0, t1
+         storep t1, ReturnPC[cfr]
+         move cfr, t5  # t5 = rdi
+@@ -1601,7 +1634,7 @@ macro nativeCallTrampoline(executableOff
+         error
+     end
+ 
+-    btpnz JSGlobalData::exception[t3], .exception
++    btqnz JSGlobalData::exception[t3], .exception
+     ret
+ .exception:
+     preserveReturnAddressAfterCall(t1)
+--- Source/JavaScriptCore/llint/LowLevelInterpreter.asm	(revision 131899)
++++ Source/JavaScriptCore/llint/LowLevelInterpreter.asm	(working copy)
+@@ -55,18 +55,31 @@ if JSVALUE64
+     const tagTypeNumber = csr1
+     const tagMask = csr2
+     
+-    macro loadisFromInstruction(offset, dest)
+-        loadis offset * 8[PB, PC, 8], dest
+-    end
++    if X32
++        macro loadisFromInstruction(offset, dest)
++            loadis offset * 4[PB, PC, 4], dest
++        end
+     
+-    macro loadpFromInstruction(offset, dest)
+-        loadp offset * 8[PB, PC, 8], dest
+-    end
++        macro loadpFromInstruction(offset, dest)
++            loadp offset * 4[PB, PC, 4], dest
++        end
++    
++        macro storepToInstruction(value, offset)
++            storep value, offset * 4[PB, PC, 4]
++        end
++    else
++        macro loadisFromInstruction(offset, dest)
++            loadis offset * 8[PB, PC, 8], dest
++        end
++    
++        macro loadpFromInstruction(offset, dest)
++            loadp offset * 8[PB, PC, 8], dest
++        end
+     
+-    macro storepToInstruction(value, offset)
+-        storep value, offset * 8[PB, PC, 8]
++        macro storepToInstruction(value, offset)
++            storep value, offset * 8[PB, PC, 8]
++        end
+     end
+-
+ else
+     const PC = t4
+     macro loadisFromInstruction(offset, dest)
+@@ -145,17 +158,24 @@ const PutToBaseOperationKindVariablePut 
+ 
+ # Allocation constants
+ if JSVALUE64
+-    const JSFinalObjectSizeClassIndex = 1
++    if X32
++        const JSFinalObjectSizeClassIndex = 3
++    else
++        const JSFinalObjectSizeClassIndex = 1
++    end
+ else
+     const JSFinalObjectSizeClassIndex = 3
+ end
+ 
+ # This must match wtf/Vector.h
++const VectorSizeOffset = 0
+ if JSVALUE64
+-    const VectorSizeOffset = 0
+-    const VectorBufferOffset = 8
++    if X32
++        const VectorBufferOffset = 4
++    else
++        const VectorBufferOffset = 8
++    end
+ else
+-    const VectorSizeOffset = 0
+     const VectorBufferOffset = 4
+ end
+ 
+@@ -185,7 +205,7 @@ macro preserveReturnAddressAfterCall(des
+         move lr, destinationRegister
+     elsif ARMv7
+         move lr, destinationRegister
+-    elsif X86 or X86_64
++    elsif X86 or X86_64 or X32
+         pop destinationRegister
+     else
+         error
+@@ -198,7 +218,7 @@ macro restoreReturnAddressBeforeReturn(s
+         move sourceRegister, lr
+     elsif ARMv7
+         move sourceRegister, lr
+-    elsif X86 or X86_64
++    elsif X86 or X86_64 or X32
+         push sourceRegister
+     else
+         error
+@@ -344,9 +364,9 @@ macro functionInitialization(profileArgS
+         addp t2, t3
+     .argumentProfileLoop:
+         if JSVALUE64
+-            loadp ThisArgumentOffset + 8 - profileArgSkip * 8[cfr, t0], t2
++            loadq ThisArgumentOffset + 8 - profileArgSkip * 8[cfr, t0], t2
+             subp sizeof ValueProfile, t3
+-            storep t2, profileArgSkip * sizeof ValueProfile + ValueProfile::m_buckets[t3]
++            storeq t2, profileArgSkip * sizeof ValueProfile + ValueProfile::m_buckets[t3]
+         else
+             loadi ThisArgumentOffset + TagOffset + 8 - profileArgSkip * 8[cfr, t0], t2
+             subp sizeof ValueProfile, t3
+@@ -546,13 +566,13 @@ macro getPutToBaseOperationField(scratch
+ end
+ 
+ macro moveJSValueFromRegisterWithoutProfiling(value, destBuffer, destOffsetReg)
+-    storep value, [destBuffer, destOffsetReg, 8]
++    storeq value, [destBuffer, destOffsetReg, 8]
+ end
+ 
+ 
+ macro moveJSValueFromRegistersWithoutProfiling(tag, payload, destBuffer, destOffsetReg)
+-    storep tag, TagOffset[destBuffer, destOffsetReg, 8]
+-    storep payload, PayloadOffset[destBuffer, destOffsetReg, 8]
++    storei tag, TagOffset[destBuffer, destOffsetReg, 8]
++    storei payload, PayloadOffset[destBuffer, destOffsetReg, 8]
+ end
+ 
+ macro putToBaseVariableBody(variableOffset, scratch1, scratch2, scratch3)
+@@ -613,15 +633,15 @@ end
+ 
+ macro moveJSValue(sourceBuffer, sourceOffsetReg, destBuffer, destOffsetReg, profileOffset, scratchRegister)
+     if JSVALUE64
+-        loadp [sourceBuffer, sourceOffsetReg, 8], scratchRegister
+-        storep scratchRegister, [destBuffer, destOffsetReg, 8]
++        loadq [sourceBuffer, sourceOffsetReg, 8], scratchRegister
++        storeq scratchRegister, [destBuffer, destOffsetReg, 8]
+         loadpFromInstruction(profileOffset, destOffsetReg)
+         valueProfile(scratchRegister, destOffsetReg)
+     else
+-        loadp PayloadOffset[sourceBuffer, sourceOffsetReg, 8], scratchRegister
+-        storep scratchRegister, PayloadOffset[destBuffer, destOffsetReg, 8]
+-        loadp TagOffset[sourceBuffer, sourceOffsetReg, 8], sourceOffsetReg
+-        storep sourceOffsetReg, TagOffset[destBuffer, destOffsetReg, 8]
++        loadi PayloadOffset[sourceBuffer, sourceOffsetReg, 8], scratchRegister
++        storei scratchRegister, PayloadOffset[destBuffer, destOffsetReg, 8]
++        loadi TagOffset[sourceBuffer, sourceOffsetReg, 8], sourceOffsetReg
++        storei sourceOffsetReg, TagOffset[destBuffer, destOffsetReg, 8]
+         loadpFromInstruction(profileOffset, destOffsetReg)
+         valueProfile(sourceOffsetReg, scratchRegister, destOffsetReg)
+     end
+@@ -629,29 +649,29 @@ end
+ 
+ macro moveJSValueFromSlot(slot, destBuffer, destOffsetReg, profileOffset, scratchRegister)
+     if JSVALUE64
+-        loadp [slot], scratchRegister
+-        storep scratchRegister, [destBuffer, destOffsetReg, 8]
++        loadq [slot], scratchRegister
++        storeq scratchRegister, [destBuffer, destOffsetReg, 8]
+         loadpFromInstruction(profileOffset, destOffsetReg)
+         valueProfile(scratchRegister, destOffsetReg)
+     else
+-        loadp PayloadOffset[slot], scratchRegister
+-        storep scratchRegister, PayloadOffset[destBuffer, destOffsetReg, 8]
+-        loadp TagOffset[slot], slot
+-        storep slot, TagOffset[destBuffer, destOffsetReg, 8]
++        loadi PayloadOffset[slot], scratchRegister
++        storei scratchRegister, PayloadOffset[destBuffer, destOffsetReg, 8]
++        loadi TagOffset[slot], slot
++        storei slot, TagOffset[destBuffer, destOffsetReg, 8]
+         loadpFromInstruction(profileOffset, destOffsetReg)
+         valueProfile(slot, scratchRegister, destOffsetReg)
+     end
+ end
+ 
+ macro moveJSValueFromRegister(value, destBuffer, destOffsetReg, profileOffset)
+-    storep value, [destBuffer, destOffsetReg, 8]
++    storeq value, [destBuffer, destOffsetReg, 8]
+     loadpFromInstruction(profileOffset, destOffsetReg)
+     valueProfile(value, destOffsetReg)
+ end
+ 
+ macro moveJSValueFromRegisters(tag, payload, destBuffer, destOffsetReg, profileOffset)
+-    storep tag, TagOffset[destBuffer, destOffsetReg, 8]
+-    storep payload, PayloadOffset[destBuffer, destOffsetReg, 8]
++    storei tag, TagOffset[destBuffer, destOffsetReg, 8]
++    storei payload, PayloadOffset[destBuffer, destOffsetReg, 8]
+     loadpFromInstruction(profileOffset, destOffsetReg)
+     valueProfile(tag, payload, destOffsetReg)
+ end
+@@ -886,10 +906,11 @@ macro interpretResolveWithBase(opcodeLen
+     # t1 now contains the index for the base register
+ 
+     bineq t2, ResolveOperationSetBaseToScope, .notSetBaseToScope
+-        storep t3, PayloadOffset[cfr, t1, 8]
+         if JSVALUE64
++            storeq t3, [cfr, t1, 8]
+         else
+-            storep CellTag, TagOffset[cfr, t1, 8]
++            storei t3, PayloadOffset[cfr, t1, 8]
++            storei CellTag, TagOffset[cfr, t1, 8]
+         end
+         jmp .haveSetBase
+ 
+@@ -897,10 +918,10 @@ macro interpretResolveWithBase(opcodeLen
+ 
+     bineq t2, ResolveOperationSetBaseToUndefined, .notSetBaseToUndefined
+         if JSVALUE64
+-            storep ValueUndefined, PayloadOffset[cfr, t1, 8]
++            storeq ValueUndefined, [cfr, t1, 8]
+         else
+-            storep 0, PayloadOffset[cfr, t1, 8]
+-            storep UndefinedTag, TagOffset[cfr, t1, 8]
++            storei 0, PayloadOffset[cfr, t1, 8]
++            storei UndefinedTag, TagOffset[cfr, t1, 8]
+         end
+         jmp .haveSetBase
+ 
+@@ -908,10 +929,11 @@ macro interpretResolveWithBase(opcodeLen
+     bineq t2, ResolveOperationSetBaseToGlobal, .slowPath
+         loadp JSCell::m_structure[t3], t2
+         loadp Structure::m_globalObject[t2], t2
+-        storep t2, PayloadOffset[cfr, t1, 8]
+         if JSVALUE64
++            storeq t2, [cfr, t1, 8]
+         else
+-            storep CellTag, TagOffset[cfr, t1, 8]
++            storei t2, PayloadOffset[cfr, t1, 8]
++            storei CellTag, TagOffset[cfr, t1, 8]
+         end
+ 
+     .haveSetBase:
+--- Source/JavaScriptCore/offlineasm/backends.rb	(revision 131899)
++++ Source/JavaScriptCore/offlineasm/backends.rb	(working copy)
+@@ -31,6 +31,7 @@ BACKENDS =
+     [
+      "X86",
+      "X86_64",
++     "X32",
+      "ARMv7",
+      "C_LOOP"
+     ]
+@@ -44,6 +45,7 @@ WORKING_BACKENDS =
+     [
+      "X86",
+      "X86_64",
++     "X32",
+      "ARMv7",
+      "C_LOOP"
+     ]
+--- Source/JavaScriptCore/offlineasm/cloop.rb	(revision 131899)
++++ Source/JavaScriptCore/offlineasm/cloop.rb	(working copy)
+@@ -897,14 +897,14 @@ class Instruction
+         when "fd2ii"
+             $asm.putc "Double2Ints(#{operands[0].clValue(:double)}, #{operands[1].clValue}, #{operands[2].clValue});"
+ 
+-        # 64-bit instruction: fp2d int64Op dblOp (based on X64)
++        # 64-bit instruction: fq2d int64Op dblOp (based on X64)
+         # Copy a bit-encoded double in a 64-bit int register to a double register.
+-        when "fp2d"
++        when "fq2d"
+             $asm.putc "#{operands[1].clValue(:double)} = #{operands[0].clValue(:castToDouble)};"
+ 
+-        # 64-bit instruction: fd2p dblOp int64Op (based on X64 instruction set)
++        # 64-bit instruction: fd2q dblOp int64Op (based on X64 instruction set)
+         # Copy a double as a bit-encoded double into a 64-bit int register.
+-        when "fd2p"
++        when "fd2q"
+             $asm.putc "#{operands[1].clValue(:voidPtr)} = #{operands[0].clValue(:castToVoidPtr)};"
+ 
+         when "leai"
+--- Source/JavaScriptCore/offlineasm/instructions.rb	(revision 131899)
++++ Source/JavaScriptCore/offlineasm/instructions.rb	(working copy)
+@@ -63,8 +63,6 @@ MACRO_INSTRUCTIONS =
+      "ci2d",
+      "fii2d", # usage: fii2d <gpr with least significant bits>, <gpr with most significant bits>, <fpr>
+      "fd2ii", # usage: fd2ii <fpr>, <gpr with least significant bits>, <gpr with most significant bits>
+-     "fp2d",
+-     "fd2p",
+      "bdeq",
+      "bdneq",
+      "bdgt",
+@@ -213,6 +211,56 @@ X86_INSTRUCTIONS =
+      "idivi"
+     ]
+ 
++X86_64_INSTRUCTIONS =
++    [
++     "lshiftq",
++     "negq",
++     "rshiftq",
++     "urshiftq",
++     "tqs",
++     "tqz",
++     "tqnz",
++     "peekq",
++     "pokeq",
++     "fq2d",
++     "fd2q",
++     "bqeq",
++     "bqneq",
++     "bqa",
++     "bqaeq",
++     "bqb",
++     "bqbeq",
++     "bqgt",
++     "bqgteq",
++     "bqlt",
++     "bqlteq",
++     "addq",
++     "mulq",
++     "andq",
++     "orq",
++     "subq",
++     "xorq",
++     "loadq",
++     "cqeq",
++     "cqneq",
++     "cqa",
++     "cqaeq",
++     "cqb",
++     "cqbeq",
++     "cqgt",
++     "cqgteq",
++     "cqlt",
++     "cqlteq",
++     "storeq",
++     "btqs",
++     "btqz",
++     "btqnz",
++     "baddqo",
++     "baddqs",
++     "baddqz",
++     "baddqnz"
++    ]
++
+ ARMv7_INSTRUCTIONS =
+     [
+      "smulli",
+@@ -237,7 +285,7 @@ CXX_INSTRUCTIONS =
+      "cloopDo",              # no operands
+     ]
+ 
+-INSTRUCTIONS = MACRO_INSTRUCTIONS + X86_INSTRUCTIONS + ARMv7_INSTRUCTIONS + CXX_INSTRUCTIONS
++INSTRUCTIONS = MACRO_INSTRUCTIONS + X86_INSTRUCTIONS + X86_64_INSTRUCTIONS + ARMv7_INSTRUCTIONS + CXX_INSTRUCTIONS
+ 
+ INSTRUCTION_PATTERN = Regexp.new('\\A((' + INSTRUCTIONS.join(')|(') + '))\\Z')
+ 
+--- Source/JavaScriptCore/offlineasm/x86.rb	(revision 131899)
++++ Source/JavaScriptCore/offlineasm/x86.rb	(working copy)
+@@ -29,6 +29,21 @@ def isX64
+         false
+     when "X86_64"
+         true
++    when "X32"
++        true # X32 is a special mode of X86_64
++    else
++        raise "bad value for $activeBackend: #{$activeBackend}"
++    end
++end
++
++def isX32
++    case $activeBackend
++    when "X86"
++        false
++    when "X86_64"
++        false
++    when "X32"
++        true
+     else
+         raise "bad value for $activeBackend: #{$activeBackend}"
+     end
+@@ -44,13 +59,18 @@ class SpecialRegister < NoChildren
+         when :int
+             "%" + @name + "d"
+         when :ptr
++            isX32 ? "%" + @name + "d" : "%" + @name
++        when :quad
+             "%" + @name
+         else
+             raise
+         end
+     end
+     def x86CallOperand(kind)
+-        "*#{x86Operand(kind)}"
++        "*#{x86Operand(:quad)}"
++    end
++    def x86PushOperand(kind)
++        "#{x86Operand(:quad)}"
+     end
+ end
+ 
+@@ -81,7 +101,9 @@ class RegisterID
+             when :int
+                 "%eax"
+             when :ptr
+-                isX64 ? "%rax" : "%eax"
++                isX64 && !isX32 ? "%rax" : "%eax"
++            when :quad
++                isX64 ? "%rax" : raise
+             else
+                 raise
+             end
+@@ -94,7 +116,9 @@ class RegisterID
+             when :int
+                 "%edx"
+             when :ptr
+-                isX64 ? "%rdx" : "%edx"
++                isX64 && !isX32 ? "%rdx" : "%edx"
++            when :quad
++                isX64 ? "%rdx" : raise
+             else
+                 raise
+             end
+@@ -107,7 +131,9 @@ class RegisterID
+             when :int
+                 "%ecx"
+             when :ptr
+-                isX64 ? "%rcx" : "%ecx"
++                isX64 && !isX32 ? "%rcx" : "%ecx"
++            when :quad
++                isX64 ? "%rcx" : raise
+             else
+                 raise
+             end
+@@ -120,7 +146,9 @@ class RegisterID
+             when :int
+                 "%ebx"
+             when :ptr
+-                isX64 ? "%rbx" : "%ebx"
++                isX64 && !isX32 ? "%rbx" : "%ebx"
++            when :quad
++                isX64 ? "%rbx" : raise
+             else
+                 raise
+             end
+@@ -133,7 +161,9 @@ class RegisterID
+             when :int
+                 "%esi"
+             when :ptr
+-                isX64 ? "%rsi" : "%esi"
++                isX64 && !isX32 ? "%rsi" : "%esi"
++            when :quad
++                isX64 ? "%rsi" : raise
+             else
+                 raise
+             end
+@@ -145,6 +175,8 @@ class RegisterID
+                 when :int
+                     "%r13d"
+                 when :ptr
++                    isX32 ? "%r13d" : "%r13"
++                when :quad
+                     "%r13"
+                 else
+                     raise
+@@ -172,7 +204,9 @@ class RegisterID
+             when :int
+                 "%esp"
+             when :ptr
+-                isX64 ? "%rsp" : "%esp"
++                isX64 && !isX32 ? "%rsp" : "%esp"
++            when :quad
++                isX64 ? "%rsp" : raise
+             else
+                 raise
+             end
+@@ -186,6 +220,8 @@ class RegisterID
+             when :int
+                 "%edi"
+             when :ptr
++                isX32 ? "%edi" : "%rdi"
++            when :quad
+                 "%rdi"
+             end
+         when "t6"
+@@ -196,6 +232,8 @@ class RegisterID
+             when :int
+                 "%r10d"
+             when :ptr
++                isX32 ? "%r10d" : "%r10"
++            when :quad
+                 "%r10"
+             end
+         when "csr1"
+@@ -206,6 +244,8 @@ class RegisterID
+             when :int
+                 "%r14d"
+             when :ptr
++                isX32 ? "%r14d" : "%r14"
++            when :quad
+                 "%r14"
+             end
+         when "csr2"
+@@ -216,6 +256,8 @@ class RegisterID
+             when :int
+                 "%r15d"
+             when :ptr
++                isX32 ? "%r15d" : "%r15"
++            when :quad
+                 "%r15"
+             end
+         else
+@@ -223,7 +265,10 @@ class RegisterID
+         end
+     end
+     def x86CallOperand(kind)
+-        "*#{x86Operand(kind)}"
++        isX64 ? "*#{x86Operand(:quad)}" : "*#{x86Operand(:ptr)}"
++    end
++    def x86PushOperand(kind)
++        isX64 ? "#{x86Operand(:quad)}" : "#{x86Operand(:ptr)}"
+     end
+ end
+ 
+@@ -250,6 +295,9 @@ class FPRegisterID
+     def x86CallOperand(kind)
+         "*#{x86Operand(kind)}"
+     end
++    def x86PushOperand(kind)
++        "#{x86Operand(kind)}"
++    end
+ end
+ 
+ class Immediate
+@@ -266,6 +314,9 @@ class Immediate
+     def x86CallOperand(kind)
+         "#{value}"
+     end
++    def x86PushOperand(kind)
++        "$#{value}"
++    end
+ end
+ 
+ class Address
+@@ -282,6 +333,9 @@ class Address
+     def x86CallOperand(kind)
+         "*#{x86Operand(kind)}"
+     end
++    def x86PushOperand(kind)
++        "#{x86Operand(kind)}"
++    end
+ end
+ 
+ class BaseIndex
+@@ -300,6 +354,9 @@ class BaseIndex
+     def x86CallOperand(kind)
+         "*#{x86Operand(kind)}"
+     end
++    def x86PushOperand(kind)
++        "#{x86Operand(kind)}"
++    end
+ end
+ 
+ class AbsoluteAddress
+@@ -318,6 +375,9 @@ class AbsoluteAddress
+     def x86CallOperand(kind)
+         "*#{address.value}"
+     end
++    def x86PushOperand(kind)
++        "#{address.value}"
++    end
+ end
+ 
+ class LabelReference
+@@ -371,6 +431,9 @@ class Sequence
+         
+         return newList
+     end
++    def getModifiedListX32
++        return getModifiedListX86_64
++    end
+ end
+ 
+ class Instruction
+@@ -393,7 +456,9 @@ class Instruction
+         when :int
+             "l"
+         when :ptr
+-            isX64 ? "q" : "l"
++            isX64 && !isX32 ? "q" : "l"
++        when :quad
++            isX64 ? "q" : raise
+         when :double
+             "sd"
+         else
+@@ -410,7 +475,9 @@ class Instruction
+         when :int
+             4
+         when :ptr
+-            isX64 ? 8 : 4
++            isX64 && !isX32 ? 8 : 4
++        when :quad
++            isX64 ? 8 : raise
+         when :double
+             8
+         else
+@@ -437,6 +504,19 @@ class Instruction
+         handleX86OpWithNumOperands(opcode, kind, operands.size)
+     end
+     
++    def handleX86Jump(opcode, kind)
++        if isX32
++            if operands[0].is_a? Address or operands[0].is_a? BaseIndex or operands[0].is_a? AbsoluteAddress
++                $asm.puts "mov#{x86Suffix(kind)} #{operands[0].x86Operand(kind)}, #{X64_SCRATCH_REGISTER.x86Operand(kind)}"
++                $asm.puts "#{opcode} #{X64_SCRATCH_REGISTER.x86CallOperand(kind)}"
++            else
++                $asm.puts "#{opcode} #{operands[0].x86CallOperand(kind)}"
++            end
++        else
++            $asm.puts "#{opcode} #{operands[0].x86CallOperand(kind)}"
++        end
++    end
++
+     def handleX86Shift(opcode, kind)
+         if operands[0].is_a? Immediate or operands[0] == RegisterID.forName(nil, "t2")
+             $asm.puts "#{opcode} #{operands[0].x86Operand(:byte)}, #{operands[1].x86Operand(kind)}"
+@@ -607,9 +687,17 @@ class Instruction
+     
+     def handleMove
+         if Immediate.new(nil, 0) == operands[0] and operands[1].is_a? RegisterID
+-            $asm.puts "xor#{x86Suffix(:ptr)} #{operands[1].x86Operand(:ptr)}, #{operands[1].x86Operand(:ptr)}"
++            if isX64
++                $asm.puts "xor#{x86Suffix(:quad)} #{operands[1].x86Operand(:quad)}, #{operands[1].x86Operand(:quad)}"
++            else
++                $asm.puts "xor#{x86Suffix(:ptr)} #{operands[1].x86Operand(:ptr)}, #{operands[1].x86Operand(:ptr)}"
++            end
+         elsif operands[0] != operands[1]
+-            $asm.puts "mov#{x86Suffix(:ptr)} #{x86Operands(:ptr, :ptr)}"
++            if isX64
++                $asm.puts "mov#{x86Suffix(:quad)} #{x86Operands(:quad, :quad)}"
++            else
++                $asm.puts "mov#{x86Suffix(:ptr)} #{x86Operands(:ptr, :ptr)}"
++            end
+         end
+     end
+     
+@@ -623,6 +711,11 @@ class Instruction
+         lowerX86Common
+     end
+     
++    def lowerX32
++        raise unless $activeBackend == "X32"
++        lowerX86Common
++    end
++    
+     def lowerX86Common
+         $asm.codeOrigin codeOriginString if $enableCodeOriginComments
+         $asm.annotation annotation if $enableInstrAnnotations
+@@ -632,54 +725,76 @@ class Instruction
+             handleX86Add(:int)
+         when "addp"
+             handleX86Add(:ptr)
++        when "addq"
++            handleX86Add(:quad)
+         when "andi"
+             handleX86Op("andl", :int)
+         when "andp"
+             handleX86Op("and#{x86Suffix(:ptr)}", :ptr)
++        when "andq"
++            handleX86Op("and#{x86Suffix(:quad)}", :quad)
+         when "lshifti"
+             handleX86Shift("sall", :int)
+         when "lshiftp"
+             handleX86Shift("sal#{x86Suffix(:ptr)}", :ptr)
++        when "lshiftq"
++            handleX86Shift("sal#{x86Suffix(:quad)}", :quad)
+         when "muli"
+             handleX86Mul(:int)
+         when "mulp"
+             handleX86Mul(:ptr)
++        when "mulq"
++            handleX86Mul(:quad)
+         when "negi"
+             $asm.puts "negl #{x86Operands(:int)}"
+         when "negp"
+             $asm.puts "neg#{x86Suffix(:ptr)} #{x86Operands(:ptr)}"
++        when "negq"
++            $asm.puts "neg#{x86Suffix(:quad)} #{x86Operands(:quad)}"
+         when "noti"
+             $asm.puts "notl #{x86Operands(:int)}"
+         when "ori"
+             handleX86Op("orl", :int)
+         when "orp"
+             handleX86Op("or#{x86Suffix(:ptr)}", :ptr)
++        when "orq"
++            handleX86Op("or#{x86Suffix(:quad)}", :quad)
+         when "rshifti"
+             handleX86Shift("sarl", :int)
+         when "rshiftp"
+             handleX86Shift("sar#{x86Suffix(:ptr)}", :ptr)
++        when "rshiftq"
++            handleX86Shift("sar#{x86Suffix(:quad)}", :quad)
+         when "urshifti"
+             handleX86Shift("shrl", :int)
+         when "urshiftp"
+             handleX86Shift("shr#{x86Suffix(:ptr)}", :ptr)
++        when "urshiftq"
++            handleX86Shift("shr#{x86Suffix(:quad)}", :quad)
+         when "subi"
+             handleX86Sub(:int)
+         when "subp"
+             handleX86Sub(:ptr)
++        when "subq"
++            handleX86Sub(:quad)
+         when "xori"
+             handleX86Op("xorl", :int)
+         when "xorp"
+             handleX86Op("xor#{x86Suffix(:ptr)}", :ptr)
++        when "xorq"
++            handleX86Op("xor#{x86Suffix(:quad)}", :quad)
+         when "loadi", "storei"
+             $asm.puts "movl #{x86Operands(:int, :int)}"
+         when "loadis"
+             if isX64
+-                $asm.puts "movslq #{x86Operands(:int, :ptr)}"
++                $asm.puts "movslq #{x86Operands(:int, :quad)}"
+             else
+                 $asm.puts "movl #{x86Operands(:int, :int)}"
+             end
+         when "loadp", "storep"
+             $asm.puts "mov#{x86Suffix(:ptr)} #{x86Operands(:ptr, :ptr)}"
++        when "loadq", "storeq"
++            $asm.puts "mov#{x86Suffix(:quad)} #{x86Operands(:quad, :quad)}"
+         when "loadb"
+             $asm.puts "movzbl #{operands[0].x86Operand(:byte)}, #{operands[1].x86Operand(:int)}"
+         when "loadbs"
+@@ -756,14 +871,14 @@ class Instruction
+         when "movdz"
+             $asm.puts "xorpd #{operands[0].x86Operand(:double)}, #{operands[0].x86Operand(:double)}"
+         when "pop"
+-            $asm.puts "pop #{operands[0].x86Operand(:ptr)}"
++            $asm.puts "pop #{operands[0].x86PushOperand(:ptr)}"
+         when "push"
+-            $asm.puts "push #{operands[0].x86Operand(:ptr)}"
++            $asm.puts "push #{operands[0].x86PushOperand(:ptr)}"
+         when "move"
+             handleMove
+         when "sxi2p"
+             if isX64
+-                $asm.puts "movslq #{operands[0].x86Operand(:int)}, #{operands[1].x86Operand(:ptr)}"
++                $asm.puts "movslq #{operands[0].x86Operand(:int)}, #{operands[1].x86Operand(:quad)}"
+             else
+                 handleMove
+             end
+@@ -779,42 +894,62 @@ class Instruction
+             handleX86IntBranch("je", :int)
+         when "bpeq"
+             handleX86IntBranch("je", :ptr)
++        when "bqeq"
++            handleX86IntBranch("je", :quad)
+         when "bineq"
+             handleX86IntBranch("jne", :int)
+         when "bpneq"
+             handleX86IntBranch("jne", :ptr)
++        when "bqneq"
++            handleX86IntBranch("jne", :quad)
+         when "bia"
+             handleX86IntBranch("ja", :int)
+         when "bpa"
+             handleX86IntBranch("ja", :ptr)
++        when "bqa"
++            handleX86IntBranch("ja", :quad)
+         when "biaeq"
+             handleX86IntBranch("jae", :int)
+         when "bpaeq"
+             handleX86IntBranch("jae", :ptr)
++        when "bqaeq"
++            handleX86IntBranch("jae", :quad)
+         when "bib"
+             handleX86IntBranch("jb", :int)
+         when "bpb"
+             handleX86IntBranch("jb", :ptr)
++        when "bqb"
++            handleX86IntBranch("jb", :quad)
+         when "bibeq"
+             handleX86IntBranch("jbe", :int)
+         when "bpbeq"
+             handleX86IntBranch("jbe", :ptr)
++        when "bqbeq"
++            handleX86IntBranch("jbe", :quad)
+         when "bigt"
+             handleX86IntBranch("jg", :int)
+         when "bpgt"
+             handleX86IntBranch("jg", :ptr)
++        when "bqgt"
++            handleX86IntBranch("jg", :quad)
+         when "bigteq"
+             handleX86IntBranch("jge", :int)
+         when "bpgteq"
+             handleX86IntBranch("jge", :ptr)
++        when "bqgteq"
++            handleX86IntBranch("jge", :quad)
+         when "bilt"
+             handleX86IntBranch("jl", :int)
+         when "bplt"
+             handleX86IntBranch("jl", :ptr)
++        when "bqlt"
++            handleX86IntBranch("jl", :quad)
+         when "bilteq"
+             handleX86IntBranch("jle", :int)
+         when "bplteq"
+             handleX86IntBranch("jle", :ptr)
++        when "bqlteq"
++            handleX86IntBranch("jle", :quad)
+         when "bbeq"
+             handleX86IntBranch("je", :byte)
+         when "bbneq"
+@@ -839,14 +974,20 @@ class Instruction
+             handleX86BranchTest("js", :int)
+         when "btps"
+             handleX86BranchTest("js", :ptr)
++        when "btqs"
++            handleX86BranchTest("js", :quad)
+         when "btiz"
+             handleX86BranchTest("jz", :int)
+         when "btpz"
+             handleX86BranchTest("jz", :ptr)
++        when "btqz"
++            handleX86BranchTest("jz", :quad)
+         when "btinz"
+             handleX86BranchTest("jnz", :int)
+         when "btpnz"
+             handleX86BranchTest("jnz", :ptr)
++        when "btqnz"
++            handleX86BranchTest("jnz", :quad)
+         when "btbs"
+             handleX86BranchTest("js", :byte)
+         when "btbz"
+@@ -854,23 +995,32 @@ class Instruction
+         when "btbnz"
+             handleX86BranchTest("jnz", :byte)
+         when "jmp"
+-            $asm.puts "jmp #{operands[0].x86CallOperand(:ptr)}"
++            # $asm.puts "jmp #{operands[0].x86CallOperand(:ptr)}"
++            handleX86Jump("jmp", :ptr)
+         when "baddio"
+             handleX86OpBranch("addl", "jo", :int)
+         when "baddpo"
+             handleX86OpBranch("add#{x86Suffix(:ptr)}", "jo", :ptr)
++        when "baddqo"
++            handleX86OpBranch("add#{x86Suffix(:quad)}", "jo", :quad)
+         when "baddis"
+             handleX86OpBranch("addl", "js", :int)
+         when "baddps"
+             handleX86OpBranch("add#{x86Suffix(:ptr)}", "js", :ptr)
++        when "baddqs"
++            handleX86OpBranch("add#{x86Suffix(:quad)}", "js", :quad)
+         when "baddiz"
+             handleX86OpBranch("addl", "jz", :int)
+         when "baddpz"
+             handleX86OpBranch("add#{x86Suffix(:ptr)}", "jz", :ptr)
++        when "baddqz"
++            handleX86OpBranch("add#{x86Suffix(:quad)}", "jz", :quad)
+         when "baddinz"
+             handleX86OpBranch("addl", "jnz", :int)
+         when "baddpnz"
+             handleX86OpBranch("add#{x86Suffix(:ptr)}", "jnz", :ptr)
++        when "baddqnz"
++            handleX86OpBranch("add#{x86Suffix(:quad)}", "jnz", :quad)
+         when "bsubio"
+             handleX86SubBranch("jo", :int)
+         when "bsubis"
+@@ -898,7 +1048,8 @@ class Instruction
+         when "break"
+             $asm.puts "int $3"
+         when "call"
+-            $asm.puts "call #{operands[0].x86CallOperand(:ptr)}"
++            # $asm.puts "call #{operands[0].x86CallOperand(:ptr)}"
++            handleX86Jump("call", :ptr)
+         when "ret"
+             $asm.puts "ret"
+         when "cieq"
+@@ -907,60 +1058,80 @@ class Instruction
+             handleX86IntCompareSet("sete", :byte)
+         when "cpeq"
+             handleX86IntCompareSet("sete", :ptr)
++        when "cqeq"
++            handleX86IntCompareSet("sete", :quad)
+         when "cineq"
+             handleX86IntCompareSet("setne", :int)
+         when "cbneq"
+             handleX86IntCompareSet("setne", :byte)
+         when "cpneq"
+             handleX86IntCompareSet("setne", :ptr)
++        when "cqneq"
++            handleX86IntCompareSet("setne", :quad)
+         when "cia"
+             handleX86IntCompareSet("seta", :int)
+         when "cba"
+             handleX86IntCompareSet("seta", :byte)
+         when "cpa"
+             handleX86IntCompareSet("seta", :ptr)
++        when "cqa"
++            handleX86IntCompareSet("seta", :quad)
+         when "ciaeq"
+             handleX86IntCompareSet("setae", :int)
+         when "cbaeq"
+             handleX86IntCompareSet("setae", :byte)
+         when "cpaeq"
+             handleX86IntCompareSet("setae", :ptr)
++        when "cqaeq"
++            handleX86IntCompareSet("setae", :quad)
+         when "cib"
+             handleX86IntCompareSet("setb", :int)
+         when "cbb"
+             handleX86IntCompareSet("setb", :byte)
+         when "cpb"
+             handleX86IntCompareSet("setb", :ptr)
++        when "cqb"
++            handleX86IntCompareSet("setb", :quad)
+         when "cibeq"
+             handleX86IntCompareSet("setbe", :int)
+         when "cbbeq"
+             handleX86IntCompareSet("setbe", :byte)
+         when "cpbeq"
+             handleX86IntCompareSet("setbe", :ptr)
++        when "cqbeq"
++            handleX86IntCompareSet("setbe", :quad)
+         when "cigt"
+             handleX86IntCompareSet("setg", :int)
+         when "cbgt"
+             handleX86IntCompareSet("setg", :byte)
+         when "cpgt"
+             handleX86IntCompareSet("setg", :ptr)
++        when "cqgt"
++            handleX86IntCompareSet("setg", :quad)
+         when "cigteq"
+             handleX86IntCompareSet("setge", :int)
+         when "cbgteq"
+             handleX86IntCompareSet("setge", :byte)
+         when "cpgteq"
+             handleX86IntCompareSet("setge", :ptr)
++        when "cqgteq"
++            handleX86IntCompareSet("setge", :quad)
+         when "cilt"
+             handleX86IntCompareSet("setl", :int)
+         when "cblt"
+             handleX86IntCompareSet("setl", :byte)
+         when "cplt"
+             handleX86IntCompareSet("setl", :ptr)
++        when "cqlt"
++            handleX86IntCompareSet("setl", :quad)
+         when "cilteq"
+             handleX86IntCompareSet("setle", :int)
+         when "cblteq"
+             handleX86IntCompareSet("setle", :byte)
+         when "cplteq"
+             handleX86IntCompareSet("setle", :ptr)
++        when "cqlteq"
++            handleX86IntCompareSet("setle", :quad)
+         when "tis"
+             handleX86SetTest("sets", :int)
+         when "tiz"
+@@ -973,6 +1144,12 @@ class Instruction
+             handleX86SetTest("setz", :ptr)
+         when "tpnz"
+             handleX86SetTest("setnz", :ptr)
++        when "tqs"
++            handleX86SetTest("sets", :quad)
++        when "tqz"
++            handleX86SetTest("setz", :quad)
++        when "tqnz"
++            handleX86SetTest("setnz", :quad)
+         when "tbs"
+             handleX86SetTest("sets", :byte)
+         when "tbz"
+@@ -982,9 +1159,15 @@ class Instruction
+         when "peek"
+             sp = RegisterID.new(nil, "sp")
+             $asm.puts "mov#{x86Suffix(:ptr)} #{operands[0].value * x86Bytes(:ptr)}(#{sp.x86Operand(:ptr)}), #{operands[1].x86Operand(:ptr)}"
++        when "peekq"
++            sp = RegisterID.new(nil, "sp")
++            $asm.puts "mov#{x86Suffix(:quad)} #{operands[0].value * x86Bytes(:quad)}(#{sp.x86Operand(:ptr)}), #{operands[1].x86Operand(:quad)}"
+         when "poke"
+             sp = RegisterID.new(nil, "sp")
+             $asm.puts "mov#{x86Suffix(:ptr)} #{operands[0].x86Operand(:ptr)}, #{operands[1].value * x86Bytes(:ptr)}(#{sp.x86Operand(:ptr)})"
++        when "pokeq"
++            sp = RegisterID.new(nil, "sp")
++            $asm.puts "mov#{x86Suffix(:quad)} #{operands[0].x86Operand(:quad)}, #{operands[1].value * x86Bytes(:quad)}(#{sp.x86Operand(:ptr)})"
+         when "cdqi"
+             $asm.puts "cdq"
+         when "idivi"
+@@ -999,10 +1182,10 @@ class Instruction
+             $asm.puts "movsd #{operands[0].x86Operand(:double)}, %xmm7"
+             $asm.puts "psrlq $32, %xmm7"
+             $asm.puts "movsd %xmm7, #{operands[2].x86Operand(:int)}"
+-        when "fp2d"
+-            $asm.puts "movd #{operands[0].x86Operand(:ptr)}, #{operands[1].x86Operand(:double)}"
+-        when "fd2p"
+-            $asm.puts "movd #{operands[0].x86Operand(:double)}, #{operands[1].x86Operand(:ptr)}"
++        when "fq2d"
++            $asm.puts "movd #{operands[0].x86Operand(:quad)}, #{operands[1].x86Operand(:double)}"
++        when "fd2q"
++            $asm.puts "movd #{operands[0].x86Operand(:double)}, #{operands[1].x86Operand(:quad)}"
+         when "bo"
+             $asm.puts "jo #{operands[0].asmLabel}"
+         when "bs"
+

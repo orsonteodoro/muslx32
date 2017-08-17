@@ -59,7 +59,7 @@ pkg_setup() {
 src_prepare() {
 	if [[ "${CHOST}" =~ "muslx32" ]] ; then
 		epatch "${FILESDIR}"/musl-1.1.15-gdb-ptrace.patch #for gdb on x32
-		epatch "${FILESDIR}"/musl-9999-x32-relative64-1.patch #for wine x32
+#		epatch "${FILESDIR}"/musl-9999-x32-relative64-1.patch #for wine x32
 		#epatch "${FILESDIR}"/musl-9999-pthread_setname_np.patch #for firefox 49.x already applied
 		epatch "${FILESDIR}"/musl-9999-timex-x32.patch #for chrony
 #	        epatch "${FILESDIR}"/musl-1.1.15-x32-itimerspec-timespec-stat-1.patch #for weston, top, ps

@@ -1,0 +1,31 @@
+From bc8a191fe360207b8220e0d2065f36ee0b920962 Mon Sep 17 00:00:00 2001
+From: Eduardo Lima Mitev <elima@igalia.com>
+Date: Fri, 26 Apr 2013 12:48:10 +0200
+Subject: [PATCH] [GTK] Compilation of ProcessLauncherGtk.cpp fails due to
+ unresolved symbols
+ https://bugs.webkit.org/show_bug.cgi?id=115240
+
+Reviewed by NOBODY (OOPS!).
+
+* UIProcess/Launcher/gtk/ProcessLauncherGtk.cpp: Includes sys/socket.h if OS is Linux
+---
+ Source/WebKit2/ChangeLog                                     |    9 +++++++++
+ Source/WebKit2/UIProcess/Launcher/gtk/ProcessLauncherGtk.cpp |    1 +
+ 2 files changed, 10 insertions(+)
+
+diff --git a/Source/WebKit2/UIProcess/Launcher/gtk/ProcessLauncherGtk.cpp b/Source/WebKit2/UIProcess/Launcher/gtk/ProcessLauncherGtk.cpp
+index c8138d7..f65c7ed 100644
+--- a/Source/WebKit2/UIProcess/Launcher/gtk/ProcessLauncherGtk.cpp
++++ b/Source/WebKit2/UIProcess/Launcher/gtk/ProcessLauncherGtk.cpp
+@@ -43,6 +43,7 @@
+ 
+ #if OS(LINUX)
+ #include <sys/prctl.h>
++#include <sys/socket.h>
+ #endif
+ 
+ #ifdef SOCK_SEQPACKET
+-- 
+1.7.10.4
+
+

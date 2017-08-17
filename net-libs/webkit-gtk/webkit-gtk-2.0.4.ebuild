@@ -27,6 +27,7 @@ REQUIRED_USE="
 	webgl? ( ^^ ( gles2 opengl ) )
 	!webgl? ( ?? ( gles2 opengl ) )
 	|| ( aqua wayland X )
+	elibc_musl? ( abi_x86_x32? ( jit ) )
 "
 
 # use sqlite, svg by default
@@ -117,6 +118,11 @@ pkg_pretend() {
 pkg_setup() {
         if [[ "${CHOST}" =~ "muslx32" ]] ; then
                 ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+                ewarn "reason: broken x32 javascript"
+                if [[ "${MUSLX32_OVERLAY_DEVELOPER}" != "1" ]] ; then
+                        eerror "add MUSLX32_OVERLAY_DEVELOPER=1 to /etc/portage/make.conf to continue emerging broken package."
+                        die
+                fi
         fi
 
 	# Check whether any of the debugging flags is enabled
@@ -177,36 +183,43 @@ src_prepare() {
 	epatch "${FILESDIR}"/${PN}-2.4.9-remove-disallow_ctypes_h-braindead.patch
 	epatch "${FILESDIR}"/${PN}-2.0.4-remove-execinfo_h.patch
 
+	epatch "${FILESDIR}"/${PN}-2.1.3-fix-undefined-reference-to-putByIndexBeyondVectorLengthWithoutAttributes.patch
+
 	AT_M4DIR=Source/autotools eautoreconf
 
-	epatch "${FILESDIR}"/webkit-jsc-jit-2.0.4.patch
-	epatch "${FILESDIR}"/webkit-jsc-llint-2.0.4-1.patch
-	sed -i '/parse-param/ a%lex-param {YYLEX_PARAM}' \
-             Source/ThirdParty/ANGLE/src/compiler/glslang.y
-	epatch "${FILESDIR}"/webkitgtk-2.0.4-x32-weakcompareandswap.patch
-	epatch "${FILESDIR}"/webkitgtk-2.0.4-isnan.patch
-	epatch "${FILESDIR}"/webkitgtk-2.0.4-pluginprocessproxyunix-signalh.patch
-	epatch "${FILESDIR}"/webkitgtk-2.0.4-pluginprocessmainunix-libgen.patch
-	epatch "${FILESDIR}"/webkit-jsc-llint-2.0.4-2.patch
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		epatch "${FILESDIR}"/${PN}-2.0.1-jsc-jit.patch
+		epatch "${FILESDIR}"/${PN}-2.0.1-jsc-llint.patch
+
+		sed -i '/parse-param/ a%lex-param {YYLEX_PARAM}' \
+	             Source/ThirdParty/ANGLE/src/compiler/glslang.y
+		epatch "${FILESDIR}"/${PN}-2.0.4-x32-weakcompareandswap.patch
+		epatch "${FILESDIR}"/${PN}-2.0.4-isnan.patch
+		epatch "${FILESDIR}"/${PN}-2.0.4-pluginprocessproxyunix-signalh.patch
+		epatch "${FILESDIR}"/${PN}-2.0.4-pluginprocessmainunix-libgen.patch
+
+		epatch "${FILESDIR}"/${PN}-2.0.4-stacksize-musl.patch
+
+		#disable gcc version check
+		sed -i -r -e 's|as_fn_error \$\? "Compiler GCC|true; #as_fn_error \$\? "Compiler GCC|g' configure
+	fi
 
 	gnome2_src_prepare
 }
 
 src_configure() {
-	strip-flags
-	filter-flags -O0 -O1 -O2 -Os -O3 -O4
-	append-cflags -O0
-	append-cxxflags -O0
-
 	# Respect CC, otherwise fails on prefix #395875
 	tc-export CC
 
-	# Arches without JIT support also need this to really disable it in all places
-	if [[ "${CHOST}" =~ "muslx32" ]]; then
-		true
-	else
-		use jit || append-cppflags -DENABLE_JIT=0 -DENABLE_YARR_JIT=0 -DENABLE_ASSEMBLER=0
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		if use debug ; then
+			#using use debug will run out of memory for ld
+			append-ldflags -Wl,--reduce-memory-overheads
+			append-ldflags -Wl,--no-keep-memory
+		fi
 	fi
+
+	use jit || append-cppflags -DENABLE_JIT=0 -DENABLE_YARR_JIT=0 -DENABLE_ASSEMBLER=0
 
 	# It does not compile on alpha without this in LDFLAGS
 	# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=648761
@@ -239,13 +252,6 @@ src_configure() {
 		ruby_interpreter="RUBY=$(type -P ruby20)"
 	fi
 
-	local jit_choice
-	if [[ "${CHOST}" =~ "muslx32" ]]; then
-		jit_choice="--enable-jit"
-	else
-		jit_choice="$(use_enable jit)"
-	fi
-
 	# TODO: Check Web Audio support
 	# should somehow let user select between them?
 	#
@@ -271,7 +277,7 @@ src_configure() {
 		--with-gtk=3.0 \
 		--enable-dependency-tracking \
 		--disable-gtk-doc \
-		${jit_choice} \
+		$(use_enable jit) \
 		${ruby_interpreter}
 }
 

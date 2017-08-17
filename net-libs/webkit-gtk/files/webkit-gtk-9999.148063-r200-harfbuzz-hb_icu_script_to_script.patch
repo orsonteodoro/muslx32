@@ -1,0 +1,39 @@
+Only in webkitgtk-9999.148063/Source/WebKit/gtk: ChangeLog.orig
+Only in webkitgtk-9999.148063/Source/WebKit/gtk: ChangeLog.rej
+Only in webkitgtk-9999.148063/Source/WebKit/gtk: GNUmakefile.am.rej
+Only in webkitgtk-9999.148063/Source/WebKit2: ChangeLog.orig
+Only in webkitgtk-9999.148063/Source/WebKit2: ChangeLog.rej
+Only in webkitgtk-9999.148063/Source/WebKit2: GNUmakefile.am.rej
+Only in webkitgtk-9999.148063/Source/WebKit2/UIProcess/API/gtk/tests: GNUmakefile.am.rej
+diff -urp webkitgtk-9999.148063.orig/Source/autotools/FindDependencies.m4 webkitgtk-9999.148063/Source/autotools/FindDependencies.m4
+--- webkitgtk-9999.148063.orig/Source/autotools/FindDependencies.m4	2017-06-12 03:16:16.233041195 -0700
++++ webkitgtk-9999.148063/Source/autotools/FindDependencies.m4	2017-06-12 05:26:29.442916121 -0700
+@@ -369,10 +369,10 @@ fi
+ # Check if FreeType/FontConfig are available.
+ if test "$with_target" = "directfb"; then
+     PKG_CHECK_MODULES([FREETYPE],
+-        [fontconfig >= fontconfig_required_version freetype2 >= freetype2_required_version harfbuzz >= harfbuzz_required_version])
++        [fontconfig >= fontconfig_required_version freetype2 >= freetype2_required_version harfbuzz >= harfbuzz_required_version harfbuzz-icu >= harfbuzz_icu_required_version])
+ else
+     PKG_CHECK_MODULES([FREETYPE],
+-        [cairo-ft fontconfig >= fontconfig_required_version freetype2 >= freetype2_required_version harfbuzz >= harfbuzz_required_version])
++        [cairo-ft fontconfig >= fontconfig_required_version freetype2 >= freetype2_required_version harfbuzz >= harfbuzz_required_version harfbuzz-icu >= harfbuzz_icu_required_version])
+ fi
+ AC_SUBST([FREETYPE_CFLAGS])
+ AC_SUBST([FREETYPE_LIBS])
+diff -urp webkitgtk-9999.148063.orig/Source/autotools/Versions.m4 webkitgtk-9999.148063/Source/autotools/Versions.m4
+--- webkitgtk-9999.148063.orig/Source/autotools/Versions.m4	2017-06-12 03:16:16.235041195 -0700
++++ webkitgtk-9999.148063/Source/autotools/Versions.m4	2017-06-12 05:25:45.828916820 -0700
+@@ -30,6 +30,7 @@ m4_define([gobject_introspection_require
+ m4_define([gstreamer_plugins_base_required_version], [1.0.3])
+ m4_define([gstreamer_required_version], [1.0.3])
+ m4_define([harfbuzz_required_version], [0.9.7])
++m4_define([harfbuzz_icu_required_version], [1.4.5])
+ m4_define([libsoup_required_version], [2.42.0])
+ m4_define([libxml_required_version], [2.6])
+ m4_define([libxslt_required_version], [1.1.7])
+Only in webkitgtk-9999.148063/Tools: ChangeLog.orig
+Only in webkitgtk-9999.148063/Tools: ChangeLog.rej
+Only in webkitgtk-9999.148063/Tools: GNUmakefile.am.rej
+Only in webkitgtk-9999.148063/Tools/MiniBrowser/gtk: GNUmakefile.am.rej
+Only in webkitgtk-9999.148063/Tools/TestWebKitAPI: GNUmakefile.am.rej

@@ -1,0 +1,16 @@
+diff -urp webkitgtk-1.11.1.orig/Source/JavaScriptCore/interpreter/Interpreter.cpp webkitgtk-1.11.1/Source/JavaScriptCore/interpreter/Interpreter.cpp
+--- webkitgtk-1.11.1.orig/Source/JavaScriptCore/interpreter/Interpreter.cpp	2012-10-23 01:31:34.000000000 -0700
++++ webkitgtk-1.11.1/Source/JavaScriptCore/interpreter/Interpreter.cpp	2017-06-06 12:34:28.359286562 -0700
+@@ -119,8 +119,8 @@ Interpreter::StackPolicy::StackPolicy(In
+     int size = stack.size();
+ 
+     const int DEFAULT_REQUIRED_STACK = 1024 * 1024;
+-    const int DEFAULT_MINIMUM_USEABLE_STACK = 128 * 1024;
+-    const int DEFAULT_ERROR_MODE_REQUIRED_STACK = 32 * 1024;
++    const int DEFAULT_MINIMUM_USEABLE_STACK = 32 * 1024;
++    const int DEFAULT_ERROR_MODE_REQUIRED_STACK = 16 * 1024;
+ 
+     // Here's the policy in a nutshell:
+     //
+Only in webkitgtk-1.11.1/Source/JavaScriptCore/interpreter: Interpreter.cpp.orig
+Only in webkitgtk-1.11.1/Source/JavaScriptCore/interpreter: Interpreter.cpp.rej

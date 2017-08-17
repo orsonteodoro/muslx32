@@ -32,6 +32,7 @@ REQUIRED_USE="
 	!webgl? ( ?? ( gles2 opengl ) )
 	webgl? ( gstreamer )
 	|| ( aqua wayland X )
+	elibc_musl? ( abi_x86_x32? ( jit ) )
 "
 
 # Tests fail to link for inexplicable reasons
@@ -141,6 +142,11 @@ pkg_pretend() {
 pkg_setup() {
         if [[ "${CHOST}" =~ "muslx32" ]] ; then
                 ewarn "this package doesn't work for muslx32.  it is left for ebuild developers to work on it."
+                ewarn "reason: broken x32 javascript"
+                if [[ "${MUSLX32_OVERLAY_DEVELOPER}" != "1" ]] ; then
+                        eerror "add MUSLX32_OVERLAY_DEVELOPER=1 to /etc/portage/make.conf to continue emerging broken package."
+                        die
+                fi
         fi
 
 	if [[ ${MERGE_TYPE} != "binary" ]] && is-flagq "-g*" && ! is-flagq "-g*0" ; then
@@ -164,79 +170,53 @@ src_prepare() {
 	# https://bugs.webkit.org/show_bug.cgi?id=148379
 	epatch "${FILESDIR}"/${PN}-2.8.5-webkit2gtkinjectedbundle-j1.patch
 
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-wtf-x32-1.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-wtf-x32-2.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-x32-1.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-x32-2.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-x32-3.patch
-	##epatch "${FILESDIR}"/webkitgtk-2.12.3-x32-4.patch
-	##epatch "${FILESDIR}"/webkitgtk-2.12.3-x32-5.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-x32-1.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-x32-6.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-cloop.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-cloop-only.patch
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		epatch "${FILESDIR}"/${PN}-2.0.1-jsc-jit.patch
+		epatch "${FILESDIR}"/${PN}-2.1.3-jsc-llint.patch
+		epatch "${FILESDIR}"/${PN}-2.0.4-isnan.patch
 
+		#doesn't work for both the two (llint and jit) jsc core patches, and the disabling of jit with just the llint backend.
+		#jsc is based on teired system. lint (interpreter) runs first, then jit, then ftl. it moves up the teir based on the number of iterations.
+		#i want to use the llint only and disable everything above that but it doesn't work.
 if false; then
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-1.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-2.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-3.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-4.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-5.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-6.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-6a.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-7.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-8.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-9.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-10.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-11.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-12.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-llint-13t.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-1.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-2.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-3.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-4.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-5.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-6.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-7.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-8.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-9.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-10.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-11.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-12.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-13.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-jit-14.patch
-	#epatch "${FILESDIR}"/webkitgtk-2.12.3-x32-jsobject-forced2.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-gprinfoh-x32.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-musl-machinestackmarkercpp.patch
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-jsc-disable-ftl.patch
+		#two patches below were based off the 2.0.4 patchset (which is based off) and patches to the jit from webkit bugzilla bug 100450
+		epatch "${FILESDIR}"/${PN}-2.12.3-jsc-llint-all.patch
+		epatch "${FILESDIR}"/${PN}-2.12.3-jsc-jit-all.patch
+
+		#epatch "${FILESDIR}"/${PN}-2.12.3-x32-jsobject-forced2.patch
+		epatch "${FILESDIR}"/${PN}-2.12.3-gprinfoh-x32.patch
+		epatch "${FILESDIR}"/${PN}-2.12.3-musl-machinestackmarkercpp.patch
+		epatch "${FILESDIR}"/${PN}-2.12.3-jsc-disable-ftl.patch
+
+
+
+
+		epatch "${FILESDIR}"/${PN}-2.12.3-x32-jsvalue32_64-forced.patch
+		sed -i 's|ENABLE_JIT PUBLIC ON|ENABLE_JIT PUBLIC OFF|g' ./Source/cmake/OptionsGTK.cmake || die "disabling ftl failed"
+		sed -i 's|ENABLE_FTL_DEFAULT ON|ENABLE_FTL_DEFAULT OFF|g' ./Source/cmake/OptionsGTK.cmake || die "disabling ftl failed"
+		sed -i 's|ENABLE_JIT "Enable JustInTime javascript support" PRIVATE ON|ENABLE_JIT "Enable JustInTime javascript support" PRIVATE OFF|g' ./Source/cmake/WebKitFeatures.cmake || die "disabling ftl failed"
+		sed -i 's|ENABLE_DFG_JIT "Toggle data flow graph JIT tier" PRIVATE ON|ENABLE_DFG_JIT "Toggle data flow graph JIT tier" PRIVATE OFF|g' ./Source/cmake/WebKitFeatures.cmake || die "disabling ftl failed"
 fi
-	epatch "${FILESDIR}"/webkitgtk-2.12.3-x32-jsvalue32_64-forced.patch
-	[[ "${CHOST}" =~ "muslx32" ]] && sed -i 's|ENABLE_JIT PUBLIC ON|ENABLE_JIT PUBLIC OFF|g' ./Source/cmake/OptionsGTK.cmake || die "disabling ftl failed"
-	[[ "${CHOST}" =~ "muslx32" ]] && sed -i 's|ENABLE_FTL_DEFAULT ON|ENABLE_FTL_DEFAULT OFF|g' ./Source/cmake/OptionsGTK.cmake || die "disabling ftl failed"
-	[[ "${CHOST}" =~ "muslx32" ]] && sed -i 's|ENABLE_JIT "Enable JustInTime javascript support" PRIVATE ON|ENABLE_JIT "Enable JustInTime javascript support" PRIVATE OFF|g' ./Source/cmake/WebKitFeatures.cmake || die "disabling ftl failed"
-	[[ "${CHOST}" =~ "muslx32" ]] && sed -i 's|ENABLE_DFG_JIT "Toggle data flow graph JIT tier" PRIVATE ON|ENABLE_DFG_JIT "Toggle data flow graph JIT tier" PRIVATE OFF|g' ./Source/cmake/WebKitFeatures.cmake || die "disabling ftl failed"
+
+		epatch "${FILESDIR}"/${PN}-2.1.3-fix-undefined-reference-to-putByIndexBeyondVectorLengthWithoutAttributes.patch
+	fi
 
 	gnome2_src_prepare
 }
 
 src_configure() {
-if false; then
-	strip-flags
-	filter-flags -O0 -O1 -Os -O2 -O3 -O4
-	append-cflags -O0
-	append-cxxflags -O0
-fi
-
 	# Respect CC, otherwise fails on prefix #395875
 	tc-export CC
 
-	# Arches without JIT support also need this to really disable it in all places
-	if [[ "${CHOST}" =~ "muslx32" ]]; then
-		true
-		append-cppflags -DENABLE_JIT=0 -DENABLE_YARR_JIT=0 -DENABLE_ASSEMBLER=0
-	else
-		use jit || append-cppflags -DENABLE_JIT=0 -DENABLE_YARR_JIT=0 -DENABLE_ASSEMBLER=0
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		if use debug ; then
+			#using use debug will run out of memory for ld
+			append-ldflags -Wl,--reduce-memory-overheads
+			append-ldflags -Wl,--no-keep-memory
+		fi
 	fi
+
+	use jit || append-cppflags -DENABLE_JIT=0 -DENABLE_YARR_JIT=0 -DENABLE_ASSEMBLER=0
 
 	# It does not compile on alpha without this in LDFLAGS
 	# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=648761
@@ -318,12 +298,7 @@ fi
 		${ruby_interpreter}
 	)
 
-	if [[ "${CHOST}" =~ "muslx32" ]]; then
-		true
-		#mycmakeargs+=( -DENABLE_JIT=ON )
-	else
-		mycmakeargs+=( $(cmake-utils_use_enable jit)  )
-	fi
+	mycmakeargs+=( $(cmake-utils_use_enable jit)  )
 
 	if tc-ld-is-gold ; then
 		mycmakeargs+=( -DUSE_LD_GOLD=ON )

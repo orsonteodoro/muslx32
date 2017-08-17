@@ -1,0 +1,15 @@
+diff -urp webkitgtk-2.1.3.orig/Source/JavaScriptCore/runtime/JSObject.cpp webkitgtk-2.1.3/Source/JavaScriptCore/runtime/JSObject.cpp
+--- webkitgtk-2.1.3.orig/Source/JavaScriptCore/runtime/JSObject.cpp	2013-06-26 01:42:11.000000000 -0700
++++ webkitgtk-2.1.3/Source/JavaScriptCore/runtime/JSObject.cpp	2017-06-03 13:43:41.131931569 -0700
+@@ -1908,6 +1908,11 @@ void JSObject::putByIndexBeyondVectorLen
+     }
+ }
+ 
++// Used in JSArray.cpp so we must instantiate explicit
++template void JSObject::putByIndexBeyondVectorLengthWithoutAttributes<Int32Shape>(ExecState* exec, unsigned i, JSValue value);
++template void JSObject::putByIndexBeyondVectorLengthWithoutAttributes<DoubleShape>(ExecState* exec, unsigned i, JSValue value);
++template void JSObject::putByIndexBeyondVectorLengthWithoutAttributes<ContiguousShape>(ExecState* exec, unsigned i, JSValue value);
++
+ void JSObject::putByIndexBeyondVectorLengthWithArrayStorage(ExecState* exec, unsigned i, JSValue value, bool shouldThrow, ArrayStorage* storage)
+ {
+     VM& vm = exec->vm();

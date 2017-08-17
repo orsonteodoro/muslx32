@@ -1,0 +1,14 @@
+diff -urp webkitgtk-2.1.3.orig/Source/JavaScriptCore/runtime/VMStackBounds.h webkitgtk-2.1.3/Source/JavaScriptCore/runtime/VMStackBounds.h
+--- webkitgtk-2.1.3.orig/Source/JavaScriptCore/runtime/VMStackBounds.h	2013-07-01 23:28:10.000000000 -0700
++++ webkitgtk-2.1.3/Source/JavaScriptCore/runtime/VMStackBounds.h	2017-06-02 12:51:31.594575592 -0700
+@@ -53,8 +53,8 @@ private:
+         //
+         // These sizes were derived from the stack usage of a number of sites when
+         // layout occurs when we've already consumed most of the C stack.
+-        const size_t requiredStack = 128 * KB;
+-        const size_t errorModeRequiredStack = 64 * KB;
++        const size_t requiredStack = 32 * KB;
++        const size_t errorModeRequiredStack = 16 * KB;
+ 
+         size_t requiredCapacity = interpreter->isInErrorHandlingMode() ? errorModeRequiredStack : requiredStack;
+         RELEASE_ASSERT(m_bounds.size() >= requiredCapacity);
