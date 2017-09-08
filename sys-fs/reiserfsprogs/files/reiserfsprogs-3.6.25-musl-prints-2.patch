@@ -1,0 +1,74 @@
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: bitmap.o
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: journal.o
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: node_formats.o
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: prints.o
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: reiserfslib.o
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: stree.o
+Only in reiserfsprogs-3.6.25/reiserfscore: bitmap.lo
+Only in reiserfsprogs-3.6.25/reiserfscore: journal.lo
+Only in reiserfsprogs-3.6.25/reiserfscore: node_formats.lo
+diff -urp reiserfsprogs-3.6.25.orig/reiserfscore/prints.c reiserfsprogs-3.6.25/reiserfscore/prints.c
+--- reiserfsprogs-3.6.25.orig/reiserfscore/prints.c	2017-09-08 09:26:01.934101869 -0700
++++ reiserfsprogs-3.6.25/reiserfscore/prints.c	2017-09-08 09:34:34.800044466 -0700
+@@ -210,6 +210,7 @@ void reiserfs_warning (FILE * fp, const
+ 
+ #endif	/* !defined(__GLIBC__) */
+ 
++#if defined(__GLIBC__)
+ 
+ /* %b */
+ static int print_block_head(FILE * stream,
+@@ -296,33 +297,8 @@ static int print_disk_child(FILE * strea
+ 		     get_dc_child_blocknr(dc), get_dc_child_size(dc));
+ 	FPRINTF;
+ }
++#endif	/* !defined(__GLIBC__) */
+ 
+-char ftypelet(mode_t mode)
+-{
+-	if (S_ISBLK(mode))
+-		return 'b';
+-	if (S_ISCHR(mode))
+-		return 'c';
+-	if (S_ISDIR(mode))
+-		return 'd';
+-	if (S_ISREG(mode))
+-		return '-';
+-	if (S_ISFIFO(mode))
+-		return 'p';
+-	if (S_ISLNK(mode))
+-		return 'l';
+-	if (S_ISSOCK(mode))
+-		return 's';
+-	return '?';
+-}
+-
+-static int rwx(FILE * stream, mode_t mode)
+-{
+-	return fprintf(stream, "%c%c%c",
+-		       (mode & S_IRUSR) ? 'r' : '-',
+-		       (mode & S_IWUSR) ? 'w' : '-',
+-		       (mode & S_IXUSR) ? 'x' : '-');
+-}
+ 
+ /* %M */
+ static int print_sd_mode(FILE * stream,
+@@ -357,6 +333,7 @@ static int print_sd_uuid(FILE * stream,
+ #endif
+ }
+ 
++#if defined(__GLIBC__)
+ void reiserfs_warning(FILE * fp, const char *fmt, ...)
+ {
+ 	static int registered = 0;
+@@ -378,6 +355,7 @@ void reiserfs_warning(FILE * fp, const c
+ 	vfprintf(fp, fmt, args);
+ 	va_end(args);
+ }
++#endif
+ 
+ static void print_directory_item(FILE *fp, reiserfs_filsys_t fs,
+ 				 struct buffer_head *bh, struct item_head *ih)
+Only in reiserfsprogs-3.6.25/reiserfscore: prints.lo
+Only in reiserfsprogs-3.6.25/reiserfscore: reiserfslib.lo
+Only in reiserfsprogs-3.6.25/reiserfscore: stree.lo

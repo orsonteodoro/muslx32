@@ -1,0 +1,49 @@
+Only in reiserfsprogs-3.6.25/debugreiserfs: .libs
+Only in reiserfsprogs-3.6.25/debugreiserfs: corruption.o
+Only in reiserfsprogs-3.6.25/debugreiserfs: debugreiserfs.o
+Only in reiserfsprogs-3.6.25/debugreiserfs: pack.o
+Only in reiserfsprogs-3.6.25/debugreiserfs: recover.o
+Only in reiserfsprogs-3.6.25/debugreiserfs: scan.o
+Only in reiserfsprogs-3.6.25/debugreiserfs: stat.o
+Only in reiserfsprogs-3.6.25/debugreiserfs: unpack.o
+Only in reiserfsprogs-3.6.25/fsck: .libs
+Only in reiserfsprogs-3.6.25/fsck: check_tree.o
+Only in reiserfsprogs-3.6.25/fsck: info.o
+Only in reiserfsprogs-3.6.25/fsck: lost+found.o
+Only in reiserfsprogs-3.6.25/fsck: main.o
+Only in reiserfsprogs-3.6.25/fsck: pass0.o
+Only in reiserfsprogs-3.6.25/fsck: pass1.o
+Only in reiserfsprogs-3.6.25/fsck: pass2.o
+Only in reiserfsprogs-3.6.25/fsck: pass4.o
+Only in reiserfsprogs-3.6.25/fsck: reiserfsck
+Only in reiserfsprogs-3.6.25/fsck: semantic_check.o
+Only in reiserfsprogs-3.6.25/fsck: semantic_rebuild.o
+Only in reiserfsprogs-3.6.25/fsck: super.o
+Only in reiserfsprogs-3.6.25/fsck: ubitmap.o
+Only in reiserfsprogs-3.6.25/fsck: ufile.o
+Only in reiserfsprogs-3.6.25/fsck: uobjectid.o
+Only in reiserfsprogs-3.6.25/fsck: ustree.o
+diff -urp reiserfsprogs-3.6.25.orig/include/reiserfs_lib.h reiserfsprogs-3.6.25/include/reiserfs_lib.h
+--- reiserfsprogs-3.6.25.orig/include/reiserfs_lib.h	2016-06-06 10:38:54.000000000 -0700
++++ reiserfsprogs-3.6.25/include/reiserfs_lib.h	2017-09-08 09:41:40.377592449 -0700
+@@ -14,6 +14,10 @@ typedef struct reiserfs_filsys * reiserf
+ #include <com_err.h>
+ #include "reiserfs_fs.h"
+ 
++#if !defined(__GLIBC__)
++#define loff_t off_t
++#endif
++
+ struct _bitmap {
+ 	unsigned long bm_byte_size;
+ 	unsigned long bm_bit_size;
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: libreiserfscore.la
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: libreiserfscore.lai
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: libreiserfscore.so
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: libreiserfscore.so.0
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: libreiserfscore.so.0.0.0
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: reiserfs_err.o
+Only in reiserfsprogs-3.6.25/reiserfscore/.libs: xattr.o
+Only in reiserfsprogs-3.6.25/reiserfscore: libreiserfscore.la
+Only in reiserfsprogs-3.6.25/reiserfscore: reiserfs_err.lo
+Only in reiserfsprogs-3.6.25/reiserfscore: xattr.lo

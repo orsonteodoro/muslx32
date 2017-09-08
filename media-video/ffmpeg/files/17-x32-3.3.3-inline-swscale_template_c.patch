@@ -1,0 +1,19 @@
+diff -urp ffmpeg-3.3.3.orig/libswscale/x86/swscale_template.c ffmpeg-3.3.3/libswscale/x86/swscale_template.c
+--- ffmpeg-3.3.3.orig/libswscale/x86/swscale_template.c	2017-09-08 12:08:27.096545949 -0700
++++ ffmpeg-3.3.3/libswscale/x86/swscale_template.c	2017-09-08 12:30:18.005866036 -0700
+@@ -893,12 +893,12 @@ static void RENAME(yuv2rgb32_2)(SwsConte
+         const int16_t *abuf0 = abuf[0], *abuf1 = abuf[1];
+ #if ARCH_X86_64
+         __asm__ volatile(
+-            YSCALEYUV2RGB(%%REG8, %5)
+-            YSCALEYUV2RGB_YA(%%REG8, %5, %6, %7)
++            YSCALEYUV2RGB(%%FF_REG8, %5)
++            YSCALEYUV2RGB_YA(%%FF_REG8, %5, %6, %7)
+             "psraw                  $3, %%mm1       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
+             "psraw                  $3, %%mm7       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
+             "packuswb            %%mm7, %%mm1       \n\t"
+-            WRITEBGR32(%4, DSTW_OFFSET"(%5)", %%REG8, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
++            WRITEBGR32(%4, DSTW_OFFSET"(%5)", %%FF_REG8, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
+             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "r" (dest),
+                "a" (&c->redDither),
+                "r" (abuf0), "r" (abuf1)

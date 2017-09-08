@@ -1,0 +1,62 @@
+diff -urp kexec-tools-2.0.14.orig/configure.ac kexec-tools-2.0.14/configure.ac
+--- kexec-tools-2.0.14.orig/configure.ac	2016-12-20 00:13:14.000000000 -0800
++++ kexec-tools-2.0.14/configure.ac	2017-09-07 21:32:01.748927642 -0700
+@@ -54,6 +54,15 @@ case $target_cpu in
+ 		;;
+ 	ia64|x86_64|alpha|m68k )
+ 		ARCH="$target_cpu"
++
++		dnl ---Test for x32 ABI in x86_64
++		if test "x$ARCH" = "xx86_64" ; then
++			AC_EGREP_CPP(x32_test,
++			[#if defined(__x86_64__) && defined (__ILP32__)
++				x32_test
++			#endif
++			], SUBARCH='x32', SUBARCH='64')
++		fi
+ 		;;
+ 	* )
+ 		AC_MSG_ERROR([unsupported architecture $target_cpu])
+Only in kexec-tools-2.0.14: configure.ac.rej
+diff -urp kexec-tools-2.0.14.orig/kexec/arch/x86_64/kexec-elf-rel-x86_64.c kexec-tools-2.0.14/kexec/arch/x86_64/kexec-elf-rel-x86_64.c
+--- kexec-tools-2.0.14.orig/kexec/arch/x86_64/kexec-elf-rel-x86_64.c	2016-12-09 01:42:06.000000000 -0800
++++ kexec-tools-2.0.14/kexec/arch/x86_64/kexec-elf-rel-x86_64.c	2017-09-07 21:30:06.598869627 -0700
+@@ -8,7 +8,11 @@ int machine_verify_elf_rel(struct mem_eh
+ 	if (ehdr->ei_data != ELFDATA2LSB) {
+ 		return 0;
+ 	}
++#ifdef __ILP32__
++	if (ehdr->ei_class != ELFCLASS32) {
++#else
+ 	if (ehdr->ei_class != ELFCLASS64) {
++#endif
+ 		return 0;
+ 	}
+ 	if (ehdr->e_machine != EM_X86_64) {
+diff -urp kexec-tools-2.0.14.orig/kexec/kexec-syscall.h kexec-tools-2.0.14/kexec/kexec-syscall.h
+--- kexec-tools-2.0.14.orig/kexec/kexec-syscall.h	2016-12-12 00:03:35.000000000 -0800
++++ kexec-tools-2.0.14/kexec/kexec-syscall.h	2017-09-07 21:30:06.598869627 -0700
+@@ -31,8 +31,12 @@
+ #define __NR_kexec_load		268
+ #endif
+ #ifdef __x86_64__
++#ifdef __ILP32__
++#define __NR_kexec_load		528
++#else
+ #define __NR_kexec_load		246
+ #endif
++#endif
+ #ifdef __s390x__
+ #define __NR_kexec_load		277
+ #endif
+diff -urp kexec-tools-2.0.14.orig/purgatory/arch/x86_64/Makefile kexec-tools-2.0.14/purgatory/arch/x86_64/Makefile
+--- kexec-tools-2.0.14.orig/purgatory/arch/x86_64/Makefile	2016-12-09 01:42:06.000000000 -0800
++++ kexec-tools-2.0.14/purgatory/arch/x86_64/Makefile	2017-09-07 21:30:06.599869662 -0700
+@@ -23,4 +23,6 @@ x86_64_PURGATORY_SRCS += purgatory/arch/
+ x86_64_PURGATORY_SRCS += purgatory/arch/i386/vga.c
+ x86_64_PURGATORY_SRCS += purgatory/arch/i386/pic.c
+ 
+-x86_64_PURGATORY_EXTRA_CFLAGS = -mcmodel=large
++ifeq ($(SUBARCH),64)
++        x86_64_PURGATORY_EXTRA_CFLAGS = -mcmodel=large
++endif

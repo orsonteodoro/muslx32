@@ -1,0 +1,19 @@
+diff -urp reiserfsprogs-3.6.25.orig/resize_reiserfs/resize_reiserfs.c reiserfsprogs-3.6.25/resize_reiserfs/resize_reiserfs.c
+--- reiserfsprogs-3.6.25.orig/resize_reiserfs/resize_reiserfs.c	2016-06-06 10:38:54.000000000 -0700
++++ reiserfsprogs-3.6.25/resize_reiserfs/resize_reiserfs.c	2017-09-08 08:26:21.823746750 -0700
+@@ -15,6 +15,13 @@
+ #include "resize.h"
+ #include <limits.h>
+ 
++#if !defined(__GLIBC__)
++/* These are not defined in musl libc */
++#include <stdint.h>
++#define LONG_LONG_MIN INT64_MIN
++#define LONG_LONG_MAX INT64_MAX
++#endif
++
+ static int opt_banner = 0;
+ static int opt_skipj = 0;
+ int opt_force = 0;
+Only in reiserfsprogs-3.6.25/resize_reiserfs: resize_reiserfs.c.orig
+Only in reiserfsprogs-3.6.25/resize_reiserfs: resize_reiserfs.c.rej
