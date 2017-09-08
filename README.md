@@ -116,6 +116,7 @@ php | Shows phpinfo for apache.  php-fpm segfaults with nginx and doesn't show p
 phpmyadmin | Shows database tables and rows
 mariadb | Tested with phpmyadmin
 nginx | Shows "it works!"
+gentoo-sources | It may require you to manually patch it to use the BFD linker.  see https://github.com/orsonteodoro/muslx32/issues/3
 
 ### Buggy
 
