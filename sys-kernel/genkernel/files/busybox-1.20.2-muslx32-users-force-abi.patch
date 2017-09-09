@@ -1,0 +1,21 @@
+diff -urp busybox-1.20.2.orig/Makefile.flags busybox-1.20.2/Makefile.flags
+--- busybox-1.20.2.orig/Makefile.flags	2012-06-26 06:35:45.000000000 -0700
++++ busybox-1.20.2/Makefile.flags	2017-09-08 16:38:00.954585469 -0700
+@@ -69,6 +69,8 @@ CFLAGS += $(call cc-option,-Os,$(call cc
+ endif
+ endif
+ 
++CFLAGS += -mx32 -DENABLE_FEATURE_IFCONFIG_SLIP=0 -DENABLE_FEATURE_PIDFILE=0
++
+ # If arch/$(ARCH)/Makefile did not override it (with, say, -fPIC)...
+ ARCH_FPIC ?= -fpic
+ ARCH_FPIE ?= -fpie
+@@ -153,6 +155,8 @@ EXTRA_LDFLAGS += $(strip $(subst ",,$(CO
+ #"))
+ endif
+ 
++LDFLAGS += -m elf32_x86_64
++
+ ifneq ($(CONFIG_EXTRA_LDLIBS),)
+ LDLIBS += $(strip $(subst ",,$(CONFIG_EXTRA_LDLIBS)))
+ #"))

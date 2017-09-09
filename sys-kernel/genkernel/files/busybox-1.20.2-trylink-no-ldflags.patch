@@ -1,0 +1,66 @@
+diff -urp busybox-1.20.2.orig/scripts/trylink busybox-1.20.2/scripts/trylink
+--- busybox-1.20.2.orig/scripts/trylink	2012-06-26 06:35:45.000000000 -0700
++++ busybox-1.20.2/scripts/trylink	2017-09-08 20:02:41.717433313 -0700
+@@ -119,7 +119,7 @@ echo "Trying libraries: $LDLIBS"
+ # "lib1 lib2 lib3" -> "-llib1 -llib2 -llib3"
+ l_list=`echo "$LDLIBS" | sed -e 's/ / -l/g' -e 's/^/-l/' -e 's/^-l$//'`
+ test "x$l_list" != "x" && l_list="$START_GROUP $l_list $END_GROUP"
+-try $CC $CFLAGS $LDFLAGS \
++try $CC $CFLAGS \
+ 	-o $EXE \
+ 	$SORT_COMMON \
+ 	$SORT_SECTION \
+@@ -144,7 +144,7 @@ while test "$LDLIBS"; do
+ 	l_list=`echo "$without_one" | sed -e 's/ / -l/g' -e 's/^/-l/' -e 's/^-l$//'`
+ 	test x"$l_list" != x"" && l_list="$START_GROUP $l_list $END_GROUP"
+ 	$debug && echo "Trying -l options: '$l_list'"
+-	try $CC $CFLAGS $LDFLAGS \
++	try $CC $CFLAGS \
+ 		-o $EXE \
+ 		$SORT_COMMON \
+ 		$SORT_SECTION \
+@@ -176,7 +176,7 @@ l_list=`echo "$LDLIBS" | sed -e 's/ / -l
+ test "x$l_list" != "x" && l_list="$START_GROUP $l_list $END_GROUP"
+ # --verbose gives us gobs of info to stdout (e.g. linker script used)
+ if ! test -f busybox_ldscript; then
+-    try $CC $CFLAGS $LDFLAGS \
++    try $CC $CFLAGS \
+ 	    -o $EXE \
+ 	    $SORT_COMMON \
+ 	    $SORT_SECTION \
+@@ -196,7 +196,7 @@ else
+     #  *(.bss SORT_BY_ALIGNMENT(.bss.*) .gnu.linkonce.b.*)
+     # This will eliminate most of the padding (~3kb).
+     # Hmm, "ld --sort-section alignment" should do it too.
+-    try $CC $CFLAGS $LDFLAGS \
++    try $CC $CFLAGS \
+ 	    -o $EXE \
+ 	    $SORT_COMMON \
+ 	    $SORT_SECTION \
+@@ -224,7 +224,7 @@ if test "$CONFIG_BUILD_LIBBUSYBOX" = y;
+     ln -s "libbusybox.so.$BB_VER" "$sharedlib_dir"/libbusybox.so 2>/dev/null
+ 
+     EXE="$sharedlib_dir/libbusybox.so.${BB_VER}_unstripped"
+-    try $CC $CFLAGS $LDFLAGS \
++    try $CC $CFLAGS \
+ 	    -o $EXE \
+ 	    -shared -fPIC \
+ 	    -Wl,--enable-new-dtags \
+@@ -248,7 +248,7 @@ fi
+ 
+ if test "$CONFIG_FEATURE_SHARED_BUSYBOX" = y; then
+     EXE="$sharedlib_dir/busybox_unstripped"
+-    try $CC $CFLAGS $LDFLAGS \
++    try $CC $CFLAGS \
+ 	    -o $EXE \
+ 	    $SORT_COMMON \
+ 	    $SORT_SECTION \
+@@ -286,7 +286,7 @@ int main(int argc, char **argv)
+ " >"$sharedlib_dir/applet.c"
+ 
+ 	EXE="$sharedlib_dir/$name"
+-	try $CC $CFLAGS $LDFLAGS "$sharedlib_dir/applet.c" \
++	try $CC $CFLAGS "$sharedlib_dir/applet.c" \
+ 		-o $EXE \
+ 		$SORT_COMMON \
+ 		$SORT_SECTION \

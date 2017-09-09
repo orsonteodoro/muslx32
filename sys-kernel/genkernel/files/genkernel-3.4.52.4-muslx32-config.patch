@@ -1,0 +1,17 @@
+diff -urp genkernel-3.4.52.4.orig/gen_compile.sh genkernel-3.4.52.4/gen_compile.sh
+--- genkernel-3.4.52.4.orig/gen_compile.sh	2016-01-05 15:55:05.000000000 -0800
++++ genkernel-3.4.52.4/gen_compile.sh	2017-09-08 18:35:19.883711090 -0700
+@@ -423,7 +423,12 @@ compile_busybox() {
+ 		[ -d "${BUSYBOX_DIR}" ] ||
+ 			gen_die "Busybox directory ${BUSYBOX_DIR} is invalid!"
+ 		cp "${BUSYBOX_CONFIG}" "${BUSYBOX_DIR}/.config"
+-		cp "${BUSYBOX_CONFIG}" "${BUSYBOX_DIR}/.config.gk_orig"
++	        sed -i -e "s|# CONFIG_FEATURE_IFCONFIG_SLIP is not set|CONFIG_FEATURE_IFCONFIG_SLIP=n|g" "${BUSYBOX_DIR}/.config"
++	        sed -i -e "s|# CONFIG_FEATURE_UTMP is not set|CONFIG_FEATURE_UTMP=n|g" "${BUSYBOX_DIR}/.config"
++	        sed -i -e "s|# CONFIG_EXTRA_COMPAT is not set|CONFIG_EXTRA_COMPAT=n|g" "${BUSYBOX_DIR}/.config"
++	        sed -i -e "s|# CONFIG_FEATURE_VI_REGEX_SEARCH is not set|CONFIG_FEATURE_VI_REGEX_SEARCH=n|g" "${BUSYBOX_DIR}/.config"
++		cp "${BUSYBOX_DIR}/.config" "${BUSYBOX_DIR}/.config.gk_orig"
++
+ 		cd "${BUSYBOX_DIR}"
+ 		apply_patches busybox ${BUSYBOX_VER}
+ 		print_info 1 'busybox: >> Configuring...'

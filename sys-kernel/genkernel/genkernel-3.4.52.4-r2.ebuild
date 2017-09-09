@@ -115,6 +115,11 @@ src_prepare() {
 		epatch "${FILESDIR}"/${PN}-3.4.52.4-subdir-mount.patch
 	fi
 
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		epatch "${FILESDIR}"/${PN}-3.4.52.4-muslx32-config.patch
+		epatch "${FILESDIR}"/${PN}-3.4.52.4-remove-ld.so-fixes.patch
+	fi
+
 	epatch_user
 }
 
@@ -148,6 +153,13 @@ src_install() {
 	cd "${DISTDIR}"
 	insinto /usr/share/genkernel/distfiles
 	doins ${A/${P}.tar.xz/}
+
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		#we can only use x86_64 abi for busybox
+		cp -a "${FILESDIR}"/busybox-1.20.2-muslx32-users-force-abi.patch "${ED}"/usr/share/genkernel/patches/busybox/1.20.2/
+		cp -a "${FILESDIR}"/busybox-1.20.2-muslx32-disable-header.patch "${ED}"/usr/share/genkernel/patches/busybox/1.20.2/
+		cp -a "${FILESDIR}"/busybox-1.20.2-trylink-no-ldflags.patch "${ED}"/usr/share/genkernel/patches/busybox/1.20.2/
+	fi
 }
 
 pkg_postinst() {
