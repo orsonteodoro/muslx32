@@ -141,7 +141,7 @@ cryptsetup | for managing dm-crypt/luks encrypted volumes
 p7zip | 7zip compression
 pm-utils | suspending or hibernating computer
 ntfs3g | for connecting to windows partitions
-genkernel | see https://github.com/orsonteodoro/muslx32/issues/4
+genkernel | see https://github.com/orsonteodoro/muslx32/issues/4 .  Also, it compiled the initramfs without problems with the --no-zfs flag.
 
 ### Broken packages
 
