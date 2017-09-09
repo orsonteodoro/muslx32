@@ -116,7 +116,7 @@ php | Shows phpinfo for apache.  php-fpm segfaults with nginx and doesn't show p
 phpmyadmin | Shows database tables and rows
 mariadb | Tested with phpmyadmin
 nginx | Shows "it works!"
-gentoo-sources or any linux kernel | It may require you to manually patch it to use the BFD linker.  See https://github.com/orsonteodoro/muslx32/issues/3 and https://github.com/orsonteodoro/muslx32/issues/4.
+gentoo-sources or any linux kernel | It may require you to manually patch it to use the BFD linker.  See https://github.com/orsonteodoro/muslx32/issues/3.
 
 ### Buggy
 
@@ -141,6 +141,7 @@ cryptsetup | for managing dm-crypt/luks encrypted volumes
 p7zip | 7zip compression
 pm-utils | suspending or hibernating computer
 ntfs3g | for connecting to windows partitions
+genkernel | see https://github.com/orsonteodoro/muslx32/issues/4
 
 ### Broken packages
 
