@@ -9,6 +9,10 @@ This profile uses a 64-bit linux kernel with x32 abi compatibility.  All of the 
 
 The current goal is trying to get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
+Multilib gcc and multilib musl will be coming.  This will allow for x32 as the default but allow for x86 and amd64 to run only programs to run.
+
+Getting 64 bit grub to compile using multilib musl.
+
 ### Why musl and x32 and Gentoo? 
 
 Musl because it is lightweight.  x32 ABI because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  I was really disappointed about Alpine and the shortcomings of the other previously tested distros.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux and Slax packages were pretty much outdated.  blueness said that he wouldn't make muslx32 as top priority or it wasn't his job to do or after the hardened gcc patches for the platform were ready, so I decided to just do it myself without the hardened part.
@@ -30,6 +34,8 @@ x32 is better than x86_64 because of reduced pointer size and reduced virtual sp
 No binary exclusive packages work (e.g. adobe flash, spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
 
 For Adobe Flash try using Shumway Firefox addon.  It may or not work for some content.
+
+It should be possible to run glibc only programs with chroot, so you can use spotify in that.
 
 ### Who should use muslx32?
 
