@@ -9,7 +9,7 @@ This profile uses a 64-bit linux kernel with x32 abi compatibility.  All of the 
 
 The current goal is trying to get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
-Multilib gcc and multilib musl will be coming.  This will allow for x32 as the default but allow for x86 and amd64 to run only programs to run.
+Multilib gcc and multilib musl will be coming.  This will allow for x32 as the default but allow for x86 and amd64 to run amd64 or x86 only programs to run.
 
 Getting 64 bit grub to compile using multilib musl.
 
