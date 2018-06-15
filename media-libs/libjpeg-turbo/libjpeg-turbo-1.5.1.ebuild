@@ -40,6 +40,8 @@ PATCHES=(
 
 src_prepare() {
 	default
+	elibtoolize
+
 	if [[ "${CHOST}" =~ "muslx32" ]] ; then
 		if use experimental ; then
 			epatch "${FILESDIR}"/${PN}-1.5.0-ilp32-registers.patch
@@ -50,9 +52,8 @@ src_prepare() {
 		fi
 	fi
 
-	elibtoolize
-
 	java-pkg-opt-2_src_prepare
+	multilib_copy_sources
 }
 
 multilib_src_configure() {
@@ -66,9 +67,11 @@ multilib_src_configure() {
 	else
 		myconf+=( --without-java )
 	fi
-	if [[ "${CHOST}" =~ "muslx32" ]] ; then
-		if ! use experimental ; then
-			myconf+=( --without-simd )
+	if [[ "${CHOST}" == "muslx32" ]] ; then
+		if [[ "${ABI}" == "x32" ]] ; then
+			if ! use experimental ; then
+				myconf+=( --without-simd )
+			fi
 		fi
 	else
 		[[ ${ABI} == "x32" ]] && myconf+=( --without-simd ) #420239
