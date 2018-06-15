@@ -199,7 +199,7 @@ The patches for multilib support may reference gcc 7.3.0 expecially the system p
 
 The system has a preference for x86 abi when x32 is banned for a particular ebuild.  One reason why x86 abi was chosen is to limit the virtual address range or bugs related to addressing, but amd64 abi tested working fine on this profile.
 
-Many of the problems are x32 problems not musl problems.  If the package works on Alpine Linux, the other musl distro, it is likely to work.
+Many of the major problems are x32 problems not musl problems.  If the package works on Alpine Linux, the other musl distro, it is likely to work.
 
 ### Instructions for creating the muslx32 toolchain
 
