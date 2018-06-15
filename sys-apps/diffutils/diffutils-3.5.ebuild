@@ -20,6 +20,14 @@ DEPEND="app-arch/xz-utils
 
 DOCS=( AUTHORS ChangeLog NEWS README THANKS TODO )
 
+src_prepare() {
+	default
+	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+		epatch "${FILESDIR}/${PN}-3.5-gcc-7.3-x32.patch"
+	fi
+	epatch_user
+}
+
 src_configure() {
 	use static && append-ldflags -static
 
