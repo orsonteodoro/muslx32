@@ -1,0 +1,10 @@
+--- boost_1_65_0.orig/tools/build/src/tools/gcc.py	2017-08-19 09:49:50.000000000 -0700
++++ boost_1_65_0/tools/build/src/tools/gcc.py	2018-05-23 10:02:03.607846397 -0700
+@@ -745,6 +745,7 @@ def cpu_flags(toolset, variable, archite
+ # x86 and compatible
+ flags('gcc', 'OPTIONS', ['<architecture>x86/<address-model>32'], ['-m32'])
+ flags('gcc', 'OPTIONS', ['<architecture>x86/<address-model>64'], ['-m64'])
++flags('gcc', 'OPTIONS', ['<architecture>x86/<address-model>32_64'], ['-mx32'])
+ cpu_flags('gcc', 'OPTIONS', 'x86', 'native', ['-march=native'])
+ cpu_flags('gcc', 'OPTIONS', 'x86', 'i486', ['-march=i486'])
+ cpu_flags('gcc', 'OPTIONS', 'x86', 'i586', ['-march=i586'])
