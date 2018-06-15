@@ -1,8 +1,6 @@
-# to possibly prevent segfault
-#sys-apps/sandbox abi_x86_64
-
 # required to compile the kernel
 dev-libs/libelf abi_x86_64
+dev-libs/gmp abi_x86_64
 
 # required as a dependency for libelf
 sys-devel/gcc abi_x86_64 abi_x86_32
@@ -18,18 +16,31 @@ cross-x86_64-pc-linux-muslx32/musl abi_x86_64 abi_x86_32
 cross-x86_64-pc-linux-muslx32/gcc -libssp
 sys-devel/gcc -libssp
 
-#force amd64 instead of x32
-net-misc/networkmanager abi_x86_64 -abi_x86_x32
-sys-boot/grub abi_x86_64 -abi_x86_x32
-#app-arch/xz-utils abi_x86_64 -abi_x86_x32
+#not ported yet to x32
 app-emulation/wine -abi_x86_x32
-www-client/firefox -abi_x86_x32 abi_x86_64
-www-client/palemoon -abi_x86_x32 abi_x86_64
-dev-lang/rust -abi_x86_x32 abi_x86_64
-www-client/surf -abi_x86_x32 abi_x86_64
-net-libs/webkit-gtk -abi_x86_x32 abi_x86_64 jit
-sys-devel/clang -abi_x86_x32 abi_x86_64
-app-office/libreoffice -abi_x86_x32 abi_x86_64
 
-#x32 abi breaks test and parallel emerge
-sys-apps/coreutils -abi_x86_x32 abi_x86_64
+#force x86 instead of x32
+www-client/firefox -abi_x86_x32 abi_x86_32
+www-client/palemoon -abi_x86_x32 abi_x86_32
+dev-lang/rust -abi_x86_x32 abi_x86_32
+app-office/libreoffice -abi_x86_x32 abi_x86_32
+net-misc/networkmanager -abi_x86_x32 abi_x86_32
+sys-boot/grub -abi_x86_x32 -abi_x86_64 abi_x86_32
+
+#force amd64 instead of x32.  amd64 preferred because of widevine DRM
+www-client/chromium -abi_x86_x32 -abi_x86_32 abi_x86_64
+
+#force x86 because it causes runtime error with amd64 abi and nouveau
+www-client/surf -abi_x86_x32 -abi_x86_64 abi_x86_32
+net-libs/webkit-gtk -abi_x86_x32 -abi_x86_64 abi_x86_32 jit
+
+#x32 abi breaks test command and parallel emerge
+sys-apps/coreutils -abi_x86_x32 abi_x86_32
+
+#ban x32 since there is no support
+media-libs/openh264 -abi_x86_x32
+net-libs/nodejs -abi_x86_x32
+sys-devel/clang -abi_x86_x32
+sys-libs/compiler-rt-sanitizers -abi_x86_x32
+sys-devel/clang-runtime -abi_x86_x32
+sys-libs/compiler-rt -abi_x86_x32
