@@ -1,0 +1,10 @@
+--- build/config/compiler/BUILD.gn.orig	2018-06-05 08:40:10.367481309 -0700
++++ build/config/compiler/BUILD.gn	2018-06-05 09:07:47.407498549 -0700
+@@ -339,6 +339,7 @@ config("compiler") {
+     cflags += [ "-pipe" ]
+ 
+     ldflags += [
++      __GENTOO_LDFLAGS__,
+       "-Wl,-z,noexecstack",
+       "-Wl,-z,now",
+       "-Wl,-z,relro",

@@ -1,0 +1,11 @@
+--- base/logging.cc.orig	2018-05-10 15:06:22.000000000 -0700
++++ base/logging.cc	2018-05-29 17:34:37.286522462 -0700
+@@ -574,7 +574,7 @@ LogMessage::LogMessage(const char* file,
+ 
+ LogMessage::~LogMessage() {
+   size_t stack_start = stream_.tellp();
+-#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && !defined(__UCLIBC__) && \
++#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && defined(HAVE_BACKTRACE) && \
+     !defined(OS_AIX)
+   if (severity_ == LOG_FATAL && !base::debug::BeingDebugged()) {
+     // Include a stack trace on a fatal, unless a debugger is attached.

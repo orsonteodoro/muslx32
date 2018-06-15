@@ -1,0 +1,18 @@
+--- base/trace_event/malloc_dump_provider.cc.orig	2018-05-29 17:46:45.735530041 -0700
++++ base/trace_event/malloc_dump_provider.cc	2018-05-29 18:33:44.462559368 -0700
+@@ -197,6 +197,7 @@ MallocDumpProvider::~MallocDumpProvider(
+ // the current process.
+ bool MallocDumpProvider::OnMemoryDump(const MemoryDumpArgs& args,
+                                       ProcessMemoryDump* pmd) {
++#if defined(__GLIBC__)
+   {
+     base::AutoLock auto_lock(emit_metrics_on_memory_dump_lock_);
+     if (!emit_metrics_on_memory_dump_)
+@@ -325,6 +326,7 @@ bool MallocDumpProvider::OnMemoryDump(co
+   }
+   tid_dumping_heap_ = kInvalidThreadId;
+ 
++#endif // __GLIBC__
+   return true;
+ }
+ 

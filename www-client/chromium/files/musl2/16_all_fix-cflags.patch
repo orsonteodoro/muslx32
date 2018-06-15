@@ -1,0 +1,14 @@
+--- build/config/compiler/BUILD.gn.orig	2018-06-03 18:11:12.677039931 -0700
++++ build/config/compiler/BUILD.gn	2018-06-04 01:42:45.898321815 -0700
+@@ -587,6 +587,11 @@ config("compiler") {
+     }
+   }
+ 
++  if (!is_clang) {
++    cflags += [ __GENTOO_CFLAGS__ ]
++    cflags_cc += [ __GENTOO_CCFLAGS__ ]
++  }
++
+   # Pass the same C/C++ flags to the objective C/C++ compiler.
+   cflags_objc += cflags_c
+   cflags_objcc += cflags_cc

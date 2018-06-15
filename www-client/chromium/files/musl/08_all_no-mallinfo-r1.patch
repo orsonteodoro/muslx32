@@ -1,16 +1,16 @@
-diff -Naur chromium-53.0.2785.143.orig/base/trace_event/malloc_dump_provider.cc chromium-53.0.2785.143/base/trace_event/malloc_dump_provider.cc
---- chromium-53.0.2785.143.orig/base/trace_event/malloc_dump_provider.cc	2016-10-12 14:36:54.821809488 -0700
-+++ chromium-53.0.2785.143/base/trace_event/malloc_dump_provider.cc	2016-10-12 14:40:53.295875322 -0700
-@@ -128,7 +128,7 @@
-   // fixed quantum, so the excess region will not be resident.
-   // See crrev.com/1531463004 for detailed explanation.
-   resident_size = stats.max_size_in_use;
+diff -Naur chromium-54.0.2840.100.orig/base/trace_event/malloc_dump_provider.cc chromium-54.0.2840.100/base/trace_event/malloc_dump_provider.cc
+--- chromium-54.0.2840.100.orig/base/trace_event/malloc_dump_provider.cc	2016-11-30 13:21:42.571603403 -0800
++++ chromium-54.0.2840.100/base/trace_event/malloc_dump_provider.cc	2016-11-30 13:27:18.160822662 -0800
+@@ -224,7 +224,7 @@
+   resident_size = all_heap_info.committed_size;
+   allocated_objects_size = all_heap_info.allocated_size;
+   allocated_objects_count = all_heap_info.block_count;
 -#else
 +#elif defined(OS_LINUX) && defined(__GLIBC__)
    struct mallinfo info = mallinfo();
    DCHECK_GE(info.arena + info.hblkhd, info.uordblks);
  
-@@ -140,6 +140,7 @@
+@@ -238,6 +238,7 @@
    allocated_objects_size = info.uordblks;
  #endif
  
@@ -18,7 +18,7 @@ diff -Naur chromium-53.0.2785.143.orig/base/trace_event/malloc_dump_provider.cc 
    MemoryAllocatorDump* outer_dump = pmd->CreateAllocatorDump("malloc");
    outer_dump->AddScalar("virtual_size", MemoryAllocatorDump::kUnitsBytes,
                          total_virtual_size);
-@@ -162,6 +163,7 @@
+@@ -264,6 +265,7 @@
                            MemoryAllocatorDump::kUnitsBytes,
                            resident_size - allocated_objects_size);
    }
@@ -26,9 +26,9 @@ diff -Naur chromium-53.0.2785.143.orig/base/trace_event/malloc_dump_provider.cc 
  
    // Heap profiler dumps.
    if (!heap_profiler_enabled_)
-diff -Naur chromium-53.0.2785.143.orig/content/child/content_child_helpers.cc chromium-53.0.2785.143/content/child/content_child_helpers.cc
---- chromium-53.0.2785.143.orig/content/child/content_child_helpers.cc	2016-10-12 14:36:57.531855693 -0700
-+++ chromium-53.0.2785.143/content/child/content_child_helpers.cc	2016-10-12 14:41:55.688939085 -0700
+diff -Naur chromium-54.0.2840.100.orig/content/child/content_child_helpers.cc chromium-54.0.2840.100/content/child/content_child_helpers.cc
+--- chromium-54.0.2840.100.orig/content/child/content_child_helpers.cc	2016-11-30 13:21:44.171618482 -0800
++++ chromium-54.0.2840.100/content/child/content_child_helpers.cc	2016-11-30 13:28:03.140251933 -0800
 @@ -13,7 +13,7 @@
  #include "build/build_config.h"
  #include "v8/include/v8.h"
