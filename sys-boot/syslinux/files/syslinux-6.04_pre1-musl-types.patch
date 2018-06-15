@@ -1,0 +1,14 @@
+--- a/syslinux-6.04-pre1/efi/wrapper.h.orig	2018-04-26 20:15:44.918603645 +0000
++++ b/syslinux-6.04-pre1/efi/wrapper.h	2018-04-26 20:16:41.243604231 +0000
+@@ -26,6 +26,11 @@
+ #define __packed	__attribute__((packed))
+ #define OFFSETOF(t,m)	((size_t)&((t *)0)->m)
+ 
++#define __uint8_t uint8_t
++#define __uint16_t uint16_t
++#define __uint32_t uint32_t
++#define __uint64_t uint64_t
++
+ struct header {
+ 	__uint16_t msdos_signature;
+ 	__uint8_t _pad1[0x16];
