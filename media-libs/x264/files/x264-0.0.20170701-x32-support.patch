@@ -1,0 +1,1929 @@
+diff -urp x264-snapshot-20170701-2245.orig/common/bitstream.c x264-snapshot-20170701-2245/common/bitstream.c
+--- x264-snapshot-20170701-2245.orig/common/bitstream.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/bitstream.c	2018-05-01 14:04:14.406388647 -0700
+@@ -119,7 +119,7 @@ void x264_bitstream_init( int cpu, x264_
+ 
+     pf->nal_escape = x264_nal_escape_c;
+ #if HAVE_MMX
+-#if ARCH_X86_64 && !defined( __MACH__ )
++#if (ARCH_X86_64 || ARCH_X86_64_32) && !defined( __MACH__ )
+     pf->cabac_block_residual_internal = x264_cabac_block_residual_internal_sse2;
+     pf->cabac_block_residual_rd_internal = x264_cabac_block_residual_rd_internal_sse2;
+     pf->cabac_block_residual_8x8_rd_internal = x264_cabac_block_residual_8x8_rd_internal_sse2;
+@@ -132,7 +132,7 @@ void x264_bitstream_init( int cpu, x264_
+         if( cpu&X264_CPU_SSE2_IS_FAST )
+             pf->nal_escape = x264_nal_escape_sse2;
+     }
+-#if ARCH_X86_64 && !defined( __MACH__ )
++#if (ARCH_X86_64 || ARCH_X86_64_32) && !defined( __MACH__ )
+     if( cpu&X264_CPU_LZCNT )
+     {
+         pf->cabac_block_residual_internal = x264_cabac_block_residual_internal_lzcnt;
+Only in x264-snapshot-20170701-2245/common: bitstream.c.orig
+Only in x264-snapshot-20170701-2245/common: bitstream.c.rej
+diff -urp x264-snapshot-20170701-2245.orig/common/common.h x264-snapshot-20170701-2245/common/common.h
+--- x264-snapshot-20170701-2245.orig/common/common.h	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/common.h	2018-05-01 13:41:11.622374260 -0700
+@@ -1012,7 +1012,7 @@ static int ALWAYS_INLINE x264_predictor_
+     return cnt;
+ }
+ 
+-#if ARCH_X86 || ARCH_X86_64
++#if ARCH_X86 || ARCH_X86_64 || ARCH_X86_64_32
+ #include "x86/util.h"
+ #endif
+ 
+Only in x264-snapshot-20170701-2245/common: common.h.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/cpu.c x264-snapshot-20170701-2245/common/cpu.c
+--- x264-snapshot-20170701-2245.orig/common/cpu.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/cpu.c	2018-05-01 13:41:11.625374260 -0700
+@@ -129,7 +129,7 @@ uint32_t x264_cpu_detect( void )
+     uint32_t max_extended_cap, max_basic_cap;
+     uint64_t xcr0 = 0;
+ 
+-#if !ARCH_X86_64
++#if !ARCH_X86_64 && !ARCH_X86_64_32
+     if( !x264_cpu_cpuid_test() )
+         return 0;
+ #endif
+Only in x264-snapshot-20170701-2245/common: cpu.c.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/dct.c x264-snapshot-20170701-2245/common/dct.c
+--- x264-snapshot-20170701-2245.orig/common/dct.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/dct.c	2018-05-01 14:33:19.108406799 -0700
+@@ -619,7 +619,7 @@ void x264_dct_init( int cpu, x264_dct_fu
+         dctf->idct4x4dc     = x264_idct4x4dc_mmx;
+         dctf->sub8x8_dct_dc = x264_sub8x8_dct_dc_mmx2;
+ 
+-#if !ARCH_X86_64
++#if !ARCH_X86_64 && !ARCH_X86_64_32
+         dctf->sub8x8_dct    = x264_sub8x8_dct_mmx;
+         dctf->sub16x16_dct  = x264_sub16x16_dct_mmx;
+         dctf->add8x8_idct   = x264_add8x8_idct_mmx;
+@@ -707,7 +707,7 @@ void x264_dct_init( int cpu, x264_dct_fu
+         dctf->sub8x8_dct       = x264_sub8x8_dct_avx2;
+         dctf->sub16x16_dct     = x264_sub16x16_dct_avx2;
+         dctf->add16x16_idct_dc = x264_add16x16_idct_dc_avx2;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         dctf->sub16x16_dct8    = x264_sub16x16_dct8_avx2;
+ #endif
+     }
+@@ -989,7 +989,7 @@ void x264_zigzag_init( int cpu, x264_zig
+         pf_interlaced->scan_8x8 = x264_zigzag_scan_8x8_field_sse4;
+     if( cpu&X264_CPU_AVX )
+         pf_interlaced->scan_8x8 = x264_zigzag_scan_8x8_field_avx;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+     if( cpu&X264_CPU_AVX )
+     {
+         pf_progressive->scan_4x4 = x264_zigzag_scan_4x4_frame_avx;
+@@ -1031,7 +1031,7 @@ void x264_zigzag_init( int cpu, x264_zig
+     {
+         pf_interlaced->sub_4x4   = x264_zigzag_sub_4x4_field_avx;
+         pf_progressive->sub_4x4  = x264_zigzag_sub_4x4_frame_avx;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pf_interlaced->sub_4x4ac = x264_zigzag_sub_4x4ac_field_avx;
+         pf_progressive->sub_4x4ac= x264_zigzag_sub_4x4ac_frame_avx;
+ #endif
+Only in x264-snapshot-20170701-2245/common: dct.c.orig
+Only in x264-snapshot-20170701-2245/common: dct.c.rej
+diff -urp x264-snapshot-20170701-2245.orig/common/frame.c x264-snapshot-20170701-2245/common/frame.c
+--- x264-snapshot-20170701-2245.orig/common/frame.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/frame.c	2018-05-01 14:01:17.013386801 -0700
+@@ -77,7 +77,7 @@ static x264_frame_t *x264_frame_new( x26
+     int i_stride, i_width, i_lines, luma_plane_count;
+     int i_padv = PADV << PARAM_INTERLACED;
+     int align = 16;
+-#if ARCH_X86 || ARCH_X86_64
++#if ARCH_X86 || ARCH_X86_64 || ARCH_X86_64_32
+     if( h->param.cpu&X264_CPU_CACHELINE_64 || h->param.cpu&X264_CPU_AVX512 )
+         align = 64;
+     else if( h->param.cpu&X264_CPU_CACHELINE_32 || h->param.cpu&X264_CPU_AVX )
+Only in x264-snapshot-20170701-2245/common: frame.c.orig
+Only in x264-snapshot-20170701-2245/common: frame.c.rej
+diff -urp x264-snapshot-20170701-2245.orig/common/osdep.h x264-snapshot-20170701-2245/common/osdep.h
+--- x264-snapshot-20170701-2245.orig/common/osdep.h	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/osdep.h	2018-05-01 14:23:30.901400679 -0700
+@@ -138,7 +138,7 @@ int x264_is_pipe( const char *path );
+ 
+ #define EXPAND(x) x
+ 
+-#if ARCH_X86 || ARCH_X86_64
++#if ARCH_X86 || ARCH_X86_64 || ARCH_X86_64_32
+ #define NATIVE_ALIGN 64
+ #define ALIGNED_32( var ) DECLARE_ALIGNED( var, 32 )
+ #define ALIGNED_64( var ) DECLARE_ALIGNED( var, 64 )
+@@ -252,7 +252,7 @@ int x264_threading_init( void );
+ static ALWAYS_INLINE int x264_pthread_fetch_and_add( int *val, int add, x264_pthread_mutex_t *mutex )
+ {
+ #if HAVE_THREAD
+-#if defined(__GNUC__) && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ > 0) && (ARCH_X86 || ARCH_X86_64)
++#if defined(__GNUC__) && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ > 0) && (ARCH_X86 || ARCH_X86_64 || ARCH_X86_64_32)
+     return __sync_fetch_and_add( val, add );
+ #else
+     x264_pthread_mutex_lock( mutex );
+@@ -296,7 +296,7 @@ static ALWAYS_INLINE uint32_t endian_fix
+     return (x<<24) + ((x<<8)&0xff0000) + ((x>>8)&0xff00) + (x>>24);
+ }
+ #endif
+-#if HAVE_X86_INLINE_ASM && ARCH_X86_64
++#if HAVE_X86_INLINE_ASM && (ARCH_X86_64 || ARCH_X86_64_32)
+ static ALWAYS_INLINE uint64_t endian_fix64( uint64_t x )
+ {
+     asm("bswap %0":"+r"(x));
+@@ -364,7 +364,7 @@ static ALWAYS_INLINE void x264_prefetch(
+ /* We require that prefetch not fault on invalid reads, so we only enable it on
+  * known architectures. */
+ #elif defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 1) &&\
+-      (ARCH_X86 || ARCH_X86_64 || ARCH_ARM || ARCH_PPC)
++      (ARCH_X86 || ARCH_X86_64 || ARCH_X86_64_32 || ARCH_ARM || ARCH_PPC)
+ #define x264_prefetch(x) __builtin_prefetch(x)
+ #else
+ #define x264_prefetch(x)
+Only in x264-snapshot-20170701-2245/common: osdep.h.orig
+Only in x264-snapshot-20170701-2245/common: osdep.h.rej
+diff -urp x264-snapshot-20170701-2245.orig/common/pixel.c x264-snapshot-20170701-2245/common/pixel.c
+--- x264-snapshot-20170701-2245.orig/common/pixel.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/pixel.c	2018-05-01 14:32:34.492406335 -0700
+@@ -908,7 +908,7 @@ void x264_pixel_init( int cpu, x264_pixe
+ 
+         pixf->sa8d[PIXEL_16x16] = x264_pixel_sa8d_16x16_sse2;
+         pixf->sa8d[PIXEL_8x8]   = x264_pixel_sa8d_8x8_sse2;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->intra_sa8d_x3_8x8 = x264_intra_sa8d_x3_8x8_sse2;
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_sse2;
+ #endif
+@@ -974,7 +974,7 @@ void x264_pixel_init( int cpu, x264_pixe
+         pixf->intra_sad_x3_4x4  = x264_intra_sad_x3_4x4_ssse3;
+         pixf->sa8d[PIXEL_16x16]= x264_pixel_sa8d_16x16_ssse3;
+         pixf->sa8d[PIXEL_8x8]  = x264_pixel_sa8d_8x8_ssse3;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_ssse3;
+ #endif
+         pixf->intra_sad_x3_4x4    = x264_intra_sad_x3_4x4_ssse3;
+@@ -994,7 +994,7 @@ void x264_pixel_init( int cpu, x264_pixe
+         }
+         pixf->sa8d[PIXEL_16x16]= x264_pixel_sa8d_16x16_sse4;
+         pixf->sa8d[PIXEL_8x8]  = x264_pixel_sa8d_8x8_sse4;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_sse4;
+ #endif
+         pixf->intra_satd_x3_8x16c = x264_intra_satd_x3_8x16c_sse4;
+@@ -1019,7 +1019,7 @@ void x264_pixel_init( int cpu, x264_pixe
+         pixf->ssd_nv12_core    = x264_pixel_ssd_nv12_core_avx;
+         pixf->ssim_4x4x2_core  = x264_pixel_ssim_4x4x2_core_avx;
+         pixf->ssim_end4        = x264_pixel_ssim_end4_avx;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_avx;
+ #endif
+         pixf->intra_satd_x3_8x16c = x264_intra_satd_x3_8x16c_avx;
+@@ -1031,7 +1031,7 @@ void x264_pixel_init( int cpu, x264_pixe
+         pixf->ssd_nv12_core    = x264_pixel_ssd_nv12_core_xop;
+         pixf->vsad = x264_pixel_vsad_xop;
+         pixf->asd8 = x264_pixel_asd8_xop;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_xop;
+ #endif
+     }
+@@ -1127,7 +1127,7 @@ void x264_pixel_init( int cpu, x264_pixe
+         pixf->ssim_end4        = x264_pixel_ssim_end4_sse2;
+         pixf->sa8d[PIXEL_16x16] = x264_pixel_sa8d_16x16_sse2;
+         pixf->sa8d[PIXEL_8x8]   = x264_pixel_sa8d_8x8_sse2;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->intra_sa8d_x3_8x8 = x264_intra_sa8d_x3_8x8_sse2;
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_sse2;
+ #endif
+@@ -1196,7 +1196,7 @@ void x264_pixel_init( int cpu, x264_pixe
+             pixf->intra_sad_x9_4x4  = x264_intra_sad_x9_4x4_ssse3;
+             pixf->intra_satd_x9_4x4 = x264_intra_satd_x9_4x4_ssse3;
+             pixf->intra_sad_x9_8x8  = x264_intra_sad_x9_8x8_ssse3;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+             pixf->intra_sa8d_x9_8x8 = x264_intra_sa8d_x9_8x8_ssse3;
+ #endif
+         }
+@@ -1212,7 +1212,7 @@ void x264_pixel_init( int cpu, x264_pixe
+             INIT6( satd_x3, _ssse3_atom );
+             INIT6( satd_x4, _ssse3_atom );
+             INIT4( hadamard_ac, _ssse3_atom );
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+             pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_ssse3_atom;
+ #endif
+         }
+@@ -1224,7 +1224,7 @@ void x264_pixel_init( int cpu, x264_pixe
+             INIT8( satd, _ssse3 );
+             INIT7( satd_x3, _ssse3 );
+             INIT7( satd_x4, _ssse3 );
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+             pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_ssse3;
+ #endif
+         }
+@@ -1265,14 +1265,14 @@ void x264_pixel_init( int cpu, x264_pixe
+             pixf->intra_sad_x9_4x4  = x264_intra_sad_x9_4x4_sse4;
+             pixf->intra_satd_x9_4x4 = x264_intra_satd_x9_4x4_sse4;
+             pixf->intra_sad_x9_8x8  = x264_intra_sad_x9_8x8_sse4;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+             pixf->intra_sa8d_x9_8x8 = x264_intra_sa8d_x9_8x8_sse4;
+ #endif
+         }
+         pixf->sa8d[PIXEL_16x16]= x264_pixel_sa8d_16x16_sse4;
+         pixf->sa8d[PIXEL_8x8]  = x264_pixel_sa8d_8x8_sse4;
+         pixf->intra_satd_x3_8x16c = x264_intra_satd_x3_8x16c_sse4;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_sse4;
+ #endif
+     }
+@@ -1294,7 +1294,7 @@ void x264_pixel_init( int cpu, x264_pixe
+             pixf->intra_sad_x9_4x4  = x264_intra_sad_x9_4x4_avx;
+             pixf->intra_satd_x9_4x4 = x264_intra_satd_x9_4x4_avx;
+             pixf->intra_sad_x9_8x8  = x264_intra_sad_x9_8x8_avx;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+             pixf->intra_sa8d_x9_8x8 = x264_intra_sa8d_x9_8x8_avx;
+ #endif
+         }
+@@ -1308,7 +1308,7 @@ void x264_pixel_init( int cpu, x264_pixe
+         pixf->var[PIXEL_8x8]   = x264_pixel_var_8x8_avx;
+         pixf->ssim_4x4x2_core  = x264_pixel_ssim_4x4x2_core_avx;
+         pixf->ssim_end4        = x264_pixel_ssim_end4_avx;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_avx;
+ #endif
+     }
+@@ -1328,7 +1328,7 @@ void x264_pixel_init( int cpu, x264_pixe
+         pixf->sa8d[PIXEL_8x8]  = x264_pixel_sa8d_8x8_xop;
+         pixf->intra_satd_x3_8x16c = x264_intra_satd_x3_8x16c_xop;
+         pixf->ssd_nv12_core    = x264_pixel_ssd_nv12_core_xop;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_xop;
+ #endif
+     }
+@@ -1351,7 +1351,7 @@ void x264_pixel_init( int cpu, x264_pixe
+         pixf->intra_sad_x9_8x8  = x264_intra_sad_x9_8x8_avx2;
+         pixf->intra_sad_x3_8x8c = x264_intra_sad_x3_8x8c_avx2;
+         pixf->ssd_nv12_core = x264_pixel_ssd_nv12_core_avx2;
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         pixf->sa8d_satd[PIXEL_16x16] = x264_pixel_sa8d_satd_16x16_avx2;
+ #endif
+     }
+Only in x264-snapshot-20170701-2245/common: pixel.c.orig
+Only in x264-snapshot-20170701-2245/common: pixel.c.rej
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/bitstream-a.asm x264-snapshot-20170701-2245/common/x86/bitstream-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/bitstream-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/bitstream-a.asm	2018-05-01 13:41:11.649374260 -0700
+@@ -130,7 +130,7 @@ INIT_MMX mmx2
+ NAL_ESCAPE
+ INIT_XMM sse2
+ NAL_ESCAPE
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ INIT_YMM avx2
+ NAL_ESCAPE
+ %endif
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/cabac-a.asm x264-snapshot-20170701-2245/common/x86/cabac-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/cabac-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/cabac-a.asm	2018-05-01 13:41:11.652374260 -0700
+@@ -35,7 +35,7 @@ coeff_abs_levelgt1_ctx:     db 5, 5, 5,
+ coeff_abs_level_transition: db 1, 2, 3, 3, 4, 5, 6, 7
+                             db 4, 4, 4, 4, 5, 6, 7, 7
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ %macro COEFF_LAST_TABLE 17
+     %define funccpu1 %1
+     %define funccpu2 %2
+@@ -97,7 +97,7 @@ cextern coeff_abs_level_m1_offset
+ cextern count_cat_m1
+ cextern cabac_encode_ue_bypass
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define pointer resq
+ %else
+     %define pointer resd
+@@ -133,7 +133,7 @@ endstruc
+ ; t3 must be ecx, since it's used for shift.
+ %if WIN64
+     DECLARE_REG_TMP 3,1,2,0,5,6,4,4
+-%elif ARCH_X86_64
++%elif ARCH_X86_64 || ARCH_X86_64_32
+     DECLARE_REG_TMP 0,1,2,3,4,5,6,6
+ %else
+     DECLARE_REG_TMP 0,4,2,1,3,5,6,2
+@@ -204,7 +204,7 @@ cglobal cabac_encode_bypass_%1, 2,3
+     mov   [t0+cb.low], t7d
+     mov   [t0+cb.queue], t3d
+     RET
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 ARCH_X86_64 == 0ARCH_X86_64 == 0 ARCH_X86_64_32 == 0
+ .putbyte:
+     PROLOGUE 0,7
+     movifnidn t6d, t7d
+@@ -539,7 +539,7 @@ CABAC bmi2
+     RET
+ %endmacro
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ INIT_XMM sse2
+ CABAC_RESIDUAL_RD 0, coeff_last_sse2
+ CABAC_RESIDUAL_RD 1, coeff_last_sse2
+@@ -764,7 +764,7 @@ cglobal cabac_block_residual_internal, 4
+     RET
+ %endmacro
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ INIT_XMM sse2
+ CABAC_RESIDUAL coeff_last_sse2
+ INIT_XMM lzcnt
+Only in x264-snapshot-20170701-2245/common/x86: cabac-a.asm.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/cpu-a.asm x264-snapshot-20170701-2245/common/x86/cpu-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/cpu-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/cpu-a.asm	2018-05-01 13:41:11.653374260 -0700
+@@ -64,7 +64,7 @@ cglobal cpu_xgetbv
+ %endif
+     ret
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ 
+ ;-----------------------------------------------------------------------------
+ ; void stack_align( void (*func)(void*), void *arg );
+Only in x264-snapshot-20170701-2245/common/x86: cpu-a.asm.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/dct-a.asm x264-snapshot-20170701-2245/common/x86/dct-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/dct-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/dct-a.asm	2018-05-01 13:41:11.659374260 -0700
+@@ -906,7 +906,7 @@ SUB_NxN_DCT  sub16x16_dct8_sse2, sub8x8_
+ SUB_NxN_DCT  sub16x16_dct8_sse4, sub8x8_dct8_sse4, 256, 16, 0, 0, 14
+ SUB_NxN_DCT  sub16x16_dct8_avx,  sub8x8_dct8_avx,  256, 16, 0, 0, 14
+ %else ; !HIGH_BIT_DEPTH
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 ARCH_X86_64 == 0ARCH_X86_64 == 0 ARCH_X86_64_32 == 0
+ INIT_MMX
+ SUB_NxN_DCT  sub8x8_dct_mmx,     sub4x4_dct_mmx,   32, 4, 0, 0, 0
+ ADD_NxN_IDCT add8x8_idct_mmx,    add4x4_idct_mmx,  32, 4, 0, 0
+Only in x264-snapshot-20170701-2245/common/x86: dct-a.asm.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/deblock-a.asm x264-snapshot-20170701-2245/common/x86/deblock-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/deblock-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/deblock-a.asm	2018-05-01 13:41:11.663374260 -0700
+@@ -307,7 +307,7 @@ cglobal deblock_h_luma, 5,6,8,0-7*mmsize
+     RET
+ %endmacro
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ ; in:  m0=p1, m1=p0, m2=q0, m3=q1, m8=p2, m9=q2
+ ;      m12=alpha, m13=beta
+ ; out: m0=p1', m3=q1', m1=p0', m2=q0'
+@@ -438,7 +438,7 @@ DEBLOCK_LUMA_64
+ ;     %1=p0 %2=p1 %3=p2 %4=p3 %5=q0 %6=q1 %7=mask0
+ ;     %8=mask1p %9=2 %10=p0' %11=p1' %12=p2'
+ %macro LUMA_INTRA_P012 12 ; p0..p3 in memory
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     paddw     t0, %3, %2
+     mova      t2, %4
+     paddw     t2, %3
+@@ -503,7 +503,7 @@ DEBLOCK_LUMA_64
+     LOAD_AB t0, t1, r2d, r3d
+     mova    %1, t0
+     LOAD_MASK m0, m1, m2, m3, %1, t1, t0, t2, t3
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     mova    %2, t0        ; mask0
+     psrlw   t3, %1, 2
+ %else
+@@ -600,7 +600,7 @@ DEBLOCK_LUMA_64
+ %endif
+ %endmacro
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ ;-----------------------------------------------------------------------------
+ ; void deblock_v_luma_intra( uint16_t *pix, intptr_t stride, int alpha, int beta )
+ ;-----------------------------------------------------------------------------
+@@ -786,7 +786,7 @@ cglobal deblock_h_luma_intra, 4,7,8,0-8*
+     RET
+ %endmacro
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ DEBLOCK_LUMA
+ DEBLOCK_LUMA_INTRA
+@@ -1206,7 +1206,7 @@ DEBLOCK_LUMA_INTRA
+     mova    %4, %2
+ %endmacro
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ ;-----------------------------------------------------------------------------
+ ; void deblock_v_luma( uint8_t *pix, intptr_t stride, int alpha, int beta, int8_t *tc0 )
+ ;-----------------------------------------------------------------------------
+@@ -1473,7 +1473,7 @@ DEBLOCK_LUMA v, 16
+ 
+ 
+ %macro LUMA_INTRA_P012 4 ; p0..p3 in memory
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     pavgb t0, p2, p1
+     pavgb t1, p0, q0
+ %else
+@@ -1484,7 +1484,7 @@ DEBLOCK_LUMA v, 16
+ %endif
+     pavgb t0, t1 ; ((p2+p1+1)/2 + (p0+q0+1)/2 + 1)/2
+     mova  t5, t1
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     paddb t2, p2, p1
+     paddb t3, p0, q0
+ %else
+@@ -1502,7 +1502,7 @@ DEBLOCK_LUMA v, 16
+     pand  t2, mpb_1
+     psubb t0, t2 ; p1' = (p2+p1+p0+q0+2)/4;
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     pavgb t1, p2, q1
+     psubb t2, p2, q1
+ %else
+@@ -1577,7 +1577,7 @@ DEBLOCK_LUMA v, 16
+     %define t1 m5
+     %define t2 m6
+     %define t3 m7
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define p2 m8
+     %define q2 m9
+     %define t4 m10
+@@ -1616,7 +1616,7 @@ cglobal deblock_%1_luma_intra, 4,6,16,0-
+     mova    p0, [r4+r5]
+     mova    q0, [r0]
+     mova    q1, [r0+r1]
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     pxor    mpb_0, mpb_0
+     mova    mpb_1, [pb_1]
+     LOAD_MASK r2d, r3d, t5 ; m5=beta-1, t5=alpha-1, m7=mask0
+@@ -1659,7 +1659,7 @@ INIT_XMM cpuname
+ %else
+ INIT_MMX cpuname
+ %endif
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ ;-----------------------------------------------------------------------------
+ ; void deblock_h_luma_intra( uint8_t *pix, intptr_t stride, int alpha, int beta )
+ ;-----------------------------------------------------------------------------
+@@ -1729,14 +1729,14 @@ cglobal deblock_h_luma_intra, 2,4,8,0x80
+     lea    r2,  [r2+r1*8]
+     TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30), PASS8ROWS(r0, r2, r1, r3)
+     RET
+-%endif ; ARCH_X86_64
++%endif ; ARCH_X86_64 || ARCH_X86_64_32
+ %endmacro ; DEBLOCK_LUMA_INTRA
+ 
+ INIT_XMM sse2
+ DEBLOCK_LUMA_INTRA v
+ INIT_XMM avx
+ DEBLOCK_LUMA_INTRA v
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ DEBLOCK_LUMA_INTRA v8
+ %endif
+@@ -2016,7 +2016,7 @@ cglobal deblock_h_chroma_422, 5,7,8
+     RET
+ %endmacro ; DEBLOCK_CHROMA
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ DEBLOCK_CHROMA
+ %endif
+@@ -2116,7 +2116,7 @@ INIT_XMM sse2
+ DEBLOCK_CHROMA
+ INIT_XMM avx
+ DEBLOCK_CHROMA
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ DEBLOCK_CHROMA
+ %endif
+@@ -2139,14 +2139,14 @@ cglobal deblock_h_chroma_mbaff, 5,7,8
+ 
+ INIT_XMM sse2
+ DEBLOCK_H_CHROMA_420_MBAFF
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ DEBLOCK_H_CHROMA_420_MBAFF
+ %endif
+ 
+ %macro DEBLOCK_H_CHROMA_422 0
+ cglobal deblock_h_chroma_422, 5,8,8
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define cntr r7
+ %else
+     %define cntr dword r0m
+@@ -2264,7 +2264,7 @@ DEBLOCK_CHROMA_INTRA_BODY
+ DEBLOCK_CHROMA_INTRA
+ INIT_MMX mmx2
+ DEBLOCK_CHROMA_INTRA_BODY
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ DEBLOCK_CHROMA_INTRA
+ %endif
+ 
+Only in x264-snapshot-20170701-2245/common/x86: deblock-a.asm.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/mc-a.asm x264-snapshot-20170701-2245/common/x86/mc-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/mc-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/mc-a.asm	2018-05-01 13:41:11.669374260 -0700
+@@ -1240,7 +1240,7 @@ cglobal pixel_avg2_w%1_cache%2_%3
+ %endif
+ %if 0 ; or %1==8 - but the extra branch seems too expensive
+     ja cachesplit
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     test      r4b, 1
+ %else
+     test byte r4m, 1
+@@ -1262,7 +1262,7 @@ cglobal pixel_avg2_w%1_cache%2_%3
+ INIT_MMX
+ AVG_CACHELINE_CHECK  8, 64, mmx2
+ AVG_CACHELINE_CHECK 12, 64, mmx2
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ AVG_CACHELINE_CHECK 16, 64, mmx2
+ AVG_CACHELINE_CHECK 20, 64, mmx2
+ AVG_CACHELINE_CHECK  8, 32, mmx2
+@@ -1454,7 +1454,7 @@ MC_COPY 16
+ ;-----------------------------------------------------------------------------
+ 
+ %macro PREFETCH_FENC 1
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ cglobal prefetch_fenc_%1, 5,5
+     FIX_STRIDES r1, r3
+     and    r4d, 3
+@@ -1508,7 +1508,7 @@ cglobal prefetch_fenc_%1, 0,3
+     prefetcht0  [r0+r1]
+ %endif
+     ret
+-%endif ; ARCH_X86_64
++%endif ; ARCH_X86_64 || ARCH_X86_64_32
+ %endmacro
+ 
+ INIT_MMX mmx2
+@@ -1542,14 +1542,14 @@ cglobal prefetch_ref, 3,3
+ ; chroma MC
+ ;=============================================================================
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     DECLARE_REG_TMP 6,7,8
+ %else
+     DECLARE_REG_TMP 0,1,2
+ %endif
+ 
+ %macro MC_CHROMA_START 1
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     PROLOGUE 0,9,%1
+ %else
+     PROLOGUE 0,6,%1
+@@ -1606,11 +1606,11 @@ cglobal mc_chroma
+     MC_CHROMA_START 0
+     FIX_STRIDES r4
+     and       r5d, 7
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     jz .mc1dy
+ %endif
+     and       t2d, 7
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     jz .mc1dx
+ %endif
+     shl       r5d, 16
+@@ -1711,7 +1711,7 @@ ALIGN 4
+ 
+ %if mmsize==8
+ .width4:
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     mov        t0, r0
+     mov        t1, r1
+     mov        t2, r3
+@@ -1728,7 +1728,7 @@ ALIGN 4
+ %endif
+ %else
+ .width8:
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define multy0 m8
+     SWAP        8, 5
+ %else
+@@ -1837,7 +1837,7 @@ ALIGN 4
+     jg .width8
+     RET
+ .width8:
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     lea        r3, [t2+8*SIZEOF_PIXEL]
+     lea        r0, [t0+4*SIZEOF_PIXEL]
+     lea        r1, [t1+4*SIZEOF_PIXEL]
+@@ -1853,7 +1853,7 @@ ALIGN 4
+     jmp .loopx
+ %endif
+ 
+-%if ARCH_X86_64 ; too many regs for x86_32
++%if ARCH_X86_64 || ARCH_X86_64_32; too many regs for x86_32
+     RESET_MM_PERMUTATION
+ %if WIN64
+     %assign stack_offset stack_offset - stack_size_padded
+@@ -1980,7 +1980,7 @@ ALIGN 4
+     shl       r5d, 1
+ %endif
+     jmp .loop1d_w4
+-%endif ; ARCH_X86_64
++%endif ; ARCH_X86_64 || ARCH_X86_64_32
+ %endmacro ; MC_CHROMA
+ 
+ %macro MC_CHROMA_SSSE3 0
+@@ -2023,7 +2023,7 @@ cglobal mc_chroma
+     SPLATW     m6, m6
+     SPLATW     m7, m7
+ %endif
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define shiftround m8
+     mova       m8, [pw_512]
+ %else
+@@ -2130,7 +2130,7 @@ cglobal mc_chroma
+     pshufb     m0, m5
+     movu       m1, [r3+8]
+     pshufb     m1, m5
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     SWAP        9, 6
+     %define  mult1 m9
+ %else
+Only in x264-snapshot-20170701-2245/common/x86: mc-a.asm.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/mc-a2.asm x264-snapshot-20170701-2245/common/x86/mc-a2.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/mc-a2.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/mc-a2.asm	2018-05-01 13:41:11.673374260 -0700
+@@ -504,7 +504,7 @@ cglobal hpel_filter_c, 3,3,9
+     mova    m7, [pw_32]
+ %endif
+     %define pw_rnd m7
+-%elif ARCH_X86_64
++%elif ARCH_X86_64 || ARCH_X86_64_32
+     mova    m8, [pw_32]
+     %define pw_rnd m8
+ %else
+@@ -659,7 +659,7 @@ INIT_MMX mmx2
+ HPEL_V 0
+ INIT_XMM sse2
+ HPEL_V 8
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_XMM sse2
+ HPEL_C
+ INIT_XMM ssse3
+@@ -711,7 +711,7 @@ cglobal hpel_filter_h, 3,3,8
+     RET
+ %endif
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ %macro DO_FILT_V 5
+     ;The optimum prefetch distance is difficult to determine in checkasm:
+     ;any prefetch seems slower than not prefetching.
+@@ -920,7 +920,7 @@ INIT_XMM avx
+ HPEL
+ INIT_YMM avx2
+ HPEL
+-%endif ; ARCH_X86_64
++%endif ; ARCH_X86_64 || ARCH_X86_64_32
+ 
+ %undef movntq
+ %undef movntps
+@@ -1105,7 +1105,7 @@ cglobal plane_copy_interleave_core, 6,9
+     lea    r0, [r0+r6*2]
+     add    r2,  r6
+     add    r4,  r6
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     DECLARE_REG_TMP 7,8
+ %else
+     DECLARE_REG_TMP 1,3
+@@ -1351,7 +1351,7 @@ cglobal load_deinterleave_chroma_fenc, 4
+ ;                                        pixel *dstc, intptr_t i_dstc,
+ ;                                        pixel *src,  intptr_t i_src, int pw, int w, int h )
+ ;-----------------------------------------------------------------------------
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ cglobal plane_copy_deinterleave_rgb, 8,12
+     %define %%args r1, r3, r5, r7, r8, r9, r10, r11
+     mov        r8d, r9m
+@@ -1393,7 +1393,7 @@ cglobal plane_copy_deinterleave_rgb, 1,7
+ ;                                         uint16_t *dstc, intptr_t i_dstc,
+ ;                                         uint32_t *src, intptr_t i_src, int w, int h )
+ ;-----------------------------------------------------------------------------
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ cglobal plane_copy_deinterleave_v210, 8,10,7
+ %define src   r8
+ %define org_w r9
+@@ -2076,7 +2076,7 @@ cglobal frame_init_lowres_core, 6,7,(12-
+ 
+ INIT_MMX mmx2
+ FRAME_INIT_LOWRES
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX cache32, mmx2
+ FRAME_INIT_LOWRES
+ %endif
+Only in x264-snapshot-20170701-2245/common/x86: mc-a2.asm.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/mc-c.c x264-snapshot-20170701-2245/common/x86/mc-c.c
+--- x264-snapshot-20170701-2245.orig/common/x86/mc-c.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/mc-c.c	2018-05-01 13:41:11.677374260 -0700
+@@ -486,7 +486,7 @@ HPEL(8, mmx2, mmx2, mmx2, mmx2)
+ HPEL(16, sse2, sse2, sse2, sse2)
+ #else // !HIGH_BIT_DEPTH
+ HPEL(16, sse2_amd, mmx2, mmx2, sse2)
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+ void x264_hpel_filter_sse2 ( uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, uint8_t *src, intptr_t stride, int width, int height, int16_t *buf );
+ void x264_hpel_filter_ssse3( uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, uint8_t *src, intptr_t stride, int width, int height, int16_t *buf );
+ void x264_hpel_filter_avx  ( uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, uint8_t *src, intptr_t stride, int width, int height, int16_t *buf );
+@@ -805,7 +805,7 @@ void x264_mc_init_mmx( int cpu, x264_mc_
+ 
+     if( !(cpu&X264_CPU_SLOW_PALIGNR) )
+     {
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+         if( !(cpu&X264_CPU_SLOW_ATOM) ) /* The 64-bit version is slower, but the 32-bit version is faster? */
+ #endif
+             pf->hpel_filter = x264_hpel_filter_ssse3;
+Only in x264-snapshot-20170701-2245/common/x86: mc-c.c.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/pixel-a.asm x264-snapshot-20170701-2245/common/x86/pixel-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/pixel-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/pixel-a.asm	2018-05-01 14:22:01.528399749 -0700
+@@ -427,7 +427,7 @@ cglobal pixel_ssd_%1x%2, 0,0,0
+ %else
+ 
+ .startloop:
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     DECLARE_REG_TMP 0,1,2,3
+     PROLOGUE 0,0,8
+ %else
+@@ -719,7 +719,7 @@ SSD_NV12
+ %endif
+     MOVHL        xm6, xm5
+     paddd        xm5, xm6
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     movq         rax, xm5
+ %else
+     movd         eax, xm5
+@@ -939,7 +939,7 @@ cglobal pixel_var_16x16, 2,4
+     VAR_AVX512_CORE_16x16 1
+     sub            r2d, 0x50
+     jg .loop
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+     pop            r3d
+     %assign regs_used 3
+ %endif
+@@ -954,7 +954,7 @@ var_avx512_end:
+     paddd         xmm0, xm0, xm1
+     punpckhqdq    xmm1, xmm0, xmm0
+     paddd         xmm0, xmm1
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     movq           rax, xmm0
+ %else
+     movd           eax, xmm0
+@@ -985,7 +985,7 @@ cglobal pixel_var_8x16, 2,3
+ ; int pixel_var2_8x8( pixel *fenc, pixel *fdec, int ssd[2] )
+ ;-----------------------------------------------------------------------------
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     DECLARE_REG_TMP 6
+ %else
+     DECLARE_REG_TMP 2
+@@ -1600,7 +1600,7 @@ cglobal pixel_satd_4x4, 4,6
+ %endmacro
+ 
+ %macro BACKUP_POINTERS 0
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ %if WIN64
+     PUSH r7
+ %endif
+@@ -1610,7 +1610,7 @@ cglobal pixel_satd_4x4, 4,6
+ %endmacro
+ 
+ %macro RESTORE_AND_INC_POINTERS 0
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     lea     r0, [r6+8*SIZEOF_PIXEL]
+     lea     r2, [r7+8*SIZEOF_PIXEL]
+ %if WIN64
+@@ -1816,7 +1816,7 @@ cglobal pixel_satd_8x4, 4,6,8
+ %endmacro ; SATDS_SSE2
+ 
+ %macro SA8D_INTER 0
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define lh m10
+     %define rh m0
+ %else
+@@ -1835,7 +1835,7 @@ cglobal pixel_satd_8x4, 4,6,8
+ ; sse2 doesn't seem to like the horizontal way of doing things
+ %define vertical ((notcpuflag(ssse3) || cpuflag(atom)) || HIGH_BIT_DEPTH)
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ ;-----------------------------------------------------------------------------
+ ; int pixel_sa8d_8x8( uint8_t *, intptr_t, uint8_t *, intptr_t )
+ ;-----------------------------------------------------------------------------
+@@ -2036,7 +2036,7 @@ cglobal pixel_sa8d_16x16, 4,7
+     shr  eax, 1
+     mov  esp, r6
+     RET
+-%endif ; !ARCH_X86_64
++%endif ; !ARCH_X86_64 || ARCH_X86_64_32
+ %endmacro ; SA8D
+ 
+ ;=============================================================================
+@@ -2219,7 +2219,7 @@ cglobal pixel_sa8d_satd_16x16, 4,8-(mmsi
+ ; intra_sa8d_x3_8x8 and intra_satd_x3_4x4 are obsoleted by x9 on ssse3+,
+ ; and are only retained for old cpus.
+ %macro INTRA_SA8D_SSE2 0
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ ;-----------------------------------------------------------------------------
+ ; void intra_sa8d_x3_8x8( uint8_t *fenc, uint8_t edge[36], int *res )
+ ;-----------------------------------------------------------------------------
+@@ -2317,7 +2317,7 @@ cglobal intra_sa8d_x3_8x8, 3,3,14
+     psrldq      m0, 8
+     movd    [r2+8], m0 ; i8x8_dc
+     RET
+-%endif ; ARCH_X86_64
++%endif ; ARCH_X86_64 || ARCH_X86_64_32
+ %endmacro ; INTRA_SA8D_SSE2
+ 
+ ; in: r0 = fenc
+@@ -2589,7 +2589,7 @@ cglobal intra_satd_x3_16x16, 0,5
+     ADD        rsp, stack_pad
+     RET
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define  t0 r6
+ %else
+     %define  t0 r2
+@@ -2896,7 +2896,7 @@ cglobal intra_sad_x9_4x4, 3,4,9
+     %assign pad 0xc0-gprsize-(stack_offset&15)
+     %define pred_buf rsp
+     sub       rsp, pad
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     INTRA_X9_PRED intrax9a, m8
+ %else
+     INTRA_X9_PRED intrax9a, [rsp+0xa0]
+@@ -2931,7 +2931,7 @@ cglobal intra_sad_x9_4x4, 3,4,9
+     paddd      m2, m3
+     paddd      m4, m5
+     paddd      m6, m7
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     SWAP        7, 8
+     pxor       m8, m8
+     %define %%zero m8
+@@ -2971,7 +2971,7 @@ cglobal intra_sad_x9_4x4, 3,4,9
+     RET
+ %endif ; cpuflag
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ ;-----------------------------------------------------------------------------
+ ; int intra_satd_x9_4x4( uint8_t *fenc, uint8_t *fdec, uint16_t *bitcosts )
+ ;-----------------------------------------------------------------------------
+@@ -3058,7 +3058,7 @@ ALIGN 16
+     paddd    xmm0, m0, m1 ; consistent location of return value. only the avx version of hadamard permutes m0, so 3arg is free
+     ret
+ 
+-%else ; !ARCH_X86_64
++%else ; !ARCH_X86_64 || ARCH_X86_64_32
+ cglobal intra_satd_x9_4x4, 3,4,8
+     %assign pad 0x120-gprsize-(stack_offset&15)
+     %define fenc_buf rsp
+@@ -3173,7 +3173,7 @@ cglobal intra_sad_x9_8x8, 5,6,9
+     %define fenc13 m5
+     %define fenc46 m6
+     %define fenc57 m7
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define tmp m8
+     %assign padbase 0x0
+ %else
+@@ -3529,7 +3529,7 @@ cglobal intra_sad_x9_8x8, 5,6,9
+     ADD       rsp, pad
+     RET
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ ;-----------------------------------------------------------------------------
+ ; int intra_sa8d_x9_8x8( uint8_t *fenc, uint8_t *fdec, uint8_t edge[36], uint16_t *bitcosts, uint16_t *satds )
+ ;-----------------------------------------------------------------------------
+@@ -3823,7 +3823,7 @@ ALIGN 16
+     paddw       m0, m2
+     paddw mret, m0, m3
+     ret
+-%endif ; ARCH_X86_64
++%endif ; ARCH_X86_64 || ARCH_X86_64_32
+ %endmacro ; INTRA8_X9
+ 
+ ; in:  r0=pix, r1=stride, r2=stride*3, r3=tmp, m6=mask_ac4, m7=0
+@@ -4035,7 +4035,7 @@ cglobal pixel_hadamard_ac_%1x%2, 2,4
+     movd edx, m0
+     movd eax, m1
+     shr  edx, 1
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     shl  rdx, 32
+     add  rax, rdx
+ %endif
+@@ -4084,7 +4084,7 @@ HADAMARD_AC_WXH_MMX  8,  8
+ ; in:  r0=pix, r1=stride, r2=stride*3
+ ; out: [esp+16]=sa8d, [esp+32]=satd, r0+=stride*4
+ cglobal hadamard_ac_8x8
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define spill0 m8
+     %define spill1 m9
+     %define spill2 m10
+@@ -4270,7 +4270,7 @@ cglobal pixel_hadamard_ac_%1x%2, 2,4,11
+     movd eax, xm1
+     shr  edx, 2 - (%1*%2*16/mmsize >> 8)
+     shr  eax, 1
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     shl  rdx, 32
+     add  rax, rdx
+ %endif
+@@ -4280,7 +4280,7 @@ cglobal pixel_hadamard_ac_%1x%2, 2,4,11
+ 
+ ; instantiate satds
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ cextern pixel_sa8d_8x8_internal_mmx2
+ INIT_MMX mmx2
+ SA8D
+@@ -4297,7 +4297,7 @@ SA8D
+ INIT_XMM sse2
+ SA8D
+ SATDS_SSE2
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ SA8D_SATD
+ %endif
+ %if HIGH_BIT_DEPTH == 0
+@@ -4313,7 +4313,7 @@ INIT_XMM ssse3,atom
+ SATDS_SSE2
+ SA8D
+ HADAMARD_AC_SSE2
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ SA8D_SATD
+ %endif
+ %endif
+@@ -4329,7 +4329,7 @@ INIT_XMM ssse3
+ SATDS_SSE2
+ SA8D
+ HADAMARD_AC_SSE2
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ SA8D_SATD
+ %endif
+ %if HIGH_BIT_DEPTH == 0
+@@ -4350,7 +4350,7 @@ INIT_XMM sse4
+ SATDS_SSE2
+ SA8D
+ HADAMARD_AC_SSE2
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ SA8D_SATD
+ %endif
+ %if HIGH_BIT_DEPTH == 0
+@@ -4364,7 +4364,7 @@ INTRA8_X9
+ INIT_XMM avx
+ SATDS_SSE2
+ SA8D
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ SA8D_SATD
+ %endif
+ %if HIGH_BIT_DEPTH == 0
+@@ -4377,7 +4377,7 @@ HADAMARD_AC_SSE2
+ INIT_XMM xop
+ SATDS_SSE2
+ SA8D
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ SA8D_SATD
+ %endif
+ %if HIGH_BIT_DEPTH == 0
+@@ -4393,7 +4393,7 @@ HADAMARD_AC_SSE2
+ %define TRANS TRANS_SSE4
+ INIT_YMM avx2
+ HADAMARD_AC_SSE2
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ SA8D_SATD
+ %endif
+ 
+@@ -4745,7 +4745,7 @@ cglobal intra_sad_x9_8x8, 5,7,8
+ 
+ %macro SATD_AVX512_END 0-1 0 ; sa8d
+     paddw          m0 {k1}{z}, m1 ; zero-extend to dwords
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ %if mmsize == 64
+     vextracti32x8 ym1, m0, 1
+     paddd         ym0, ym1
+@@ -4888,7 +4888,7 @@ cglobal pixel_satd_8x4, 4,5
+ cglobal pixel_satd_4x8, 4,6
+     call pixel_satd_4x8_internal_avx512
+ satd_ymm_avx512_end:
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+     pop     r5d
+     %assign regs_used 5
+ %endif
+@@ -5121,7 +5121,7 @@ cglobal pixel_ssim_end4, 2,3
+     pshuflw   m4, m0, q0032
+ %endif
+     addss     m0, m4
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+     movss    r0m, m0
+     fld     dword r0m
+ %endif
+@@ -5332,7 +5332,7 @@ cglobal pixel_ads4, 5,7,12
+     punpckhqdq m5, m5
+     punpckhqdq m4, m4
+ %endif
+-%if ARCH_X86_64 && mmsize == 16
++%if (ARCH_X86_64 || ARCH_X86_64_32) && mmsize == 16
+     movd      m8, r6m
+     SPLATW    m8, m8
+     ADS_START
+@@ -5513,7 +5513,7 @@ ALIGN 16
+     jge .end
+ .loopi:
+     mov     r2,  [r6+r1]
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     test    r2,  r2
+ %else
+     mov     r3,  r2
+@@ -5525,7 +5525,7 @@ ALIGN 16
+     TEST 1
+     TEST 2
+     TEST 3
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     shr     r2,  32
+ %else
+     mov     r2d, [r6+r1]
+Only in x264-snapshot-20170701-2245/common/x86: pixel-a.asm.orig
+Only in x264-snapshot-20170701-2245/common/x86: pixel-a.asm.rej
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/predict-a.asm x264-snapshot-20170701-2245/common/x86/predict-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/predict-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/predict-a.asm	2018-05-01 14:25:12.726401738 -0700
+@@ -640,7 +640,7 @@ cglobal predict_4x4_dc, 1,4
+ cglobal predict_8x8_filter, 4,6,6
+     add          r0, 0x58*SIZEOF_PIXEL
+ %define src r0-0x58*SIZEOF_PIXEL
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+     mov          r4, r1
+ %define t1 r4
+ %define t4 r1
+@@ -942,7 +942,7 @@ INIT_XMM ssse3
+ PREDICT_8x8_DDLR
+ INIT_XMM cache64, ssse3
+ PREDICT_8x8_DDLR
+-%elif ARCH_X86_64 == 0
++%elif ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ PREDICT_8x8_DDLR
+ %endif
+@@ -1014,7 +1014,7 @@ INIT_XMM ssse3
+ PREDICT_8x8_HU d, wd
+ INIT_XMM avx
+ PREDICT_8x8_HU d, wd
+-%elif ARCH_X86_64 == 0
++%elif ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ PREDICT_8x8_HU w, bw
+ %endif
+@@ -1063,13 +1063,13 @@ INIT_XMM ssse3
+ PREDICT_8x8_VR w
+ INIT_XMM avx
+ PREDICT_8x8_VR w
+-%elif ARCH_X86_64 == 0
++%elif ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ PREDICT_8x8_VR b
+ %endif
+ 
+ %macro LOAD_PLANE_ARGS 0
+-%if cpuflag(avx2) && ARCH_X86_64 == 0
++%if cpuflag(avx2) && ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+     vpbroadcastw m0, r1m
+     vpbroadcastw m2, r2m
+     vpbroadcastw m4, r3m
+@@ -1090,7 +1090,7 @@ PREDICT_8x8_VR b
+ ;-----------------------------------------------------------------------------
+ ; void predict_8x8c_p_core( uint8_t *src, int i00, int b, int c )
+ ;-----------------------------------------------------------------------------
+-%if ARCH_X86_64 == 0 && HIGH_BIT_DEPTH == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0 && HIGH_BIT_DEPTH == 0
+ %macro PREDICT_CHROMA_P_MMX 1
+ cglobal predict_8x%1c_p_core, 1,2
+     LOAD_PLANE_ARGS
+@@ -1210,7 +1210,7 @@ PREDICT_CHROMA_P 16
+ ;-----------------------------------------------------------------------------
+ ; void predict_16x16_p_core( uint8_t *src, int i00, int b, int c )
+ ;-----------------------------------------------------------------------------
+-%if HIGH_BIT_DEPTH == 0 && ARCH_X86_64 == 0
++%if HIGH_BIT_DEPTH == 0 && ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ cglobal predict_16x16_p_core, 1,2
+     LOAD_PLANE_ARGS
+@@ -1250,7 +1250,7 @@ ALIGN 4
+     dec         r1d
+     jg          .loop
+     RET
+-%endif ; !HIGH_BIT_DEPTH && !ARCH_X86_64
++%endif ; !HIGH_BIT_DEPTH && !ARCH_X86_64 || ARCH_X86_64_32
+ 
+ %macro PREDICT_16x16_P 0
+ cglobal predict_16x16_p_core, 1,2,8
+Only in x264-snapshot-20170701-2245/common/x86: predict-a.asm.orig
+Only in x264-snapshot-20170701-2245/common/x86: predict-a.asm.rej
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/predict-c.c x264-snapshot-20170701-2245/common/x86/predict-c.c
+--- x264-snapshot-20170701-2245.orig/common/x86/predict-c.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/predict-c.c	2018-05-01 13:41:11.706374261 -0700
+@@ -140,9 +140,9 @@ static void x264_predict_16x16_p_##name(
+ #if HIGH_BIT_DEPTH
+ PREDICT_16x16_P_INLINE( sse2, sse2 )
+ #else // !HIGH_BIT_DEPTH
+-#if !ARCH_X86_64
++#if !ARCH_X86_64 && !ARCH_X86_64_32
+ PREDICT_16x16_P( mmx2, mmx2 )
+-#endif // !ARCH_X86_64
++#endif // !ARCH_X86_64 && !ARCH_X86_64_32
+ PREDICT_16x16_P( sse2, sse2 )
+ #if HAVE_X86_INLINE_ASM
+ PREDICT_16x16_P_INLINE( ssse3, sse2 )
+@@ -180,9 +180,9 @@ static void x264_predict_8x16c_p_##name(
+     PREDICT_8x16C_P_END(name)\
+ }
+ 
+-#if !ARCH_X86_64 && !HIGH_BIT_DEPTH
++#if !ARCH_X86_64 && !ARCH_X86_64_32 && !HIGH_BIT_DEPTH
+ PREDICT_8x16C_P( mmx2 )
+-#endif // !ARCH_X86_64 && !HIGH_BIT_DEPTH
++#endif // !ARCH_X86_64 && !ARCH_X86_64_32 && !HIGH_BIT_DEPTH
+ PREDICT_8x16C_P( sse2 )
+ PREDICT_8x16C_P( avx )
+ PREDICT_8x16C_P( avx2 )
+@@ -269,9 +269,9 @@ static void x264_predict_8x8c_p_##name(
+ #if HIGH_BIT_DEPTH
+ PREDICT_8x8C_P_INLINE( sse2, sse2 )
+ #else  //!HIGH_BIT_DEPTH
+-#if !ARCH_X86_64
++#if !ARCH_X86_64 && !ARCH_X86_64_32
+ PREDICT_8x8C_P( mmx2, mmx2 )
+-#endif // !ARCH_X86_64
++#endif // !ARCH_X86_64 && !ARCH_X86_64_32
+ PREDICT_8x8C_P( sse2, sse2 )
+ #if HAVE_X86_INLINE_ASM
+ PREDICT_8x8C_P_INLINE( ssse3, sse2 )
+@@ -280,7 +280,7 @@ PREDICT_8x8C_P_INLINE( ssse3, sse2 )
+ PREDICT_8x8C_P_INLINE( avx, avx )
+ PREDICT_8x8C_P_INLINE( avx2, avx2 )
+ 
+-#if ARCH_X86_64 && !HIGH_BIT_DEPTH
++#if (ARCH_X86_64 || ARCH_X86_64_32) && !HIGH_BIT_DEPTH
+ static void x264_predict_8x8c_dc_left( uint8_t *src )
+ {
+     int y;
+@@ -306,7 +306,7 @@ static void x264_predict_8x8c_dc_left( u
+         src += FDEC_STRIDE;
+     }
+ }
+-#endif // ARCH_X86_64 && !HIGH_BIT_DEPTH
++#endif // (ARCH_X86_64 || ARCH_X86_64_32) && !HIGH_BIT_DEPTH
+ 
+ /****************************************************************************
+  * Exported functions:
+@@ -335,7 +335,7 @@ void x264_predict_16x16_init_mmx( int cp
+         return;
+     pf[I_PRED_16x16_H]       = x264_predict_16x16_h_avx2;
+ #else
+-#if !ARCH_X86_64
++#if !ARCH_X86_64 && !ARCH_X86_64_32
+     pf[I_PRED_16x16_P]       = x264_predict_16x16_p_mmx2;
+ #endif
+     if( !(cpu&X264_CPU_SSE) )
+@@ -396,7 +396,7 @@ void x264_predict_8x8c_init_mmx( int cpu
+         return;
+     pf[I_PRED_CHROMA_H]   = x264_predict_8x8c_h_avx2;
+ #else
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+     pf[I_PRED_CHROMA_DC_LEFT] = x264_predict_8x8c_dc_left;
+ #endif
+     pf[I_PRED_CHROMA_V]       = x264_predict_8x8c_v_mmx;
+@@ -404,7 +404,7 @@ void x264_predict_8x8c_init_mmx( int cpu
+         return;
+     pf[I_PRED_CHROMA_DC_TOP]  = x264_predict_8x8c_dc_top_mmx2;
+     pf[I_PRED_CHROMA_H]       = x264_predict_8x8c_h_mmx2;
+-#if !ARCH_X86_64
++#if !ARCH_X86_64 || ARCH_X86_64_32
+     pf[I_PRED_CHROMA_P]       = x264_predict_8x8c_p_mmx2;
+ #endif
+     pf[I_PRED_CHROMA_DC]      = x264_predict_8x8c_dc_mmx2;
+@@ -459,7 +459,7 @@ void x264_predict_8x16c_init_mmx( int cp
+     pf[I_PRED_CHROMA_DC_TOP]  = x264_predict_8x16c_dc_top_mmx2;
+     pf[I_PRED_CHROMA_DC]      = x264_predict_8x16c_dc_mmx2;
+     pf[I_PRED_CHROMA_H]       = x264_predict_8x16c_h_mmx2;
+-#if !ARCH_X86_64
++#if !ARCH_X86_64 || ARCH_X86_64_32
+     pf[I_PRED_CHROMA_P]       = x264_predict_8x16c_p_mmx2;
+ #endif
+     if( !(cpu&X264_CPU_SSE2) )
+Only in x264-snapshot-20170701-2245/common/x86: predict-c.c.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/quant-a.asm x264-snapshot-20170701-2245/common/x86/quant-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/quant-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/quant-a.asm	2018-05-01 14:30:59.116405342 -0700
+@@ -138,7 +138,7 @@ cextern popcnt_table
+ %if cpuflag(sse4)
+     ptest     m5, m5
+ %else ; !sse4
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ %if mmsize == 16
+     packsswb  m5, m5
+ %endif
+@@ -458,7 +458,7 @@ cglobal quant_4x4x4, 3,3,7
+ 
+ INIT_MMX mmx2
+ QUANT_DC quant_2x2_dc, 1
+-%if ARCH_X86_64 == 0 ; not needed because sse2 is faster
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0 ; not needed because sse2 is faster
+ QUANT_DC quant_4x4_dc, 4
+ INIT_MMX mmx2
+ QUANT_AC quant_4x4, 4
+@@ -614,7 +614,7 @@ cglobal quant_4x4x4, 3,3,6
+ %endrep
+ %endmacro
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     DECLARE_REG_TMP 6,3,2
+ %else
+     DECLARE_REG_TMP 2,0,1
+@@ -628,7 +628,7 @@ cglobal quant_4x4x4, 3,3,6
+     sub  t2d, t0d
+     sub  t2d, t1d   ; i_mf = i_qp % 6
+     shl  t2d, %1
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     add  r1, t2     ; dequant_mf[i_mf]
+ %else
+     add  r1, r1mp   ; dequant_mf[i_mf]
+@@ -731,7 +731,7 @@ INIT_YMM avx2
+ DEQUANT 4, 4, 4
+ DEQUANT 8, 6, 4
+ %else
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx
+ DEQUANT 4, 4, 1
+ DEQUANT 8, 6, 1
+@@ -767,7 +767,7 @@ DEQUANT 8, 6, 4
+ %else
+ %define dmf t2+dequant8_scale
+ %endif
+-%elif ARCH_X86_64
++%elif ARCH_X86_64 || ARCH_X86_64_32
+ %define dmf r1+t2
+ %else
+ %define dmf r1
+@@ -981,7 +981,7 @@ DEQUANT_DC d, pmaddwd
+ INIT_YMM avx2
+ DEQUANT_DC d, pmaddwd
+ %else
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ DEQUANT_DC w, pmullw
+ %endif
+@@ -1021,7 +1021,7 @@ DEQUANT_DC w, pmullw
+     %define %%args dct, dct4x4, dmf, qp
+ %endif
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+     DECLARE_REG_TMP 2,0,1
+ %endif
+ 
+@@ -1033,7 +1033,7 @@ cglobal idct_dequant_2x4_%1, 0,3,5, %%ar
+     sub        t2d, t0d
+     sub        t2d, t1d       ; qp % 6
+     shl        t2d, 6         ; 16 * sizeof(int)
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     imul       t2d, [dmfq+t2], -0xffff ; (-dmf) << 16 | dmf
+ %else
+     mov       dctq, dctmp
+@@ -1138,7 +1138,7 @@ DEQUANT_2x4_DC dc
+ DEQUANT_2x4_DC dconly
+ 
+ ; t4 is eax for return value.
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     DECLARE_REG_TMP 0,1,2,3,6,4  ; Identical for both Windows and *NIX
+ %else
+     DECLARE_REG_TMP 4,1,2,3,0,5
+@@ -1284,7 +1284,7 @@ cglobal denoise_dct, 4,4,6
+     RET
+ %endmacro
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx
+ DENOISE_DCT
+ %endif
+@@ -1334,7 +1334,7 @@ cglobal denoise_dct, 4,4,7
+     RET
+ %endmacro
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx
+ DENOISE_DCT
+ %endif
+@@ -1457,7 +1457,7 @@ cglobal decimate_score%1, 1,3
+ %endif
+     movzx ecx, dl
+     movzx eax, byte [mask_table + rcx]
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     xor   edx, ecx
+     jz .ret
+ %if cpuflag(lzcnt)
+@@ -1539,7 +1539,7 @@ cglobal decimate_score%1, 1,3
+ %endmacro
+ 
+ %macro DECIMATE8x8 0
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ cglobal decimate_score64, 1,5
+ %if mmsize == 64
+     DECIMATE_MASK64_AVX512
+@@ -1807,7 +1807,7 @@ cglobal coeff_last8, 1,3
+     RET
+ %endmacro
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ COEFF_LAST8
+ %endif
+@@ -1847,7 +1847,7 @@ COEFF_LAST8
+ %endmacro
+ 
+ %macro COEFF_LAST48 0
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ cglobal coeff_last4, 1,1
+     BSR  rax, [r0], 0x3f
+     shr  eax, 4
+@@ -1896,7 +1896,7 @@ cglobal coeff_last16, 1,3
+     BSR eax, r1d, 0x1f
+     RET
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ cglobal coeff_last64, 1, 4-mmsize/16
+     pxor m2, m2
+     LAST_MASK 16, r1d, r0+SIZEOF_DCTCOEF* 32, r3d
+@@ -1935,7 +1935,7 @@ cglobal coeff_last64, 1,3
+ %endif
+ %endmacro
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX mmx2
+ COEFF_LAST
+ %endif
+@@ -1962,7 +1962,7 @@ COEFF_LAST
+     pmovmskb %1, m0
+ %endmacro
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_YMM avx2
+ cglobal coeff_last64, 1,2
+     pxor m2, m2
+@@ -2018,7 +2018,7 @@ cglobal coeff_last64, 1,2
+     kunpckwd     k0, k1, k0
+     kunpckwd     k1, k3, k2
+ %endif
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     kunpckdq     k0, k1, k0
+     kmovq       rax, k0
+     lzcnt       rax, rax
+@@ -2068,7 +2068,7 @@ endstruc
+ ; t6 = eax for return, t3 = ecx for shift, t[01] = r[01] for x86_64 args
+ %if WIN64
+     DECLARE_REG_TMP 3,1,2,0,4,5,6
+-%elif ARCH_X86_64
++%elif ARCH_X86_64 || ARCH_X86_64_32
+     DECLARE_REG_TMP 0,1,2,3,4,5,6
+ %else
+     DECLARE_REG_TMP 6,3,2,1,4,5,0
+@@ -2119,7 +2119,7 @@ cglobal coeff_level_run%1,0,7
+ %endmacro
+ 
+ INIT_MMX mmx2
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ COEFF_LEVELRUN 15
+ COEFF_LEVELRUN 16
+ %endif
+@@ -2185,7 +2185,7 @@ cglobal coeff_level_run%1,2,4+(%1/9)
+     add     eax, eax
+ %endif
+ %if %1 > 8
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     mov     r4d, eax
+     shr     r4d, 8
+ %else
+Only in x264-snapshot-20170701-2245/common/x86: quant-a.asm.orig
+Only in x264-snapshot-20170701-2245/common/x86: quant-a.asm.rej
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/sad-a.asm x264-snapshot-20170701-2245/common/x86/sad-a.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/sad-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/sad-a.asm	2018-05-01 13:41:11.719374261 -0700
+@@ -334,7 +334,7 @@ cglobal pixel_sad_16x16, 4,4
+ ; void pixel_vsad( pixel *src, intptr_t stride );
+ ;-----------------------------------------------------------------------------
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ INIT_MMX
+ cglobal pixel_vsad_mmx2, 3,3
+     mova      m0, [r0]
+@@ -1111,7 +1111,7 @@ SAD_X 4,  4,  4
+     paddw    m2, m3
+ %endmacro
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     DECLARE_REG_TMP 6
+ %else
+     DECLARE_REG_TMP 5
+@@ -2021,7 +2021,7 @@ cglobal pixel_sad_x3_%1x%2_cache%3_%6
+     CHECK_SPLIT r3m, %1, %3
+     jmp pixel_sad_x3_%1x%2_%4
+ .split:
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     PROLOGUE 6,9
+     push r3
+     push r2
+@@ -2087,7 +2087,7 @@ cglobal pixel_sad_x4_%1x%2_cache%3_%6
+     CHECK_SPLIT r4m, %1, %3
+     jmp pixel_sad_x4_%1x%2_%4
+ .split:
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     PROLOGUE 6,9
+     mov  r8,  r6mp
+     push r4
+@@ -2166,7 +2166,7 @@ cglobal pixel_sad_x4_%1x%2_cache%3_%6
+ ; instantiate the aligned sads
+ 
+ INIT_MMX
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ SAD16_CACHELINE_FUNC_MMX2  8, 32
+ SAD16_CACHELINE_FUNC_MMX2 16, 32
+ SAD8_CACHELINE_FUNC_MMX2   4, 32
+@@ -2174,23 +2174,23 @@ SAD8_CACHELINE_FUNC_MMX2   8, 32
+ SAD8_CACHELINE_FUNC_MMX2  16, 32
+ SAD16_CACHELINE_FUNC_MMX2  8, 64
+ SAD16_CACHELINE_FUNC_MMX2 16, 64
+-%endif ; !ARCH_X86_64
++%endif ; !ARCH_X86_64 || ARCH_X86_64_32
+ SAD8_CACHELINE_FUNC_MMX2   4, 64
+ SAD8_CACHELINE_FUNC_MMX2   8, 64
+ SAD8_CACHELINE_FUNC_MMX2  16, 64
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ SADX34_CACHELINE_FUNC 16, 16, 32, mmx2, mmx2, mmx2
+ SADX34_CACHELINE_FUNC 16,  8, 32, mmx2, mmx2, mmx2
+ SADX34_CACHELINE_FUNC  8, 16, 32, mmx2, mmx2, mmx2
+ SADX34_CACHELINE_FUNC  8,  8, 32, mmx2, mmx2, mmx2
+ SADX34_CACHELINE_FUNC 16, 16, 64, mmx2, mmx2, mmx2
+ SADX34_CACHELINE_FUNC 16,  8, 64, mmx2, mmx2, mmx2
+-%endif ; !ARCH_X86_64
++%endif ; !ARCH_X86_64 || ARCH_X86_64_32
+ SADX34_CACHELINE_FUNC  8, 16, 64, mmx2, mmx2, mmx2
+ SADX34_CACHELINE_FUNC  8,  8, 64, mmx2, mmx2, mmx2
+ 
+-%if ARCH_X86_64 == 0
++%if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ SAD16_CACHELINE_FUNC sse2, 8
+ SAD16_CACHELINE_FUNC sse2, 16
+ %assign i 1
+@@ -2200,7 +2200,7 @@ SAD16_CACHELINE_LOOP_SSE2 i
+ %endrep
+ SADX34_CACHELINE_FUNC 16, 16, 64, sse2, sse2, sse2
+ SADX34_CACHELINE_FUNC 16,  8, 64, sse2, sse2, sse2
+-%endif ; !ARCH_X86_64
++%endif ; !ARCH_X86_64 || ARCH_X86_64_32
+ SADX34_CACHELINE_FUNC  8, 16, 64, sse2, mmx2, sse2
+ 
+ SAD16_CACHELINE_FUNC ssse3, 8
+Only in x264-snapshot-20170701-2245/common/x86: sad-a.asm.orig
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/x86util.asm x264-snapshot-20170701-2245/common/x86/x86util.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/x86util.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/x86util.asm	2018-05-01 13:41:11.729374261 -0700
+@@ -102,7 +102,7 @@
+ %endmacro
+ 
+ %macro TRANSPOSE8x8W 9-11
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     SBUTTERFLY wd,  %1, %2, %9
+     SBUTTERFLY wd,  %3, %4, %9
+     SBUTTERFLY wd,  %5, %6, %9
+diff -urp x264-snapshot-20170701-2245.orig/configure x264-snapshot-20170701-2245/configure
+--- x264-snapshot-20170701-2245.orig/configure	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/configure	2018-05-01 13:54:51.701382792 -0700
+@@ -713,20 +713,23 @@ case $host_cpu in
+         fi
+         ;;
+     x86_64)
+-        ARCH="X86_64"
+         AS="${AS-nasm}"
+         AS_EXT=".asm"
+-        ASFLAGS="$ASFLAGS -DARCH_X86_64=1 -I\$(SRCPATH)/common/x86/"
+         stack_alignment=16
+-        [ $compiler = GNU ] && CFLAGS="-m64 $CFLAGS" && LDFLAGS="-m64 $LDFLAGS"
+         if [ "$SYS" = MACOSX ]; then
++            ARCH="X86_64"
++            ASFLAGS="$ASFLAGS -DARCH_X86_64=1 -I\$(SRCPATH)/common/x86/"
+             ASFLAGS="$ASFLAGS -f macho64 -DPIC -DPREFIX"
++            [ $compiler = GNU ] && CFLAGS="-m64 $CFLAGS" && LDFLAGS="-m64 $LDFLAGS"
+             if cc_check '' "-arch x86_64"; then
+                 CFLAGS="$CFLAGS -arch x86_64"
+                 LDFLAGS="$LDFLAGS -arch x86_64"
+             fi
+         elif [ "$SYS" = WINDOWS -o "$SYS" = CYGWIN ]; then
++            ARCH="X86_64"
++            ASFLAGS="$ASFLAGS -DARCH_X86_64=1 -I\$(SRCPATH)/common/x86/"
+             ASFLAGS="$ASFLAGS -f win64"
++            [ $compiler = GNU ] && CFLAGS="-m64 $CFLAGS" && LDFLAGS="-m64 $LDFLAGS"
+             if [ $compiler = GNU ]; then
+                 # only the GNU toolchain is inconsistent in prefixing function names with _
+                 cc_check "" "-S" && grep -q "_main:" conftest && ASFLAGS="$ASFLAGS -DPREFIX"
+@@ -736,8 +739,15 @@ case $host_cpu in
+                 SOFLAGS="$SOFLAGS -Wl,--image-base,0x180000000"
+                 RCFLAGS="--target=pe-x86-64 $RCFLAGS"
+             fi
++        elif [[ $host_os = *x32  ]]; then
++            ARCH="X86_64_32"
++            ASFLAGS="$ASFLAGS -DARCH_X86_64_32=1 -I\$(SRCPATH)/common/x86/ -f elfx32"
++            [ $compiler = GNU ] && CFLAGS="-mx32 $CFLAGS" && LDFLAGS="-mx32 $LDFLAGS"
+         else
++            ARCH="X86_64"
++            ASFLAGS="$ASFLAGS -DARCH_X86_64=1 -I\$(SRCPATH)/common/x86/"
+             ASFLAGS="$ASFLAGS -f elf64"
++            [ $compiler = GNU ] && CFLAGS="-m64 $CFLAGS" && LDFLAGS="-m64 $LDFLAGS"
+         fi
+         ;;
+     powerpc*)
+@@ -1233,7 +1242,7 @@ else
+ fi
+ [ "$lto" = "auto" ] && lto="no"
+ 
+-if cc_check '' -fno-tree-vectorize ; then
++if cc_check '' -fno-tree-vectorize && ! [[ $host_os = *x32  ]]; then
+     CFLAGS="$CFLAGS -fno-tree-vectorize"
+ fi
+ 
+Only in x264-snapshot-20170701-2245: configure.orig
+Only in x264-snapshot-20170701-2245: configure.rej
+diff -urp x264-snapshot-20170701-2245.orig/encoder/cabac.c x264-snapshot-20170701-2245/encoder/cabac.c
+--- x264-snapshot-20170701-2245.orig/encoder/cabac.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/encoder/cabac.c	2018-05-01 13:58:44.862385218 -0700
+@@ -801,7 +801,7 @@ void x264_cabac_block_residual_c( x264_t
+ 
+ static void ALWAYS_INLINE x264_cabac_block_residual( x264_t *h, x264_cabac_t *cb, int ctx_block_cat, dctcoef *l )
+ {
+-#if ARCH_X86_64 && HAVE_MMX && !defined( __MACH__ )
++#if (ARCH_X86_64 || ARCH_X86_64_32) && HAVE_MMX && !defined( __MACH__ )
+     h->bsf.cabac_block_residual_internal( l, MB_INTERLACED, ctx_block_cat, cb );
+ #else
+     x264_cabac_block_residual_c( h, cb, ctx_block_cat, l );
+@@ -915,7 +915,7 @@ void x264_cabac_block_residual_rd_c( x26
+ 
+ static ALWAYS_INLINE void x264_cabac_block_residual_8x8( x264_t *h, x264_cabac_t *cb, int ctx_block_cat, dctcoef *l )
+ {
+-#if ARCH_X86_64 && HAVE_MMX && !defined( __MACH__ )
++#if (ARCH_X86_64 || ARCH_X86_64_32) && HAVE_MMX && !defined( __MACH__ )
+     h->bsf.cabac_block_residual_8x8_rd_internal( l, MB_INTERLACED, ctx_block_cat, cb );
+ #else
+     x264_cabac_block_residual_8x8_rd_c( h, cb, ctx_block_cat, l );
+@@ -923,7 +923,7 @@ static ALWAYS_INLINE void x264_cabac_blo
+ }
+ static ALWAYS_INLINE void x264_cabac_block_residual( x264_t *h, x264_cabac_t *cb, int ctx_block_cat, dctcoef *l )
+ {
+-#if ARCH_X86_64 && HAVE_MMX && !defined( __MACH__ )
++#if (ARCH_X86_64 || ARCH_X86_64_32) && HAVE_MMX && !defined( __MACH__ )
+     h->bsf.cabac_block_residual_rd_internal( l, MB_INTERLACED, ctx_block_cat, cb );
+ #else
+     x264_cabac_block_residual_rd_c( h, cb, ctx_block_cat, l );
+Only in x264-snapshot-20170701-2245/encoder: cabac.c.orig
+Only in x264-snapshot-20170701-2245/encoder: cabac.c.rej
+diff -urp x264-snapshot-20170701-2245.orig/encoder/encoder.c x264-snapshot-20170701-2245/encoder/encoder.c
+--- x264-snapshot-20170701-2245.orig/encoder/encoder.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/encoder/encoder.c	2018-05-01 13:41:11.750374261 -0700
+@@ -1598,7 +1598,7 @@ x264_t *x264_encoder_open( x264_param_t
+     if( x264_clz( temp ) != 23 )
+     {
+         x264_log( h, X264_LOG_ERROR, "CLZ test failed: x264 has been miscompiled!\n" );
+-#if ARCH_X86 || ARCH_X86_64
++#if ARCH_X86 || ARCH_X86_64 || ARCH_X86_64_32
+         x264_log( h, X264_LOG_ERROR, "Are you attempting to run an SSE4a/LZCNT-targeted build on a CPU that\n" );
+         x264_log( h, X264_LOG_ERROR, "doesn't support it?\n" );
+ #endif
+Only in x264-snapshot-20170701-2245/encoder: encoder.c.orig
+diff -urp x264-snapshot-20170701-2245.orig/encoder/rdo.c x264-snapshot-20170701-2245/encoder/rdo.c
+--- x264-snapshot-20170701-2245.orig/encoder/rdo.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/encoder/rdo.c	2018-05-01 13:57:25.388384391 -0700
+@@ -694,7 +694,7 @@ int quant_trellis_cabac( x264_t *h, dctc
+         return !!dct[0];
+     }
+ 
+-#if HAVE_MMX && ARCH_X86_64 && !defined( __MACH__ )
++#if HAVE_MMX && (ARCH_X86_64 || ARCH_X86_64_32) && !defined( __MACH__ )
+ #define TRELLIS_ARGS unquant_mf, zigzag, lambda2, last_nnz, orig_coefs, quant_coefs, dct,\
+                      cabac_state_sig, cabac_state_last, M64(cabac_state), M16(cabac_state+8)
+     if( num_coefs == 16 && !dc )
+Only in x264-snapshot-20170701-2245/encoder: rdo.c.orig
+Only in x264-snapshot-20170701-2245/encoder: rdo.c.rej
+diff -urp x264-snapshot-20170701-2245.orig/tools/checkasm-a.asm x264-snapshot-20170701-2245/tools/checkasm-a.asm
+--- x264-snapshot-20170701-2245.orig/tools/checkasm-a.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/tools/checkasm-a.asm	2018-05-01 13:41:11.759374261 -0700
+@@ -30,7 +30,7 @@ SECTION_RODATA
+ 
+ error_message: db "failed to preserve register", 0
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ ; just random numbers to reduce the chance of incidental match
+ ALIGN 16
+ x6:  dq 0x1a1b2550a612b48c,0x79445c159ce79064
+@@ -61,7 +61,7 @@ cextern_naked puts
+ ; (max_args % 4) must equal 3 for stack alignment
+ %define max_args 15
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+ 
+ ;-----------------------------------------------------------------------------
+ ; void x264_checkasm_stack_clobber( uint64_t clobber, ... )
+@@ -207,7 +207,7 @@ cglobal checkasm_call, 1,7
+ .ok:
+     REP_RET
+ 
+-%endif ; ARCH_X86_64
++%endif ; ARCH_X86_64 || ARCH_X86_64_32
+ 
+ ;-----------------------------------------------------------------------------
+ ; int x264_stack_pagealign( int (*func)(), int align )
+Only in x264-snapshot-20170701-2245/tools: checkasm-a.asm.orig
+diff -urp x264-snapshot-20170701-2245.orig/tools/checkasm.c x264-snapshot-20170701-2245/tools/checkasm.c
+--- x264-snapshot-20170701-2245.orig/tools/checkasm.c	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/tools/checkasm.c	2018-05-01 14:34:58.853407837 -0700
+@@ -230,7 +230,7 @@ static void print_bench(void)
+ static void (*simd_warmup_func)( void ) = NULL;
+ #define simd_warmup() do { if( simd_warmup_func ) simd_warmup_func(); } while( 0 )
+ 
+-#if ARCH_X86 || ARCH_X86_64
++#if ARCH_X86 || ARCH_X86_64 || ARCH_X86_64_32
+ int x264_stack_pagealign( int (*func)(), int align );
+ void x264_checkasm_warmup_avx( void );
+ void x264_checkasm_warmup_avx512( void );
+@@ -254,7 +254,7 @@ intptr_t (*x264_checkasm_call)( intptr_t
+ 
+ #define call_c1(func,...) func(__VA_ARGS__)
+ 
+-#if ARCH_X86_64
++#if ARCH_X86_64 || ARCH_X86_64_32
+ /* Evil hack: detect incorrect assumptions that 32-bit ints are zero-extended to 64-bit.
+  * This is done by clobbering the stack with junk around the stack pointer and calling the
+  * assembly function through x264_checkasm_call with added dummy arguments which forces all
+@@ -276,7 +276,7 @@ void x264_checkasm_stack_clobber( uint64
+     uint64_t r = (rand() & 0xffff) * 0x0001000100010001ULL; \
+     x264_checkasm_stack_clobber( r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r ); /* max_args+8 */ \
+     x264_checkasm_call(( intptr_t(*)())func, &ok, 0, 0, 0, 0, 0, 0, __VA_ARGS__ ); })
+-#elif ARCH_X86 || ARCH_ARM
++#elif ARCH_X86 || ARCH_X86_64_32 || ARCH_ARM
+ #define call_a1(func,...) x264_checkasm_call( (intptr_t(*)())func, &ok, __VA_ARGS__ )
+ #else
+ #define call_a1 call_c1
+@@ -2921,7 +2921,7 @@ int main(int argc, char *argv[])
+ 
+     if( argc > 1 && !strncmp( argv[1], "--bench", 7 ) )
+     {
+-#if !ARCH_X86 && !ARCH_X86_64 && !ARCH_PPC && !ARCH_ARM && !ARCH_AARCH64 && !ARCH_MIPS
++#if !ARCH_X86 && !ARCH_X86_64 && !ARCH_X86_64_32 && !ARCH_PPC && !ARCH_ARM && !ARCH_AARCH64 && !ARCH_MIPS
+         fprintf( stderr, "no --bench for your cpu until you port rdtsc\n" );
+         return 1;
+ #endif
+Only in x264-snapshot-20170701-2245/tools: checkasm.c.orig
+Only in x264-snapshot-20170701-2245/tools: checkasm.c.rej
+diff -urp x264-snapshot-20170701-2245.orig/common/x86/x86inc.asm x264-snapshot-20170701-2245/common/x86/x86inc.asm
+--- x264-snapshot-20170701-2245.orig/common/x86/x86inc.asm	2017-07-01 13:45:02.000000000 -0700
++++ x264-snapshot-20170701-2245/common/x86/x86inc.asm	2018-05-01 14:28:35.427403847 -0700
+@@ -43,7 +43,7 @@
+ %endif
+ 
+ %ifndef STACK_ALIGNMENT
+-    %if ARCH_X86_64
++    %if ARCH_X86_64 || ARCH_X86_64_32
+         %define STACK_ALIGNMENT 16
+     %else
+         %define STACK_ALIGNMENT 4
+@@ -52,7 +52,7 @@
+ 
+ %define WIN64  0
+ %define UNIX64 0
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %ifidn __OUTPUT_FORMAT__,win32
+         %define WIN64  1
+     %elifidn __OUTPUT_FORMAT__,win64
+@@ -85,7 +85,7 @@
+ 
+ %if WIN64
+     %define PIC
+-%elif ARCH_X86_64 == 0
++%elif ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+ ; x86_32 doesn't require PIC.
+ ; Some distros prefer shared objects to be PIC, but nothing breaks if
+ ; the code contains a few textrels, so we'll skip that complexity.
+@@ -150,7 +150,7 @@
+     %if %0 == 2
+         %define r%1m  %2d
+         %define r%1mp %2
+-    %elif ARCH_X86_64 ; memory
++    %elif ARCH_X86_64 || ARCH_X86_64_32 ; memory
+         %define r%1m [rstk + stack_offset + %3]
+         %define r%1mp qword r %+ %1 %+ m
+     %else
+@@ -171,7 +171,7 @@
+     %define e%1h %3
+     %define r%1b %2
+     %define e%1b %2
+-    %if ARCH_X86_64 == 0
++    %if ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0
+         %define r%1 e%1
+     %endif
+ %endmacro
+@@ -208,7 +208,7 @@ DECLARE_REG_SIZE bp, bpl, null
+ 
+ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
+ 
+-%if ARCH_X86_64
++%if ARCH_X86_64 || ARCH_X86_64_32
+     %define gprsize 8
+ %else
+     %define gprsize 4
+@@ -323,7 +323,7 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9
+ %endmacro
+ 
+ %define required_stack_alignment ((mmsize + 15) & ~15)
+-%define vzeroupper_required (mmsize > 16 && (ARCH_X86_64 == 0 || xmm_regs_used > 16 || notcpuflag(avx512)))
++%define vzeroupper_required (mmsize > 16 && ((ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0) || xmm_regs_used > 16 || notcpuflag(avx512)))
+ %define high_mm_regs (16*cpuflag(avx512))
+ 
+ %macro ALLOC_STACK 1-2 0 ; stack_size, n_xmm_regs (for win64 only)
+@@ -378,13 +378,13 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9
+                 ; Reserve an additional register for storing the original stack pointer, but avoid using
+                 ; eax/rax for this purpose since it can potentially get overwritten as a return value.
+                 %assign regs_used (regs_used + 1)
+-                %if ARCH_X86_64 && regs_used == 7
++                %if (ARCH_X86_64 || ARCH_X86_64_32) && regs_used == 7
+                     %assign regs_used 8
+-                %elif ARCH_X86_64 == 0 && regs_used == 1
++                %elif (ARCH_X86_64 == 0 && ARCH_X86_64_32 == 0) && regs_used == 1
+                     %assign regs_used 2
+                 %endif
+             %endif
+-            %if ARCH_X86_64 && regs_used < 5 + UNIX64 * 3
++            %if (ARCH_X86_64 || ARCH_X86_64_32) && regs_used < 5 + UNIX64 * 3
+                 ; Ensure that we don't clobber any registers containing arguments. For UNIX64 we also preserve r6 (rax)
+                 ; since it's used as a hidden argument in vararg functions to specify the number of vector registers used.
+                 %assign regs_used 5 + UNIX64 * 3
+@@ -511,7 +511,7 @@ DECLARE_REG 14, R13, 120
+     AUTO_REP_RET
+ %endmacro
+ 
+-%elif ARCH_X86_64 ; *nix x64 ;=============================================
++%elif ARCH_X86_64 || ARCH_X86_64_32 ; *nix x64 ;=============================================
+ 
+ DECLARE_REG 0,  rdi
+ DECLARE_REG 1,  rsi
+@@ -841,7 +841,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle,
+         %endif
+     %endif
+ 
+-    %if ARCH_X86_64 || cpuflag(sse2)
++    %if ARCH_X86_64 || ARCH_X86_64_32 || cpuflag(sse2)
+         %ifdef __NASM_VER__
+             ALIGNMODE p6
+         %else
+@@ -873,7 +873,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle,
+ 
+ ; Prefer registers 16-31 over 0-15 to avoid having to use vzeroupper
+ %macro AVX512_MM_PERMUTATION 0-1 0 ; start_reg
+-    %if ARCH_X86_64 && cpuflag(avx512)
++    %if (ARCH_X86_64 || ARCH_X86_64_32) && cpuflag(avx512)
+         %assign %%i %1
+         %rep 16-%1
+             %assign %%i_high %%i+16
+@@ -911,7 +911,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle,
+     %define RESET_MM_PERMUTATION INIT_XMM %1
+     %define mmsize 16
+     %define num_mmregs 8
+-    %if ARCH_X86_64
++    %if ARCH_X86_64 || ARCH_X86_64_32
+         %define num_mmregs 32
+     %endif
+     %define mova movdqa
+@@ -936,7 +936,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle,
+     %define RESET_MM_PERMUTATION INIT_YMM %1
+     %define mmsize 32
+     %define num_mmregs 8
+-    %if ARCH_X86_64
++    %if ARCH_X86_64 || ARCH_X86_64_32
+         %define num_mmregs 32
+     %endif
+     %define mova movdqa
+@@ -958,7 +958,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle,
+     %define RESET_MM_PERMUTATION INIT_ZMM %1
+     %define mmsize 64
+     %define num_mmregs 8
+-    %if ARCH_X86_64
++    %if ARCH_X86_64 || ARCH_X86_64_32
+         %define num_mmregs 32
+     %endif
+     %define mova movdqa
+Only in x264-snapshot-20170701-2245/common/x86: x86inc.asm.orig
+Only in x264-snapshot-20170701-2245/common/x86: x86inc.asm.rej

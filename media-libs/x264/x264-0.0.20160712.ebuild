@@ -3,7 +3,7 @@
 
 EAPI=5
 
-inherit flag-o-matic multilib toolchain-funcs eutils multilib-minimal
+inherit flag-o-matic multilib multilib-minimal toolchain-funcs eutils
 
 DESCRIPTION="A free library for encoding X264/AVC streams"
 HOMEPAGE="http://www.videolan.org/developers/x264.html"
