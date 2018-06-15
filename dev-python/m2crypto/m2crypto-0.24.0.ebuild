@@ -37,6 +37,7 @@ src_prepare() {
 	default
 	if [[ "${CHOST}" =~ "muslx32" ]] ; then
 		epatch "${FILESDIR}/M2Crypto-0.24.0-x32.patch"
+		export LD_LIBRARY_PATH="/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0"
 	fi
 }
 
