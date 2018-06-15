@@ -131,7 +131,7 @@ package | notes
 --- | ---
 libjpeg-turbo | will crash on some photos and may prevent pictures loading from the app that uses the library like for feh.
 ffmpeg or firefox | It may not play some YouTube videos completely.  It will play a few seconds then stop.  It's either ffmpeg or Firefox's fault.  The debugger said ffmpeg from what I recall.
-webkit-gtk with suckless surf | It just gives a blank screen on native but works partially as amd64 or x32 abi on nouveau driver on some websites except for those using html5 video.  You will need to cut the window width wise by half to render/draw the web page properly.  Jit is broken on native x32 or something else related not relevant to the patches.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
+webkit-gtk with suckless surf | It just gives a blank screen on native x32 but works partially as amd64 or x86 abi on nouveau driver on some websites except for those using html5 video.  You will need to cut the window width wise by half to render/draw the web page properly.  Jit is broken on native x32 or something else related not relevant to the patches.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
 
 ### Needs testing
 
