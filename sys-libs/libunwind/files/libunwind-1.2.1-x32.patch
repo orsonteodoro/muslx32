@@ -1,0 +1,16 @@
+diff -urp libunwind-1.2.1.orig/src/x86_64/Gos-linux.c libunwind-1.2.1/src/x86_64/Gos-linux.c
+--- libunwind-1.2.1.orig/src/x86_64/Gos-linux.c	2017-06-15 14:26:53.000000000 -0700
++++ libunwind-1.2.1/src/x86_64/Gos-linux.c	2018-05-28 22:37:56.320812884 -0700
+@@ -143,8 +143,8 @@ x86_64_sigreturn (unw_cursor_t *cursor)
+ 
+   Debug (8, "resuming at ip=%llx via sigreturn(%p)\n",
+              (unsigned long long) c->dwarf.ip, sc);
+-  __asm__ __volatile__ ("mov %0, %%rsp;"
+-                        "mov %1, %%rax;"
++  __asm__ __volatile__ ("mov %q0, %%rsp;"
++                        "mov %q1, %%rax;"
+                         "syscall"
+                         :: "r"(sc), "i"(SYS_rt_sigreturn)
+                         : "memory");
+Only in libunwind-1.2.1/src/x86_64: Gos-linux.c.orig
+Only in libunwind-1.2.1/src/x86_64: Gos-linux.c.rej
