@@ -1,0 +1,35 @@
+# to possibly prevent segfault
+#sys-apps/sandbox abi_x86_64
+
+# required to compile the kernel
+dev-libs/libelf abi_x86_64
+
+# required as a dependency for libelf
+sys-devel/gcc abi_x86_64 abi_x86_32
+cross-x86_64-pc-linux-muslx32/gcc abi_x86_64
+
+# required by multilib gcc
+# gcc requires abi_x86_32 to compile libgcc with multilib
+sys-libs/musl abi_x86_64 abi_x86_32
+cross-x86_64-pc-linux-muslx32/musl abi_x86_64 abi_x86_32
+
+# required compile time for cross compile multilib
+# ssp is already provided by musl
+cross-x86_64-pc-linux-muslx32/gcc -libssp
+sys-devel/gcc -libssp
+
+#force amd64 instead of x32
+net-misc/networkmanager abi_x86_64 -abi_x86_x32
+sys-boot/grub abi_x86_64 -abi_x86_x32
+#app-arch/xz-utils abi_x86_64 -abi_x86_x32
+app-emulation/wine -abi_x86_x32
+www-client/firefox -abi_x86_x32 abi_x86_64
+www-client/palemoon -abi_x86_x32 abi_x86_64
+dev-lang/rust -abi_x86_x32 abi_x86_64
+www-client/surf -abi_x86_x32 abi_x86_64
+net-libs/webkit-gtk -abi_x86_x32 abi_x86_64 jit
+sys-devel/clang -abi_x86_x32 abi_x86_64
+app-office/libreoffice -abi_x86_x32 abi_x86_64
+
+#x32 abi breaks test and parallel emerge
+sys-apps/coreutils -abi_x86_x32 abi_x86_64

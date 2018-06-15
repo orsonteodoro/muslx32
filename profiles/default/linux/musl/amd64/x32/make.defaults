@@ -1,0 +1,51 @@
+# Copyright 1999-2015 Gentoo Foundation.
+# Distributed under the terms of the GNU General Public License v2
+
+ARCH="amd64"
+ACCEPT_KEYWORDS="${ARCH}"
+
+CHOST="x86_64-gentoo-linux-muslx32"
+
+# Anthony G. Basile <blueness@gentoo.org> (31 Aug 2015)
+# Multilib-related setup, bug #515130
+ABI="x32"
+DEFAULT_ABI="x32"
+MULTILIB_ABIS="amd64 x86 x32"
+IUSE_IMPLICIT="-abi_x86_64 abi_x86_x32"
+LD_LIBRARY_PATH_default=""
+
+USE_EXPAND_HIDDEN="-ABI_X86 -CPU_FLAGS_X86"
+
+# Orson Teodoro <orsonteodoro@hotmail.com> (15 May 2018)
+# Multilib dirs
+LIBDIR_amd64="lib64"
+LIBDIR_x86="lib32"
+LIBDIR_x32="libx32"
+SYMLINK_LIB="yes"
+
+# Orson Teodoro <orsonteodoro@hotmail.com> (15 May 2018)
+# 64bit specific settings.
+CFLAGS_amd64="-m64 -B/usr/x86_64-pc-linux-musl/usr/bin -B/usr/x86_64-pc-linux-musl/usr/lib -isystem /usr/x86_64-pc-linux-musl/usr/include -B/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64"
+CFLAGS2_amd64="-m64 -B/usr/x86_64-pc-linux-musl/usr/bin -B/usr/x86_64-pc-linux-musl/usr/lib -I/usr/x86_64-pc-linux-musl/usr/include -B/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64"
+LDFLAGS_amd64="-m elf_x86_64"
+CHOST_amd64="x86_64-pc-linux-musl"
+LD_LIBRARY_PATH_amd64=""
+
+# Orson Teodoro <orsonteodoro@hotmail.com> (15 May 2018)
+# 32bit specific settings.
+CFLAGS_x86="-m32 -B/usr/i686-pc-linux-musl/usr/bin -B/usr/i686-pc-linux-musl/usr/lib -isystem /usr/i686-pc-linux-musl/usr/include -B/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32"
+CFLAGS2_x86="-m32 -B/usr/i686-pc-linux-musl/usr/bin -B/usr/i686-pc-linux-musl/usr/lib -I/usr/i686-pc-linux-musl/usr/include -B/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32"
+LDFLAGS_x86="-m elf_i386"
+CHOST_x86="i686-pc-linux-musl"
+LD_LIBRARY_PATH_x86=""
+
+# Orson Teodoro <orsonteodoro@hotmail.com> (15 May 2018)
+# 64-32bit specific settings.
+CFLAGS_x32="-mx32 -B/usr/x86_64-pc-linux-muslx32/usr/bin -B/usr/x86_64-pc-linux-muslx32/usr/lib -isystem /usr/x86_64-pc-linux-muslx32/usr/include -B/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0"
+CFLAGS2_x32="-mx32 -B/usr/x86_64-pc-linux-muslx32/usr/bin -B/usr/x86_64-pc-linux-muslx32/usr/lib -I/usr/x86_64-pc-linux-muslx32/usr/include -B/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0"
+LDFLAGS_x32="-m elf32_x86_64"
+CHOST_x32="x86_64-pc-linux-muslx32"
+LD_LIBRARY_PATH_x32=""
+
+
+
