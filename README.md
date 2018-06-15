@@ -65,6 +65,7 @@ Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void 
 * Check all sizeof(void*) and similar to be sure they are in the 4G address range if porting from 64 bit code.
 * Replace all important longs that assume 64-bit as long long.  In x32, long is actual 4 bytes.
 * Check and fix the build system scripts--inspect both the linker flags and the compiler flags and constants--if it did not provide a special case for x32 ABI.
+* Convert ebuilds to multilib to cross compile them if it fails to work on x32 ABI.  Make corrections to these packages in profiles/default/linux/musl/amd64/x32/package.use.force .
 
 ### Where can we meet on IRC?
 
@@ -122,7 +123,7 @@ mariadb | Tested with phpmyadmin
 nginx | Shows "it works!"
 gentoo-sources or any linux kernel | It may require you to manually patch it to use the BFD linker.  See https://github.com/orsonteodoro/muslx32/issues/3.
 grub2-install | Works as amd64 or as x86 ABI, but it doesn't work natively in x32 use lilo.  By default, the profile will use the x86 ABI.
-coreutils | works as amd64 ABI or x86 ABI.  It was buggy on x32 ABI so it was banned.  Preference for x86 ABI was chosen.
+coreutils | Works as amd64 ABI or x86 ABI.  It was buggy on x32 ABI so it was banned.  Preference for x86 ABI was chosen.
 
 ### Buggy
 
@@ -130,7 +131,7 @@ The following are may present bugs after trying to fix assembly optimizations.  
 
 package | notes
 --- | ---
-libjpeg-turbo | will crash on some photos and may prevent pictures loading from the app that uses the library like for feh.
+libjpeg-turbo | Will crash on some photos and may prevent pictures loading from the app that uses the library like for feh.
 ffmpeg or firefox | It may not play some YouTube videos completely.  It will play a few seconds then stop.  It's either ffmpeg or Firefox's fault.  The debugger said ffmpeg from what I recall.
 webkit-gtk with suckless surf | It just gives a blank screen on native x32 but works partially as amd64 or x86 ABI on nouveau driver on some websites except for those using html5 video.  You will need to cut the window width wise by half to render/draw the web page properly.  Jit is broken on native x32 or something else related not relevant to the patches.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
 
@@ -140,15 +141,15 @@ The following major packages has been fixed and emerged but not tested.
 
 package | notes
 --- | ---
-tor | anonymous network
-privoxy | http proxy caching
-rabbitvcs | git frontend like tortoise git
-actkbd | configure custom hotkeys
-cryptsetup | for managing dm-crypt/luks encrypted volumes
+tor | For anonymous networking
+privoxy | HTTP proxy caching
+rabbitvcs | Git frontend like tortoise git
+actkbd | Configure custom hotkeys
+cryptsetup | For managing dm-crypt/luks encrypted volumes
 p7zip | 7zip compression
-pm-utils | suspending or hibernating computer
-ntfs3g | for connecting to windows partitions
-genkernel | see https://github.com/orsonteodoro/muslx32/issues/4 .  Also, it compiled the initramfs without problems with the --no-zfs flag.
+pm-utils | Suspending or hibernating computer
+ntfs3g | For connecting to windows partitions
+genkernel | See https://github.com/orsonteodoro/muslx32/issues/4 .  Also, it compiled the initramfs without problems with the --no-zfs flag.
 rust | It should work as amd64 or x86 ABI.  The profile will select one of those but ban compiling as x32 ABI.
 
 ### Broken packages
