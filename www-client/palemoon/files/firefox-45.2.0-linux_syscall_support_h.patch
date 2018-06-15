@@ -1,0 +1,15 @@
+--- firefox-45.2.0esr.orig/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h	2016-07-30 06:04:50.391361288 -0700
++++ firefox-45.2.0esr/toolkit/crashreporter/google-breakpad/src/third_party/lss/linux_syscall_support.h	2016-07-30 09:51:06.450808652 -0700
+@@ -81,11 +81,11 @@
+  */
+ #ifndef SYS_LINUX_SYSCALL_SUPPORT_H
+ #define SYS_LINUX_SYSCALL_SUPPORT_H
+-
+ /* We currently only support x86-32, x86-64, ARM, MIPS, and PPC on Linux.
+  * Porting to other related platforms should not be difficult.
+  */
+ #if (defined(__i386__) || defined(__x86_64__) && defined(__LP64__) \
++     || defined(__x86_64__) && defined(__ILP32__)  \
+      || defined(__ARM_ARCH_3__) ||   \
+      defined(__mips__) || defined(__PPC__) || defined(__ARM_EABI__)) \
+   && (defined(__linux) || defined(__ANDROID__))

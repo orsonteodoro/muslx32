@@ -1,0 +1,17 @@
+Description: Don't use ycbcr amd64 assembly on x32.
+ The asm-optimized gfx/ycbcr code has argument sizes hard-coded as numbers.
+ We'd need to port it to the x32 calling convention -- otherwise, SSE2 is
+ good.  For now, this commit uses the slow generic code path.
+Author: Adam Borowski <kilobyte@angband.pl>
+--- iceweasel-34.0.orig/gfx/ycbcr/yuv_row_posix.cpp
++++ iceweasel-34.0/gfx/ycbcr/yuv_row_posix.cpp
+@@ -9,7 +9,8 @@
+ 
+ extern "C" {
+ 
+-#if defined(ARCH_CPU_X86_64)
++// FIXME: implement x32 assembly (always SSE2)
++#if defined(ARCH_CPU_X86_64) && defined(__LP64__)
+ 
+ // We don't need CPUID guards here, since x86-64 implies SSE2.
+ 

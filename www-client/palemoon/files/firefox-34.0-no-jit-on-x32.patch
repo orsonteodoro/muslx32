@@ -1,0 +1,13 @@
+Description: Disable the js JIT on x32.
+Author: Adam Borowski <kilobyte@angband.pl>
+--- iceweasel-34.0.orig/js/src/configure.in
++++ iceweasel-34.0/js/src/configure.in
+@@ -1998,6 +1998,8 @@ fi
+ dnl Configure JIT support
+ 
+ case "$target" in
++x86_64*-gnux32 | x86_64*-muslx32)
++    ;;
+ i?86-*)
+     ENABLE_ION=1
+     AC_DEFINE(JS_CPU_X86)

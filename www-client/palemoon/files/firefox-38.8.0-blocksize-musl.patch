@@ -1,0 +1,13 @@
+--- ./mozilla-esr38.orig/xpcom/io/nsLocalFileUnix.cpp	2152-07-29 07:26:24.892879471 -0700
++++ ./mozilla-esr38/xpcom/io/nsLocalFileUnix.cpp	2152-07-29 07:29:06.322874302 -0700
+@@ -1408,8 +1408,8 @@
+       && dq.dqb_bhardlimit) {
+     int64_t QuotaSpaceAvailable = 0;
+     // dqb_bhardlimit is count of BLOCK_SIZE blocks, dqb_curspace is bytes
+-    if ((BLOCK_SIZE * dq.dqb_bhardlimit) > dq.dqb_curspace)
+-      QuotaSpaceAvailable = int64_t(BLOCK_SIZE * dq.dqb_bhardlimit - dq.dqb_curspace);
++    if (dbtob(dq.dqb_bhardlimit) > dq.dqb_curspace)
++      QuotaSpaceAvailable = (dbtob(dq.dqb_bhardlimit) - dq.dqb_curspace);
+     if (QuotaSpaceAvailable < *aDiskSpaceAvailable) {
+       *aDiskSpaceAvailable = QuotaSpaceAvailable;
+     }
