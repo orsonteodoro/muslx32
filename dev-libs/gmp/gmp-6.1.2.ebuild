@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="5"
@@ -9,7 +9,7 @@ MY_PV=${PV/_p*}
 MY_PV=${MY_PV/_/-}
 MY_P=${PN}-${MY_PV}
 PLEVEL=${PV/*p}
-DESCRIPTION="Library for arithmetic on arbitrary precision integers, rational numbers, and floating-point numbers"
+DESCRIPTION="Library for arbitrary-precision arithmetic on different type of numbers"
 HOMEPAGE="http://gmplib.org/"
 SRC_URI="ftp://ftp.gmplib.org/pub/${MY_P}/${MY_P}.tar.xz
 	mirror://gnu/${PN}/${MY_P}.tar.xz
@@ -18,7 +18,7 @@ SRC_URI="ftp://ftp.gmplib.org/pub/${MY_P}/${MY_P}.tar.xz
 LICENSE="|| ( LGPL-3+ GPL-2+ )"
 # The subslot reflects the C & C++ SONAMEs.
 SLOT="0/10.4"
-KEYWORDS="alpha amd64 arm arm64 hppa ia64 m68k ~mips ppc ppc64 s390 sh sparc x86 ~amd64-fbsd ~sparc-fbsd ~x86-fbsd"
+KEYWORDS="alpha amd64 arm arm64 hppa ia64 m68k ~mips ppc ppc64 s390 sh sparc x86 ~ppc-aix ~x64-cygwin ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~m68k-mint ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris"
 IUSE="+asm doc cxx pgo static-libs"
 
 DEPEND="sys-devel/m4
@@ -31,27 +31,25 @@ DOCS=( AUTHORS ChangeLog NEWS README doc/configuration doc/isa_abi_headache )
 HTML_DOCS=( doc )
 MULTILIB_WRAPPED_HEADERS=( /usr/include/gmp.h )
 
-#pkg_setup() {
-#	default
-#	if [[ "${CHOST}" =~ "musl32" ]] ; then
-#		ewarn "requires mpfr to be crossed compiled"
-#	fi
-#}
-
 src_prepare() {
 	[[ -d ${FILESDIR}/${PV} ]] && EPATCH_SUFFIX="diff" EPATCH_FORCE="yes" epatch "${FILESDIR}"/${PV}
-	epatch "${FILESDIR}"/${PN}-6.1.0-udiv.patch
-	epatch "${FILESDIR}"/${PN}-6.1.0-tune-printf.patch
 
 	# note: we cannot run autotools here as gcc depends on this package
 	elibtoolize
 
 	epatch "${FILESDIR}"/${PN}-6.1.0-noexecstack-detect.patch
+
+	# https://bugs.gentoo.org/536894
+	if [[ ${CHOST} == *-darwin* ]] ; then
+		epatch "${FILESDIR}"/${PN}-6.1.2-gcc-apple-4.0.1.patch
+	fi
+
 	# GMP uses the "ABI" env var during configure as does Gentoo (econf).
 	# So, to avoid patching the source constantly, wrap things up.
+	einfo "GMPABI is ${GMPABI}"
 	mv configure configure.wrapped || die
 	cat <<-\EOF > configure
-	#!/bin/sh
+	#!/usr/bin/env sh
 	exec env ABI="${GMPABI}" "$0.wrapped" "$@"
 	EOF
 	# Patches to original configure might have lost the +x bit.
@@ -71,7 +69,26 @@ multilib_src_configure() {
 		64|amd64|n64) GMPABI=64;;
 		[onx]32)      GMPABI=${ABI};;
 	esac
+	if [[ "${CHOST}" =~ "muslx32" && ABI="x32" ]] ; then
+		GMPABI="x32"
+	fi
 	export GMPABI
+	einfo "GMPABI is ${GMPABI}.  ABI is ${ABI}"
+
+	if use elibc_musl ; then
+		if [[ "${ABI}" == "amd64" ]] ; then
+			export CHOST="x86_64-pc-linux-musl"
+		elif [[ "${ABI}" == "x32" ]] ; then
+			export CHOST="x86_64-pc-linux-muslx32"
+		elif [[ "${ABI}" == "x86" ]] ; then
+			export CHOST="i686-pc-linux-musl"
+		fi
+	fi
+
+	#367719
+	if [[ ${CHOST} == *-mint* ]]; then
+		filter-flags -O?
+	fi
 
 	tc-export CC
 	ECONF_SOURCE="${S}" econf \
@@ -105,9 +122,9 @@ multilib_src_install() {
 	emake DESTDIR="${D}" install
 
 	# should be a standalone lib
-	rm -f "${D}"/usr/$(get_libdir)/libgmp.la
+	rm -f "${ED}"/usr/$(get_libdir)/libgmp.la
 	# this requires libgmp
-	local la="${D}/usr/$(get_libdir)/libgmpxx.la"
+	local la="${ED}/usr/$(get_libdir)/libgmpxx.la"
 	use static-libs \
 		&& sed -i 's:/[^ ]*/libgmp.la:-lgmp:' "${la}" \
 		|| rm -f "${la}"
@@ -115,5 +132,5 @@ multilib_src_install() {
 
 multilib_src_install_all() {
 	einstalldocs
-	use doc && cp "${DISTDIR}"/gmp-man-${MY_PV}.pdf "${D}"/usr/share/doc/${PF}/
+	use doc && cp "${DISTDIR}"/gmp-man-${MY_PV}.pdf "${ED}"/usr/share/doc/${PF}/
 }
