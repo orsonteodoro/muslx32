@@ -199,6 +199,8 @@ The patches for multilib support may reference gcc 7.3.0 expecially the system p
 
 The system has a preference for x86 abi when x32 is banned for a particular ebuild.  One reason why x86 abi was chosen is to limit the virtual address range or bugs related to addressing, but amd64 abi tested working fine on this profile.
 
+Many of the problems are x32 problems not musl problems.  If the package works on Alpine Linux, the other musl distro, it is likely to work.
+
 ### Instructions for creating the muslx32 toolchain
 
 You need the muslx32toolkit below.  It has convenience scripts to build stage3 and stage4 images.  You can build the images using your existing Gentoo installation.  It can fully automate building from crossdev toolchain, to stage 3 image, to stage 4 image, and finally to stage 4 extras.
