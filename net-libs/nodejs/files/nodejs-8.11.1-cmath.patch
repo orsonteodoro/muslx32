@@ -1,0 +1,13 @@
+--- node-v8.11.1/src/node_crypto.cc.orig	2018-03-29 16:17:17.000000000 -0700
++++ node-v8.11.1/src/node_crypto.cc	2018-05-24 08:32:58.265689708 -0700
+@@ -36,9 +36,9 @@
+ #include "v8.h"
+ 
+ #include <algorithm>
++#include <cmath>
+ #include <errno.h>
+ #include <limits.h>  // INT_MAX
+-#include <math.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <vector>
