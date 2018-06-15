@@ -37,9 +37,8 @@ PATCHES=(
 
 src_prepare() {
 	default
-	if [[ "${CHOST}" =~ "muslx32" ]] ; then
-		epatch "${FILESDIR}"/libomp-3.9.1-x32-getaffinity.patch
-	fi
+	epatch "${FILESDIR}"/libomp-3.9.1-x32-getaffinity.patch
+	epatch "${FILESDIR}"/libomp-3.9.1-x32-syscall.patch
 	multilib_copy_sources
 }
 
