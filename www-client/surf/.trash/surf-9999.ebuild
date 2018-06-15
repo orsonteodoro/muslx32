@@ -1,26 +1,23 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
-inherit savedconfig toolchain-funcs \
-	multilib multilib-minimal multilib-build autotools flag-o-matic eutils
+inherit git-r3 savedconfig toolchain-funcs
 
 DESCRIPTION="a simple web browser based on WebKit/GTK+"
-HOMEPAGE="https://surf.suckless.org/"
-SRC_URI="
-	https://dl.suckless.org/${PN}/${P}.tar.gz
-"
+HOMEPAGE="http://surf.suckless.org/"
+EGIT_REPO_URI="git://git.suckless.org/surf"
 
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS=""
 
 COMMON_DEPEND="
-	dev-libs/glib:2[${MULTILIB_USEDEP}]
-	net-libs/libsoup[${MULTILIB_USEDEP}]
-	net-libs/webkit-gtk:4[${MULTILIB_USEDEP}]
-	x11-libs/gtk+:3[${MULTILIB_USEDEP}]
-	x11-libs/libX11[${MULTILIB_USEDEP}]
+	dev-libs/glib:2
+	net-libs/libsoup
+	net-libs/webkit-gtk:3
+	x11-libs/gtk+:3
+	x11-libs/libX11
 "
 DEPEND="
 	${COMMON_DEPEND}
@@ -59,22 +56,10 @@ src_prepare() {
 	restore_config config.h
 
 	tc-export CC PKG_CONFIG
-	multilib_copy_sources
 }
 
-multilib_src_compile() {
-	emake
-}
-
-multilib_src_install() {
+src_install() {
 	default
 
 	save_config config.h
-}
-
-pkg_postinst() {
-	if [[ ${REPLACING_VERSIONS} ]] && [[ ${REPLACING_VERSIONS} < 0.4.1-r1 ]]; then
-		ewarn "Please correct the permissions of your \$HOME/.surf/ directory"
-		ewarn "and its contents to no longer be world readable (see bug #404983)"
-	fi
 }
