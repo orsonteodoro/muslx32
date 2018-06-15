@@ -77,7 +77,6 @@ Here are some major packages listed that may be difficult to port but happen to 
 
 package | notes
 --- | ---
-firefox 45.x only | It works except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd or partition with amd64 x86 and firefox updated continously.
 strace | It depends on musl from this overlay since bits/user.h is broken in musl.
 gdb | It depends on musl from this overlay since bits/user.h is broken in musl.
 X | You need to copy configs/20-video.conf from muslx32toolkit to etc/X11/xorg.conf.d/20-video.conf and edit it especially the Hz and the driver.  This special file loads the proper modules explicitly in the correct order instead of lazy loading them.  DRI3 set to 1 breaks opengl so you may need to set it to 0.
@@ -132,6 +131,7 @@ package | notes
 --- | ---
 libjpeg-turbo | will crash on some photos and may prevent pictures loading from the app that uses the library like for feh.
 ffmpeg or firefox | It may not play some YouTube videos completely.  It will play a few seconds then stop.  It's either ffmpeg or Firefox's fault.  The debugger said ffmpeg from what I recall.
+webkit-gtk with suckless surf | It just gives a blank screen on native but works partially as amd64 or x32 abi on nouveau driver on some websites except for those using html5 video.  You will need to cut the window width wise by half to render/draw the web page properly.  Jit is broken on native x32 or something else related not relevant to the patches.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
 
 ### Needs testing
 
@@ -155,12 +155,13 @@ genkernel | see https://github.com/orsonteodoro/muslx32/issues/4 .  Also, it com
 
 package | notes
 --- | ---
+palemoon | The ebuild doesn't work because virtualenv / python problem.
+firefox 45.x only | The ebuild used to work but it doesn't work with the new gcc 7.3.  It worked before except when using pulseaudio and jit.  Javascript works but through the slower interpreter path. YouTube works with alsa audio.  Firefox 47+ and 49+ is broken on x32 with 45.x patches applied.  It is an outdated version an may pose a security risk.  Use a different computer or live cd or partition with amd64 x86 and firefox updated continously.
 Makefile.in or make system | Use my bashrc script to fix it see the muslx32toolkit below.
-Chromium | v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32. I decided to stop working on this.  As of 20170507 there is some chance if someone other than me that will be able to get Chromium on x32.  The strategy to fix this is undo some changesets that cause the breakage and it has been working up to 5.4.200.  We need 5.4.500.31 which exactly matches chromium-54.0.2840.59 stable from the portage tree because the wrappers depend on a particular version of v8.  Progress can be found at https://github.com/orsonteodoro/muslx32/issues/2.  I stopped working on this because I cannot find the bug.  I had a working v8 but there are problems on the browser side not v8 JavaScript engine which did pass unit tests up to 5.3.201 and did have a working mksnapshot as of 5.4.259.  The browser interface does work, but it is not showing content from the web.
+Chromium | I was trying to port as in multilib-ing to amd64 abi but currently on hold.  It should be possible.  v8 javascript engine is broken for x32.  Intel V8 X32 team (Chih-Ping Chen, Dale Schouten, Haitao Feng, Peter Jensen and Weiliang Lin) were working on it in May 2013-Jun 2014, but it has been neglected and doesn't work since the testing of >=52.0.2743.116 of Chromium.  I can confirm that the older standalone v8 works from https://github.com/fenghaitao/v8/ on x32. I decided to stop working on this.  As of 20170507 there is some chance if someone other than me that will be able to get Chromium on x32.  The strategy to fix this is undo some changesets that cause the breakage and it has been working up to 5.4.200.  We need 5.4.500.31 which exactly matches chromium-54.0.2840.59 stable from the portage tree because the wrappers depend on a particular version of v8.  Progress can be found at https://github.com/orsonteodoro/muslx32/issues/2.  I stopped working on this because I cannot find the bug.  I had a working v8 but there are problems on the browser side not v8 JavaScript engine which did pass unit tests up to 5.3.201 and did have a working mksnapshot as of 5.4.259.  The browser interface does work, but it is not showing content from the web.
 wayland | I don't know if it is just weston causing the problem
 weston | Segfaults
 pulseaudio | It cannot connect to pavucontrol or pulseaudio apps
-webkit-gtk with suckless surf | It just gives a blank screen.  Jit is broken or something else related not relevant to the patches.  JavaScriptCore works for 2.0.4 on x32 works on standalone but it doesn't work when applied to 2.12.3.  2.0.4. is unstable and crashes out a lot.  Also, it seems that the LLint won't work alone until you enable the jit.  Yuqiang Xian of Intel was working on it but stopped in Apr 2013.
 evdev | Semi broken and quirky; dev permissions need to be manually set or devices reloaded. init script fixes are in these instructions
 grub2-install | It doesn't work natively in x32 use lilo.  you can still install grub from amd64 profile or partiton.
 xterm | It works in root but not as user
@@ -185,6 +186,12 @@ weechat | Connecting to server problem.  Use hexchat instead.  It says: sending 
 ### Notes
 
 sys-kernel/genkernel contains subdir_mount use flag and custom patch only found in this overlay.  This will allow you to keep both the crossdev toolchain and the crossdev profile on the same partition and keep everything in-place.  Add subdir_mount=/usr/x86_64-pc-linux-muslx32 to your kernel parameters to your bootloader and both root= and real_root= point to your partition (e.g. /dev/sda15).  We keep the crossdev toolchain so we can compile ghc cross compiler and to fix musl just in case.  This also prevents any file transfer human mistakes from the old documentation, which ask you to move everything from the root into a trash folder (`/mnt/<foldername>/trash`) and pull everything from `/mnt/<foldername>/trash/usr/x86_64-pc-linux-muslx32` into the root of the partition /mnt/<foldername>.
+
+It is recommended you build the image on another machine with multicore support if you are using a old unicore computer.
+
+The web browsers that currently work are only dillo and surf with webkitgtk crosscompiled as x86 or amd64 abi for simple websites.
+
+The patches for multilib support may reference gcc 7.3.0 expecially the system packages (emerge --system).
 
 ### Instructions for creating the muslx32 toolchain
 
