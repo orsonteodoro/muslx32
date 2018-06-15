@@ -1,0 +1,14 @@
+diff -urp flac-1.3.2.orig/configure.ac flac-1.3.2/configure.ac
+--- flac-1.3.2.orig/configure.ac	2018-05-25 09:40:18.620630670 -0700
++++ flac-1.3.2/configure.ac	2018-05-25 09:42:53.237632279 -0700
+@@ -104,7 +104,7 @@ asm_optimisation=no
+ case "$host_cpu" in
+ 	amd64|x86_64)
+ 		case "$host" in
+-			*gnux32)
++			*gnux32|*muslx32)
+ 				# x32 user space and 64 bit kernel.
+ 				cpu_x86_64=true
+ 				AC_DEFINE(FLAC__CPU_X86_64)
+Only in flac-1.3.2: configure.ac.orig
+Only in flac-1.3.2: configure.ac.rej
