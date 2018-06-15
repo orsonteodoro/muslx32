@@ -3,7 +3,8 @@
 
 EAPI=6
 
-inherit eutils multilib-minimal libtool
+inherit eutils multilib-minimal libtool \
+	autotools
 
 DESCRIPTION="Library for manipulating Unicode strings and C strings according to the Unicode standard"
 HOMEPAGE="https://www.gnu.org/software/libunistring/"
@@ -21,12 +22,13 @@ PATCHES=(
 src_prepare() {
 	default
 	epatch "${FILESDIR}/${PN}-0.9.7-need_charset_alias_musl.patch"
+	eautoreconf
 	elibtoolize  # for Solaris shared libraries
 }
 
 multilib_src_configure() {
 	local myconfig
-	if [[ "${CHOST}" =~ "muslx32" ]] ; then
+	if use elibc_musl ; then
 		myconf=( --disable-namespacing )
 	fi
 	ECONF_SOURCE="${S}" \
