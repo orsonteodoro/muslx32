@@ -1,0 +1,15 @@
+--- a/gcc-7.3.0/libgomp/configure.orig	2018-04-25 14:25:18.962485961 +0000
++++ b/gcc-7.3.0/libgomp/configure	2018-04-25 20:53:20.705728189 +0000
+@@ -4382,9 +4382,9 @@ fi
+ save_CFLAGS="$CFLAGS"
+ 
+ # Add -Wall -Werror if we are using GCC.
+-if test "x$GCC" = "xyes"; then
+-  XCFLAGS="$XCFLAGS -Wall -Werror"
+-fi
++#if test "x$GCC" = "xyes"; then
++#  XCFLAGS="$XCFLAGS -Wall -Werror"
++#fi
+ 
+ # Find other programs we need.
+ if test -n "$ac_tool_prefix"; then

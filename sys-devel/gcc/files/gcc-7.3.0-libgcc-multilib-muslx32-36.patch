@@ -1,0 +1,20 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2018-04-21 21:16:27.891717624 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-21 23:44:24.553809979 +0000
+@@ -83853,7 +83853,7 @@ striplib=$lt_striplib
+ 
+ 
+ # The linker used to build libraries.
+-LD=$lt_LD
++LD=$(echo "${lt_LD}" | sed -e "s|-ld -m elf32_x86_64|-ld |g")
+ 
+ # How to create reloadable object files.
+ reload_flag=$lt_reload_flag
+@@ -84240,7 +84240,7 @@ _LT_EOF
+ # ### BEGIN LIBTOOL TAG CONFIG: CXX
+ 
+ # The linker used to build libraries.
+-LD=$lt_LD_CXX
++LD=$(echo "${lt_LD_CXX}" | sed -e "s|-ld -m elf32_x86_64|-ld |g")
+ 
+ # How to create reloadable object files.
+ reload_flag=$lt_reload_flag_CXX

@@ -1,0 +1,46 @@
+--- a/gcc-7.3.0/Makefile.in.orig	2018-04-11 07:11:09.233200682 +0000
++++ b/gcc-7.3.0/Makefile.in	2018-04-11 16:23:06.731545244 +0000
+@@ -576,7 +576,42 @@ LIBCXXFLAGS_FOR_TARGET = $(CXXFLAGS_FOR_
+ LDFLAGS_FOR_TARGET = @LDFLAGS_FOR_TARGET@
+ GOCFLAGS_FOR_TARGET = -O2 -g
+ 
+-FLAGS_FOR_TARGET = @FLAGS_FOR_TARGET@
++flags_for_target4 = @FLAGS_FOR_TARGET@
++ifneq (,$(findstring m64,$(CXXFLAGS)))
++flags_for_target3 = $(subst x86_64-pc-linux-muslx32/usr/bin/,x86_64-pc-linux-musl/usr/bin/,$(flags_for_target4))
++flags_for_target2 = $(subst x86_64-pc-linux-muslx32/usr/lib/,x86_64-pc-linux-musl/usr/lib/,$(flags_for_target3))
++flags_for_target1 = $(subst x86_64-pc-linux-muslx32/usr/include/,x86_64-pc-linux-musl/usr/include/,$(flags_for_target2))
++flags_for_target = $(subst x86_64-pc-linux-muslx32/usr/sys-include/,x86_64-pc-linux-musl/usr/sys-include/,$(flags_for_target1)) -m64
++else ifneq (,$(findstring mx32,$(CXXFLAGS)))
++flags_for_target3 = $(subst x86_64-pc-linux-muslx32/usr/bin/,x86_64-pc-linux-muslx32/usr/bin/,$(flags_for_target4))
++flags_for_target2 = $(subst x86_64-pc-linux-muslx32/usr/lib/,x86_64-pc-linux-muslx32/usr/lib/,$(flags_for_target3))
++flags_for_target1 = $(subst x86_64-pc-linux-muslx32/usr/include/,x86_64-pc-linux-muslx32/usr/include/,$(flags_for_target2))
++flags_for_target = $(subst x86_64-pc-linux-muslx32/usr/sys-include/,x86_64-pc-linux-muslx32/usr/sys-include/,$(flags_for_target1)) -mx32
++else ifneq (,$(findstring m32,$(CXXFLAGS)))
++flags_for_target3 = $(subst x86_64-pc-linux-muslx32/usr/bin/,i686-pc-linux-musl/usr/bin/,$(flags_for_target4))
++flags_for_target2 = $(subst x86_64-pc-linux-muslx32/usr/lib/,i686-pc-linux-musl/usr/lib/,$(flags_for_target3))
++flags_for_target1 = $(subst x86_64-pc-linux-muslx32/usr/include/,i686-pc-linux-musl/usr/include/,$(flags_for_target2))
++flags_for_target = $(subst x86_64-pc-linux-muslx32/usr/sys-include/,i686-pc-linux-musl/usr/sys-include/,$(flags_for_target1)) -m32
++else ifneq (,$(findstring m64,$(CFLAGS)))
++flags_for_target3 = $(subst x86_64-pc-linux-muslx32/usr/bin/,x86_64-pc-linux-musl/usr/bin/,$(flags_for_target4))
++flags_for_target2 = $(subst x86_64-pc-linux-muslx32/usr/lib/,x86_64-pc-linux-musl/usr/lib/,$(flags_for_target3))
++flags_for_target1 = $(subst x86_64-pc-linux-muslx32/usr/include/,x86_64-pc-linux-musl/usr/include/,$(flags_for_target2))
++flags_for_target = $(subst x86_64-pc-linux-muslx32/usr/sys-include/,x86_64-pc-linux-musl/usr/sys-include/,$(flags_for_target1)) -m64
++else ifneq (,$(findstring mx32,$(CFLAGS)))
++flags_for_target3 = $(subst x86_64-pc-linux-muslx32/usr/bin/,x86_64-pc-linux-muslx32/usr/bin/,$(flags_for_target4))
++flags_for_target2 = $(subst x86_64-pc-linux-muslx32/usr/lib/,x86_64-pc-linux-muslx32/usr/lib/,$(flags_for_target3))
++flags_for_target1 = $(subst x86_64-pc-linux-muslx32/usr/include/,x86_64-pc-linux-muslx32/usr/include/,$(flags_for_target2))
++flags_for_target = $(subst x86_64-pc-linux-muslx32/usr/sys-include/,x86_64-pc-linux-muslx32/usr/sys-include/,$(flags_for_target1)) -mx32
++else ifneq (,$(findstring m32,$(CFLAGS)))
++flags_for_target3 = $(subst x86_64-pc-linux-muslx32/usr/bin/,i686-pc-linux-musl/usr/bin/,$(flags_for_target4))
++flags_for_target2 = $(subst x86_64-pc-linux-muslx32/usr/lib/,i686-pc-linux-musl/usr/lib/,$(flags_for_target3))
++flags_for_target1 = $(subst x86_64-pc-linux-muslx32/usr/include/,i686-pc-linux-musl/usr/include/,$(flags_for_target2))
++flags_for_target = $(subst x86_64-pc-linux-muslx32/usr/sys-include/,i686-pc-linux-musl/usr/sys-include/,$(flags_for_target1)) -m32
++else
++flags_for_target = $(flags_for_target4)
++endif
++FLAGS_FOR_TARGET = $(flags_for_target)
++
+ SYSROOT_CFLAGS_FOR_TARGET = @SYSROOT_CFLAGS_FOR_TARGET@
+ DEBUG_PREFIX_CFLAGS_FOR_TARGET = @DEBUG_PREFIX_CFLAGS_FOR_TARGET@
+ 

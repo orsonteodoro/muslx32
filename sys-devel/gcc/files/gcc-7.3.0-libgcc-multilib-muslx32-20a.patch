@@ -1,0 +1,22 @@
+--- ./gcc-7.3.0/Makefile.in.orig	2018-04-11 05:16:17.333128977 +0000
++++ ./gcc-7.3.0/Makefile.in	2018-04-11 06:28:15.203173901 +0000
+@@ -235,7 +235,8 @@ POSTSTAGE1_CXX_EXPORT = \
+ # Override the above if we're bootstrapping C++.
+ POSTSTAGE1_CXX_EXPORT = \
+ 	CXX="$(STAGE_CC_WRAPPER) $$r/$(HOST_SUBDIR)/prev-gcc/xg++$(exeext) \
+-	  -B$$r/$(HOST_SUBDIR)/prev-gcc/ -B$(build_tooldir)/bin/ -nostdinc++ \
++	  -B$$r/$(HOST_SUBDIR)/prev-gcc/ -B$(build_tooldir)/usr/bin/ -nostdinc++ \
++	  -B$(build_tooldir)/usr/bin/ -B$(build_tooldir)/usr/lib/ -I $(build_tooldir)/usr/include -I $(build_tooldir)/usr/sys-include \
+ 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
+ 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs \
+ 	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/include/$(TARGET_SUBDIR) \
+@@ -251,7 +251,8 @@ POSTSTAGE1_CXX_EXPORT = \
+ POSTSTAGE1_HOST_EXPORTS = \
+ 	$(HOST_EXPORTS) \
+ 	CC="$(STAGE_CC_WRAPPER) $$r/$(HOST_SUBDIR)/prev-gcc/xgcc$(exeext) \
+-	  -B$$r/$(HOST_SUBDIR)/prev-gcc/ -B$(build_tooldir)/bin/ \
++	  -B$$r/$(HOST_SUBDIR)/prev-gcc/ -B$(build_tooldir)/usr/bin/ \
++	  -B$(build_tooldir)/usr/bin/ -B$(build_tooldir)/usr/lib/ -I $(build_tooldir)/usr/include -I $(build_tooldir)/usr/sys-include \
+ 	  $(XGCC_FLAGS_FOR_TARGET) $$TFLAGS"; export CC; \
+ 	CC_FOR_BUILD="$$CC"; export CC_FOR_BUILD; \
+ 	$(POSTSTAGE1_CXX_EXPORT) \

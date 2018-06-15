@@ -1,0 +1,41 @@
+--- a/gcc-7.3.0/libitm/Makefile.in.orig	2018-04-12 03:46:51.630972076 +0000
++++ b/gcc-7.3.0/libitm/Makefile.in	2018-04-12 06:28:49.403073182 +0000
+@@ -279,8 +279,36 @@ LTCPPASCOMPILE = $(LIBTOOL) $(AM_LIBTOOL
+ 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
+ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+ 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+-LTCXXCOMPILE = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+-	--mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
++LTCXXCOMPILE =\
++	cxx4="$(CXX)" ; \
++	case "$(CXXFLAGS)" in \
++	*m64*) \
++		cxx3=`echo "$${cxx4}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/lib|/x86_64-pc-linux-musl/usr/lib|"` ; \
++		cxx2=`echo "$${cxx3}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/bin|/x86_64-pc-linux-musl/usr/bin|"` ; \
++		cxx1=`echo "$${cxx2}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/include|/x86_64-pc-linux-musl/usr/include|"` ; \
++		cxx=`echo "$${cxx1}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/sys-include|/x86_64-pc-linux-musl/usr/sys-include|"` ; \
++		cxx="$$cxx --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/ -m64" ; \
++		;; \
++	*mx32*) \
++		cxx3=`echo "$${cxx4}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/lib|/x86_64-pc-linux-muslx32/usr/lib|"` ; \
++		cxx2=`echo "$${cxx3}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/bin|/x86_64-pc-linux-muslx32/usr/bin|"` ; \
++		cxx1=`echo "$${cxx2}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/include|/x86_64-pc-linux-muslx32/usr/include|"` ; \
++		cxx=`echo "$${cxx1}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/sys-include|/x86_64-pc-linux-muslx32/usr/sys-include|"` ; \
++		cxx="$$cxx --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/ -mx32" ; \
++		;; \
++	*m32*) \
++		cxx3=`echo "$${cxx4}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/lib|/i686-pc-linux-musl/usr/lib|"` ; \
++		cxx2=`echo "$${cxx3}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/bin|/i686-pc-linux-musl/usr/bin|"` ; \
++		cxx1=`echo "$${cxx2}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/include|/i686-pc-linux-musl/usr/include|"` ; \
++		cxx=`echo "$${cxx1}" | sed -r -e "s|/x86_64-pc-linux-muslx32/usr/sys-include|/i686-pc-linux-musl/usr/sys-include|"` ; \
++		cxx="$$cxx --sysroot=/usr/i686-pc-linux-musl/usr/lib/ -m32" ; \
++		;; \
++	*) \
++		cxx="$${cxx4}" \
++		;; \
++	esac ; \
++	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
++	--mode=compile $${cxx} $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+ 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+ CXXLD = $(CXX)
+ CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \

@@ -1,0 +1,123 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2018-04-21 16:46:33.592549135 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-21 16:46:07.836548867 +0000
+@@ -84416,6 +84416,120 @@ postdeps=$lt_postdeps_CXX
+ # a shared library.
+ compiler_lib_search_path=$lt_compiler_lib_search_path_CXX
+ 
++case "${CC}" in
++  *m64*)
++    predep_objects=$(echo "${lt_predep_objects_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crti.o|/usr/x86_64-pc-linux-musl/usr/lib/crti.o|' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtbeginS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/crtbeginS.o|' \
++        -e 's|../libx32|../lib64|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64[/]+../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/../../../../..|g' \
++        -e "s|/64//64/|/64/|g" \
++        -e "s|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/../../../../../lib64/crti.o|/usr/x86_64-pc-linux-musl/usr/lib/crti.o|g" )
++    postdep_objects=$(echo "${lt_postdep_objects_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crtn.o|/usr/x86_64-pc-linux-musl/usr/lib/crtn.o|' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtendS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/crtendS.o|' \
++        -e 's|../libx32|../lib64|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64[/]+../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/../../../../..|g' \
++        -e "s|/64//64/|/64/|g" \
++        -e "s|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/../../../../../lib64/crtn.o|/usr/x86_64-pc-linux-musl/usr/lib/crtn.o|g" )
++    postdeps=$(echo "${lt_postdeps_CXX}" | sed -r -e "s|-lm|-L/usr/x86_64-pc-linux-musl/usr/lib -lm|g")
++    compiler_lib_search_dirs=$(echo "${lt_compiler_lib_search_dirs_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib|/usr/x86_64-pc-linux-muslx32/usr/lib64|g' \
++        -e 's|../libx32|../lib64|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-musl/lib|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64[/]+../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/../../../../..|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-musl/lib|g' \
++        -e 's|x86_64-pc-linux-muslx32/lib|x86_64-pc-linux-musl/lib|g' \
++	)
++    compiler_lib_search_path=$(echo "${lt_compiler_lib_search_path_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib|/usr/x86_64-pc-linux-muslx32/usr/lib64|g' \
++        -e 's|../libx32|../lib64|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-musl/lib|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64[/]+../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/../../../../..|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-musl/lib|g' \
++        -e 's|x86_64-pc-linux-muslx32/lib|x86_64-pc-linux-musl/lib|g' \
++	)
++    ;;
++  *mx32*)
++    predep_objects=$(echo "${lt_predep_objects_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crti.o|/usr/x86_64-pc-linux-muslx32/usr/lib/crti.o|' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtbeginS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtbeginS.o|' \
++        -e 's|../libx32|../libx32|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../..|g' \
++        -e "s|/x32//x32/|/x32/|g" \
++        -e "s|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../../libx32/crti.o|/usr/x86_64-pc-linux-muslx32/usr/lib/crti.o|g" )
++    postdep_objects=$(echo "${lt_postdep_objects_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crtn.o|/usr/x86_64-pc-linux-muslx32/usr/lib/crtn.o|' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtendS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtendS.o|' \
++        -e 's|../libx32|../libx32|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../..|g' \
++        -e "s|/x32//x32/|/x32/|g" \
++        -e "s|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../../libx32/crtn.o|/usr/x86_64-pc-linux-muslx32/usr/lib/crtn.o|g" )
++    postdeps=$(echo "${lt_postdeps_CXX}" | sed -r -e "s|-lm|-L/usr/x86_64-pc-linux-muslx32/usr/lib -lm|g")
++    compiler_lib_search_dirs=$(echo "${lt_compiler_lib_search_dirs_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib|/usr/x86_64-pc-linux-muslx32/usr/lib|g' \
++        -e 's|../libx32|../libx32|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-muslx32/lib|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../..|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-muslx32/lib|g' \
++        -e 's|x86_64-pc-linux-muslx32/lib|x86_64-pc-linux-muslx32/lib|g' \
++	)
++    compiler_lib_search_path=$(echo "${lt_compiler_lib_search_path_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib|/usr/x86_64-pc-linux-muslx32/usr/lib|g' \
++        -e 's|../libx32|../libx32|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-muslx32/lib|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/../../../..|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-muslx32/lib|g' \
++        -e 's|x86_64-pc-linux-muslx32/lib|x86_64-pc-linux-muslx32/lib|g' \
++	)
++    ;;
++  *m32*)
++    predep_objects=$(echo "${lt_predep_objects_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crti.o|/usr/i686-pc-linux-musl/usr/lib/crti.o|' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtbeginS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/crtbeginS.o|' \
++        -e 's|../libx32|../lib32|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32[/]+../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/../../../../..|g' \
++        -e "s|/32//32/|/32/|g" \
++        -e "s|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/../../../../../lib32/crti.o|/usr/i686-pc-linux-musl/usr/lib/crti.o|g" )
++    postdep_objects=$(echo "${lt_postdep_objects_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crtn.o|/usr/i686-pc-linux-musl/usr/lib/crtn.o|' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtendS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/crtendS.o|' \
++        -e 's|../libx32|../lib32|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/|g' \
++        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32[/]+../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/../../../../..|g' \
++        -e "s|/32//32/|/32/|g" \
++        -e "s|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/../../../../../lib32/crtn.o|/usr/i686-pc-linux-musl/usr/lib/crtn.o|g" )
++    postdeps=$(echo "${lt_postdeps_CXX}" | sed -r -e "s|-lm|-L/usr/i686-pc-linux-musl/usr/lib -lm|g")
++    compiler_lib_search_dirs=$(echo "${lt_compiler_lib_search_dirs_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib|/usr/x86_64-pc-linux-muslx32/usr/lib32|g' \
++        -e 's|../libx32|../lib32|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/i686-pc-linux-musl/lib|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32[/]+../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/../../../../..|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/i686-pc-linux-musl/lib|g' \
++        -e 's|x86_64-pc-linux-muslx32/lib|i686-pc-linux-musl/lib|g' \
++	)
++    compiler_lib_search_path=$(echo "${lt_compiler_lib_search_path_CXX}" | \
++      sed -r -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib|/usr/x86_64-pc-linux-muslx32/usr/lib32|g' \
++        -e 's|../libx32|../lib32|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/i686-pc-linux-musl/lib|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/|g' \
++	 -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32[/]+../../../..|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/../../../../..|g' \
++	 -e 's|/usr/x86_64-pc-linux-muslx32/lib|/usr/i686-pc-linux-musl/lib|g' \
++        -e 's|x86_64-pc-linux-muslx32/lib|i686-pc-linux-musl/lib|g' \
++	)
++    ;;
++esac
++
+ # ### END LIBTOOL TAG CONFIG: CXX
+ _LT_EOF
+ 

@@ -1,0 +1,11 @@
+--- gcc-7.3.0/configure.orig	2018-04-17 15:37:44.148910470 +0000
++++ gcc-7.3.0/configure	2018-04-17 15:38:15.748910799 +0000
+@@ -7551,7 +7551,7 @@ esac
+ 
+ # Allow the user to override the flags for
+ # our build compiler if desired.
+-if test x"${build}" = x"${host}" ; then
++if true ; then
+   CFLAGS_FOR_BUILD=${CFLAGS_FOR_BUILD-${CFLAGS}}
+   CXXFLAGS_FOR_BUILD=${CXXFLAGS_FOR_BUILD-${CXXFLAGS}}
+   LDFLAGS_FOR_BUILD=${LDFLAGS_FOR_BUILD-${LDFLAGS}}

@@ -1,0 +1,50 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2018-04-21 23:48:22.146812451 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-22 02:03:59.159897111 +0000
+@@ -15673,8 +15673,21 @@ $as_echo "$enable_dfp" >&6; }
+ 
+   ac_ext=cpp
+ ac_cpp='$CXXCPP $CPPFLAGS'
+-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++case "${CC}" in
++  *m64*)
++    ac_compile='$CXX -m64 -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
++    ac_link='$CXX -m64 -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++    ;;
++  *mx32*)
++    ac_compile='$CXX -mx32 -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
++    ac_link='$CXX -mx32  -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++    ;;
++  *m32*)
++    ac_compile='$CXX -m32 -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
++    ac_link='$CXX -m32 -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++    ;;
++esac
++
+ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+ 
+ 
+@@ -15751,8 +15764,21 @@ $as_echo "$enable_float128" >&6; }
+ 
+   ac_ext=c
+ ac_cpp='$CPP $CPPFLAGS'
+-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++
++case "${CC}" in
++  *m64*)
++    ac_compile='$CC -m64 -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
++    ac_link='$CC -m64 -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++    ;;
++  *mx32*)
++    ac_compile='$CC -mx32 -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
++    ac_link='$CC -mx32 -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++    ;;
++  *m32*)
++    ac_compile='$CC -m32 -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
++    ac_link='$CC -m32 -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++    ;;
++esac
+ ac_compiler_gnu=$ac_cv_c_compiler_gnu
+ 
+ 

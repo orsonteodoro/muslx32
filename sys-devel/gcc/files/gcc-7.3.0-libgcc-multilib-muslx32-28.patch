@@ -1,0 +1,35 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2018-04-18 04:03:02.857375734 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-18 06:03:20.863450831 +0000
+@@ -3620,7 +3620,7 @@ am__tar='$${TAR-tar} chof - "$$tardir"'
+ 
+ 
+ 
+-
++MUSLCXX_INCLUDES=""
+ if test -n "${with_multisubdir}" ; then
+   case "${CC}" in
+     *m64*)
+@@ -3636,6 +3636,7 @@ if test -n "${with_multisubdir}" ; then
+       CXXCPP=$(echo "${CXXCPP}" | \
+        sed -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-musl/usr/include|" \
+        sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-musl/usr/sys-include|" )
++       MUSLCXX_INCLUDES="-B/usr/x86_64-pc-linux-musl/usr/bin/ -B/usr/x86_64-pc-linux-musl/usr/lib/ -I /usr/x86_64-pc-linux-musl/usr/include -I /usr/x86_64-pc-linux-musl/usr/sys-include"
+       ;;
+     *mx32*)
+       CC=$(echo "${CC}" | \
+@@ -3650,6 +3651,7 @@ if test -n "${with_multisubdir}" ; then
+       CXXCPP=$(echo "${CXXCPP}" | \
+        sed -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-muslx32/usr/include|" \
+        sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-muslx32/usr/sys-include|" )
++       MUSLCXX_INCLUDES="-B/usr/x86_64-pc-linux-muslx32/usr/bin/ -B/usr/x86_64-pc-linux-muslx32/usr/lib/ -I /usr/x86_64-pc-linux-muslx32/usr/include -I /usr/x86_64-pc-linux-muslx32/usr/sys-include"
+       ;;
+     *m32*)
+       CC=$(echo "${CC}" | \
+@@ -3664,6 +3666,7 @@ if test -n "${with_multisubdir}" ; then
+       CXXCPP=$(echo "${CXXCPP}" | \
+        sed -e "s|x86_64-pc-linux-muslx32/usr/include|i686-pc-linux-musl/usr/include|" \
+        sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|i686-pc-linux-musl/usr/sys-include|" )
++       MUSLCXX_INCLUDES="-B/usr/i686-pc-linux-musl/usr/bin/ -B/usr/i686-pc-linux-musl/usr/lib/ -I /usr/i686-pc-linux-musl/usr/include -I /usr/i686-pc-linux-musl/usr/sys-include"
+       ;;
+   esac
+ fi

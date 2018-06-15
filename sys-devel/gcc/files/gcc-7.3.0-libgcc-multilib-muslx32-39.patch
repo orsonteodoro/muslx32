@@ -1,0 +1,12 @@
+--- a/gcc-7.3.0/gcc/configure.orig	2017-11-21 09:31:12.135035000 +0000
++++ b/gcc-7.3.0/gcc/configure	2018-04-23 21:27:48.354522555 +0000
+@@ -11099,7 +11099,8 @@ if ac_fn_cxx_try_compile "$LINENO"; then
+ 
+ else
+ 
+-$as_echo "#define rlim_t long" >>confdefs.h
++#$as_echo "#define rlim_t long" >>confdefs.h
++true
+ 
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext

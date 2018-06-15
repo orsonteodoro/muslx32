@@ -1,0 +1,22 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2018-04-07 20:46:06.852113722 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-07 22:10:13.424166228 +0000
+@@ -9173,7 +9173,18 @@ fi
+ 
+ 
+ 
+-
++LD=$(echo "${LD}" | sed -e "s|-ld -m elf32_x86_64|-ld |g")
++case "${CC}" in
++  *m64*)
++    LDFLAGS="${LDFLAGS} -L/usr/x86_64-pc-linux-musl/usr/lib -lssp_nonshared "
++    ;;
++  *mx32*)
++    LDFLAGS="${LDFLAGS} -L/usr/x86_64-pc-linux-muslx32/usr/lib -lssp_nonshared "
++    ;;
++  *m32*)
++    LDFLAGS="${LDFLAGS} -L/usr/i686-pc-linux-musl/usr/lib -lssp_nonshared "
++    ;;
++esac
+ 
+ 
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the $compiler linker ($LD) supports shared libraries" >&5

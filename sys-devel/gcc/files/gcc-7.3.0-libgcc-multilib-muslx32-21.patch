@@ -1,0 +1,11 @@
+--- ./gcc-7.3.0/configure.orig	2018-04-11 05:16:24.067129047 +0000
++++ ./gcc-7.3.0/configure	2018-04-11 07:06:20.946197683 +0000
+@@ -7563,7 +7563,7 @@ fi
+ # being built; programs in there won't even run.
+ if test "${build}" = "${host}" && test -d ${srcdir}/gcc; then
+   # Search for pre-installed headers if nothing else fits.
+-  FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -B$(build_tooldir)/bin/ -B$(build_tooldir)/lib/ -isystem $(build_tooldir)/include -isystem $(build_tooldir)/sys-include'
++  FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -B$(build_tooldir)/usr/bin/ -B$(build_tooldir)/usr/lib/ -I $(build_tooldir)/usr/include -I $(build_tooldir)/usr/sys-include'
+ fi
+ 
+ if test "x${use_gnu_ld}" = x &&

@@ -1,0 +1,50 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2018-04-19 18:46:33.042826189 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-19 21:30:18.161928412 +0000
+@@ -9460,6 +9460,47 @@ _LT_EOF
+ 	*Sun\ F*)			# Sun Fortran 8.3
+ 	  tmp_sharedflag='-G' ;;
+ 	esac
++	case "${CC}" in
++	  *m64*)
++	    predep_objects=$(echo "${predep_objects}" | \
++	      sed -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crti.o|/usr/x86_64-pc-linux-musl/usr/lib/crti.o|' \
++	        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtbeginS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/crtbeginS.o|' )
++	    postdep_objects=$(echo "${postdep_objects}" | \
++	      sed -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crtn.o|/usr/x86_64-pc-linux-musl/usr/lib/crtn.o|' \
++	        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtendS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/crtendS.o|' )
++	    deplibs=$(echo "${deplibs}" | \
++	      sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-musl/usr/sys-include|g" \
++	        -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-musl/usr/include|g" \
++	        -e "s|x86_64-pc-linux-muslx32/usr/lib|x86_64-pc-linux-musl/usr/lib|g" \
++	        -e "s|x86_64-pc-linux-muslx32/usr/bin|x86_64-pc-linux-musl/usr/bin|g" )
++	    ;;
++	  *mx32*)
++	    predep_objects=$(echo "${predep_objects}" | \
++	      sed -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crti.o|/usr/x86_64-pc-linux-muslx32/usr/lib/crti.o|' \
++	        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtbeginS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtbeginS.o|' )
++	    postdep_objects=$(echo "${postdep_objects}" | \
++	      sed -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crtn.o|/usr/x86_64-pc-linux-muslx32/usr/lib/crtn.o|' \
++	        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtendS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtendS.o|' )
++	    deplibs=$(echo "${deplibs}" | \
++	      sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-muslx32/usr/sys-include|g" \
++	        -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-muslx32/usr/include|g" \
++	        -e "s|x86_64-pc-linux-muslx32/usr/lib|x86_64-pc-linux-muslx32/usr/lib|g" \
++	        -e "s|x86_64-pc-linux-muslx32/usr/bin|x86_64-pc-linux-muslx32/usr/bin|g" )
++	    ;;
++	  *m32)
++	    predep_objects=$(echo "${predep_objects}" | \
++	      sed -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crti.o|/usr/i686-pc-linux-musl/usr/lib/crti.o|' \
++	        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtbeginS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/crtbeginS.o|' )
++	    postdep_objects=$(echo "${postdep_objects}" | \
++	      sed -e 's|/usr/x86_64-pc-linux-muslx32/usr/lib/../libx32/crtn.o|/usr/i686-pc-linux-musl/usr/lib/crtn.o|' \
++	        -e 's|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/crtendS.o|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/crtendS.o|' )
++	    deplibs=$(echo "${deplibs}" | \
++	      sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|i686-pc-linux-musl/usr/sys-include|g" \
++	        -e "s|x86_64-pc-linux-muslx32/usr/include|i686-pc-linux-musl/usr/include|g" \
++	        -e "s|x86_64-pc-linux-muslx32/usr/lib|i686-pc-linux-musl/usr/lib|g" \
++	        -e "s|x86_64-pc-linux-muslx32/usr/bin|i686-pc-linux-musl/usr/bin|g" )
++	    ;;
++	esac
+ 	archive_cmds='$CC '"$tmp_sharedflag""$tmp_addflag"' $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname -o $lib'
+ 
+         if test "x$supports_anon_versioning" = xyes; then

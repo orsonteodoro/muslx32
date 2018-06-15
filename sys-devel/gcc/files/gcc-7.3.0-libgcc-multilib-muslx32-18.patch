@@ -1,0 +1,167 @@
+--- a/gcc-7.3.0/libitm/Makefile.in.orig	2018-04-12 00:50:27.603861958 +0000
++++ b/gcc-7.3.0/libitm/Makefile.in	2018-04-12 00:49:47.022861536 +0000
+@@ -131,6 +131,147 @@ DEFAULT_INCLUDES = -I.@am__isrc@
+ depcomp = $(SHELL) $(top_srcdir)/../depcomp
+ am__depfiles_maybe = depfiles
+ am__mv = mv -f
++
++cc_for_target4 = @CC@
++cxx4 = @CXX@
++cxxcpp4 = @CXXCPP@
++ifneq (,$(findstring m64,$(CFLAGS)))
++cc_for_target3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-musl/usr/lib,$(cc_for_target4))
++cc_for_target2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-musl/usr/bin,$(cc_for_target3))
++cc_for_target1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-musl/usr/include,$(cc_for_target2))
++cc_for_target = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-musl/usr/sys-include,$(cc_for_target1))
++cc_for_target += --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/ -m64
++cc3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-musl/usr/lib,$(cc4))
++cc2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-musl/usr/bin,$(cc3))
++cc1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-musl/usr/include,$(cc2))
++cc = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-musl/usr/sys-include,$(cc1))
++cc += --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/ -m64
++cxx3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-musl/usr/lib,$(cxx4))
++cxx2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-musl/usr/bin,$(cxx3))
++cxx1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-musl/usr/include,$(cxx2))
++cxx = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-musl/usr/sys-include,$(cxx1))
++cxx += --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/ -m64
++cxxcpp3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-musl/usr/lib,$(cxxcpp4))
++cxxcpp2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-musl/usr/bin,$(cxxcpp3))
++cxxcpp1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-musl/usr/include,$(cxxcpp2))
++cxxcpp = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-musl/usr/sys-include,$(cxxcpp1))
++cxxcpp += --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/ -m64
++else ifneq (,$(findstring mx32,$(CFLAGS)))
++cc_for_target3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-muslx32/usr/lib,$(cc_for_target4))
++cc_for_target2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-muslx32/usr/bin,$(cc_for_target3))
++cc_for_target1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-muslx32/usr/include,$(cc_for_target2))
++cc_for_target = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-muslx32/usr/sys-include,$(cc_for_target1))
++cc_for_target += --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/ -mx32
++cc3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-muslx32/usr/lib,$(cc4))
++cc2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-muslx32/usr/bin,$(cc3))
++cc1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-muslx32/usr/include,$(cc2))
++cc = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-muslx32/usr/sys-include,$(cc1))
++cc += --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/ -mx32
++cxx3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-muslx32/usr/lib,$(cxx4))
++cxx2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-muslx32/usr/bin,$(cxx3))
++cxx1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-muslx32/usr/include,$(cxx2))
++cxx = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-muslx32/usr/sys-include,$(cxx1))
++cxx += --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/ -mx32
++cxxcpp3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-muslx32/usr/lib,$(cxxcpp4))
++cxxcpp2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-muslx32/usr/bin,$(cxxcpp3))
++cxxcpp1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-muslx32/usr/include,$(cxxcpp2))
++cxxcpp = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-muslx32/usr/sys-include,$(cxxcpp1))
++cxxcpp += --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/ -mx32
++else ifneq (,$(findstring m32,$(CFLAGS)))
++cc_for_target3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/i686-pc-linux-musl/usr/lib,$(cc_for_target4))
++cc_for_target2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/i686-pc-linux-musl/usr/bin,$(cc_for_target3))
++cc_for_target1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/i686-pc-linux-musl/usr/include,$(cc_for_target2))
++cc_for_target = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/i686-pc-linux-musl/usr/sys-include,$(cc_for_target1))
++cc_for_target += --sysroot=/usr/i686-pc-linux-musl/usr/lib/ -m32
++cc3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/i686-pc-linux-musl/usr/lib,$(cc4))
++cc2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/i686-pc-linux-musl/usr/bin,$(cc3))
++cc1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/i686-pc-linux-musl/usr/include,$(cc2))
++cc = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/i686-pc-linux-musl/usr/sys-include,$(cc1))
++cc += --sysroot=/usr/i686-pc-linux-musl/usr/lib/ -m32
++cxx3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/i686-pc-linux-musl/usr/lib,$(cxx4))
++cxx2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/i686-pc-linux-musl/usr/bin,$(cxx3))
++cxx1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/i686-pc-linux-musl/usr/include,$(cxx2))
++cxx = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/i686-pc-linux-musl/usr/sys-include,$(cxx1))
++cxx += --sysroot=/usr/i686-pc-linux-musl/usr/lib/ -m32
++cxxcpp3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/i686-pc-linux-musl/usr/lib,$(cxxcpp4))
++cxxcpp2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/i686-pc-linux-musl/usr/bin,$(cxxcpp3))
++cxxcpp1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/i686-pc-linux-musl/usr/include,$(cxxcpp2))
++cxxcpp = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/i686-pc-linux-musl/usr/sys-include,$(cxxcpp1))
++cxxcpp += --sysroot=/usr/i686-pc-linux-musl/usr/lib/ -m32
++else ifneq (,$(findstring m64,$(CXXFLAGS)))
++cc_for_target3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-musl/usr/lib,$(cc_for_target4))
++cc_for_target2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-musl/usr/bin,$(cc_for_target3))
++cc_for_target1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-musl/usr/include,$(cc_for_target2))
++cc_for_target = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-musl/usr/sys-include,$(cc_for_target1))
++cc_for_target += --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/ -m64
++cc3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-musl/usr/lib,$(cc4))
++cc2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-musl/usr/bin,$(cc3))
++cc1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-musl/usr/include,$(cc2))
++cc = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-musl/usr/sys-include,$(cc1))
++cc += --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/ -m64
++cxx3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-musl/usr/lib,$(cxx4))
++cxx2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-musl/usr/bin,$(cxx3))
++cxx1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-musl/usr/include,$(cxx2))
++cxx = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-musl/usr/sys-include,$(cxx1))
++cxx += --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/ -m64
++cxxcpp3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-musl/usr/lib,$(cxxcpp4))
++cxxcpp2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-musl/usr/bin,$(cxxcpp3))
++cxxcpp1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-musl/usr/include,$(cxxcpp2))
++cxxcpp = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-musl/usr/sys-include,$(cxxcpp1))
++cxxcpp += --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/ -m64
++else ifneq (,$(findstring mx32,$(CXXFLAGS)))
++cc_for_target3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-muslx32/usr/lib,$(cc_for_target4))
++cc_for_target2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-muslx32/usr/bin,$(cc_for_target3))
++cc_for_target1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-muslx32/usr/include,$(cc_for_target2))
++cc_for_target = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-muslx32/usr/sys-include,$(cc_for_target1))
++cc_for_target += --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/ -mx32
++cc3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-muslx32/usr/lib,$(cc4))
++cc2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-muslx32/usr/bin,$(cc3))
++cc1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-muslx32/usr/include,$(cc2))
++cc = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-muslx32/usr/sys-include,$(cc1))
++cc += --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/ -mx32
++cxx3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-muslx32/usr/lib,$(cxx4))
++cxx2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-muslx32/usr/bin,$(cxx3))
++cxx1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-muslx32/usr/include,$(cxx2))
++cxx = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-muslx32/usr/sys-include,$(cxx1))
++cxx += --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/ -mx32
++cxxcpp3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-muslx32/usr/lib,$(cxxcpp4))
++cxxcpp2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-muslx32/usr/bin,$(cxxcpp3))
++cxxcpp1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-muslx32/usr/include,$(cxxcpp2))
++cxxcpp = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-muslx32/usr/sys-include,$(cxxcpp1))
++cxxcpp += --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/ -mx32
++else ifneq (,$(findstring m32,$(CXXFLAGS)))
++cc_for_target3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/i686-pc-linux-musl/usr/lib,$(cc_for_target4))
++cc_for_target2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/i686-pc-linux-musl/usr/bin,$(cc_for_target3))
++cc_for_target1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/i686-pc-linux-musl/usr/include,$(cc_for_target2))
++cc_for_target = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/i686-pc-linux-musl/usr/sys-include,$(cc_for_target1))
++cc_for_target += --sysroot=/usr/i686-pc-linux-musl/usr/lib/ -m32
++cc3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/i686-pc-linux-musl/usr/lib,$(cc4))
++cc2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/i686-pc-linux-musl/usr/bin,$(cc3))
++cc1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/i686-pc-linux-musl/usr/include,$(cc2))
++cc = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/i686-pc-linux-musl/usr/sys-include,$(cc1))
++cc += --sysroot=/usr/i686-pc-linux-musl/usr/lib/ -m32
++cxx3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/i686-pc-linux-musl/usr/lib,$(cxx4))
++cxx2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/i686-pc-linux-musl/usr/bin,$(cxx3))
++cxx1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/i686-pc-linux-musl/usr/include,$(cxx2))
++cxx = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/i686-pc-linux-musl/usr/sys-include,$(cxx1))
++cxx += --sysroot=/usr/i686-pc-linux-musl/usr/lib/ -m32
++cxxcpp3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/i686-pc-linux-musl/usr/lib,$(cxxcpp4))
++cxxcpp2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/i686-pc-linux-musl/usr/bin,$(cxxcpp3))
++cxxcpp1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/i686-pc-linux-musl/usr/include,$(cxxcpp2))
++cxxcpp = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/i686-pc-linux-musl/usr/sys-include,$(cxxcpp1))
++cxxcpp += --sysroot=/usr/i686-pc-linux-musl/usr/lib/ -m32
++else
++cc_for_target = $(cc_for_target4)
++cc = $(cc4)
++cxx = $(cxx4)
++cxxcpp = $(cxxcpp4)
++endif
++
++CC = $(cc_for_target)
++CXX = $(cxx)
++CXXCPP = $(cxxcpp)
++
+ CPPASCOMPILE = $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+ 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
+ LTCPPASCOMPILE = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+@@ -200,7 +341,6 @@ AUTOCONF = @AUTOCONF@
+ AUTOHEADER = @AUTOHEADER@
+ AUTOMAKE = @AUTOMAKE@
+ AWK = @AWK@
+-CC = @CC@
+ CCAS = @CCAS@
+ CCASDEPMODE = @CCASDEPMODE@
+ CCASFLAGS = @CCASFLAGS@
+@@ -208,8 +348,6 @@ CCDEPMODE = @CCDEPMODE@
+ CFLAGS = @CFLAGS@
+ CPP = @CPP@
+ CPPFLAGS = @CPPFLAGS@
+-CXX = @CXX@
+-CXXCPP = @CXXCPP@
+ CXXDEPMODE = @CXXDEPMODE@
+ CXXFLAGS = @CXXFLAGS@
+ CYGPATH_W = @CYGPATH_W@

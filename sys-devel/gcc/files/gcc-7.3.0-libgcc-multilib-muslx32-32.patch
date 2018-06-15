@@ -1,0 +1,13 @@
+--- a/gcc-7.3.0/libstdc++-v3/src/Makefile.in.orig	2018-04-19 06:53:37.887381147 +0000
++++ b/gcc-7.3.0/libstdc++-v3/src/Makefile.in	2018-04-19 18:40:19.894822307 +0000
+@@ -219,7 +219,9 @@ INSTALL_DATA = @INSTALL_DATA@
+ INSTALL_PROGRAM = @INSTALL_PROGRAM@
+ INSTALL_SCRIPT = @INSTALL_SCRIPT@
+ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+-LD = @LD@
++ld1=@LD@
++ld=$(subst -m elf32_x86_64,,$(ld1))
++LD = $(ld)
+ LDFLAGS = @LDFLAGS@
+ LIBICONV = @LIBICONV@
+ LIBOBJS = @LIBOBJS@

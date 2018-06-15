@@ -1,0 +1,23 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2018-04-18 07:55:40.848520956 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-18 15:13:59.412794572 +0000
+@@ -81660,6 +81660,20 @@ $as_echo "$version_specific_libs" >&6; }
+     esac
+   fi
+ 
++if test -n "${with_multisubdir}" ; then
++  case "${CC}" in
++    *m64*)
++      glibcxx_toolexeclibdir='${libdir}/../lib64'
++      ;;
++    *mx32*)
++      glibcxx_toolexeclibdir='${libdir}/../libx32'
++      ;;
++    *m32*)
++      glibcxx_toolexeclibdir='${libdir}/../lib32'
++      ;;
++  esac
++fi
++
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for install location" >&5
+ $as_echo_n "checking for install location... " >&6; }
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gxx_include_dir" >&5

@@ -1,0 +1,10 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2018-04-18 07:50:07.458517487 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-18 07:51:34.002518388 +0000
+@@ -81683,6 +81683,7 @@ $as_echo "$gxx_include_dir" >&6; }
+   if test $CANADIAN = yes; then
+     GLIBCXX_INCLUDES="$GLIBCXX_INCLUDES -I\${includedir}"
+   fi
++  GLIBCXX_INCLUDES="$GLIBCXX_INCLUDES $MUSLCXX_INCLUDES"
+ 
+   # Stuff in the actual top level.  Currently only used by libsupc++ to
+   # get unwind* headers from the libgcc dir.

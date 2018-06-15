@@ -1,0 +1,12 @@
+--- a/gcc-7.3.0/configure.orig	2018-04-23 02:28:51.323811561 +0000
++++ b/gcc-7.3.0/configure	2018-04-23 02:32:41.576813956 +0000
+@@ -7557,6 +7557,9 @@ if true ; then
+   LDFLAGS_FOR_BUILD=${LDFLAGS_FOR_BUILD-${LDFLAGS}}
+ fi
+ 
++CFLAGS_FOR_BUILD=$CFLAGS_FOR_BUILD' -B$(build_tooldir)/usr/bin/ -B$(build_tooldir)/usr/lib/ -isystem $(build_tooldir)/usr/include -isystem $(build_tooldir)/usr/sys-include'
++CXXFLAGS_FOR_BUILD=$CXXFLAGS_FOR_BUILD' -B$(build_tooldir)/usr/bin/ -B$(build_tooldir)/usr/lib/ -isystem $(build_tooldir)/usr/include -isystem $(build_tooldir)/usr/sys-include'
++
+ # On Canadian crosses, we'll be searching the right directories for
+ # the previously-installed cross compiler, so don't bother to add
+ # flags for directories within the install tree of the compiler

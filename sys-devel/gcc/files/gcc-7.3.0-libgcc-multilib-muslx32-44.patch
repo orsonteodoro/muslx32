@@ -1,0 +1,13 @@
+--- a/gcc-7.3.0/gcc/config/i386/linux64.h.orig	2017-01-01 04:07:43.905435000 -0800
++++ b/gcc-7.3.0/gcc/config/i386/linux64.h	2018-04-27 00:25:55.078821534 -0700
+@@ -32,8 +32,8 @@ see the files COPYING3 and COPYING.RUNTI
+ #define GLIBC_DYNAMIC_LINKERX32 "/libx32/ld-linux-x32.so.2"
+ 
+ #undef MUSL_DYNAMIC_LINKER32
+-#define MUSL_DYNAMIC_LINKER32 "/lib/ld-musl-i386.so.1"
++#define MUSL_DYNAMIC_LINKER32 "/lib32/ld-musl-i386.so.1"
+ #undef MUSL_DYNAMIC_LINKER64
+-#define MUSL_DYNAMIC_LINKER64 "/lib/ld-musl-x86_64.so.1"
++#define MUSL_DYNAMIC_LINKER64 "/lib64/ld-musl-x86_64.so.1"
+ #undef MUSL_DYNAMIC_LINKERX32
+ #define MUSL_DYNAMIC_LINKERX32 "/lib/ld-musl-x32.so.1"

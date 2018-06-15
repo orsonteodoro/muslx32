@@ -1,0 +1,20 @@
+--- ./gcc-7.3.0/gcc/Makefile.in.orig	2018-04-11 05:16:17.395128978 +0000
++++ ./gcc-7.3.0/gcc/Makefile.in	2018-04-11 06:29:02.499174393 +0000
+@@ -436,7 +436,7 @@ USER_H_INC_NEXT_POST = @user_headers_inc
+ # The GCC to use for compiling crt*.o.
+ # Usually the one we just built.
+ # Don't use this as a dependency--use $(GCC_PASSES).
+-GCC_FOR_TARGET = $(STAGE_CC_WRAPPER) ./xgcc -B./ -B$(build_tooldir)/bin/ -isystem $(build_tooldir)/include -isystem $(build_tooldir)/sys-include -L$(objdir)/../ld
++GCC_FOR_TARGET = $(STAGE_CC_WRAPPER) ./xgcc -B./ -B$(build_tooldir)/usr/bin/ -I $(build_tooldir)/usr/include -I $(build_tooldir)/usr/sys-include -L$(objdir)/../ld
+ 
+ # Set if the compiler was configured with --with-build-sysroot.
+ SYSROOT_CFLAGS_FOR_TARGET = @SYSROOT_CFLAGS_FOR_TARGET@
+@@ -653,7 +653,7 @@ prefix_to_exec_prefix := \
+ dollar = @dollar@
+ # Used in install-cross.
+ gcc_tooldir = @gcc_tooldir@
+-# Since gcc_tooldir does not exist at build-time, use -B$(build_tooldir)/bin/
++# Since gcc_tooldir does not exist at build-time, use -B$(build_tooldir)/usr/bin/
+ build_tooldir = $(exec_prefix)/$(target_noncanonical)
+ # Directory in which the compiler finds target-independent g++ includes.
+ gcc_gxx_include_dir = @gcc_gxx_include_dir@

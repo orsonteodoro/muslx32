@@ -1,0 +1,11 @@
+--- b/gcc-7.3.0/libstdc++-v3/include/c_global/cstdlib.orig	2017-01-01 12:07:43.905435000 +0000
++++ b/gcc-7.3.0/libstdc++-v3/include/c_global/cstdlib	2018-04-24 04:24:38.785212065 +0000
+@@ -72,7 +72,7 @@ namespace std
+ // Need to ensure this finds the C library's <stdlib.h> not a libstdc++
+ // wrapper that might already be installed later in the include search path.
+ #define _GLIBCXX_INCLUDE_NEXT_C_HEADERS
+-#include_next <stdlib.h>
++#include <stdlib.h>
+ #undef _GLIBCXX_INCLUDE_NEXT_C_HEADERS
+ #include <bits/std_abs.h>
+ 

@@ -1,0 +1,11 @@
+--- gcc-7.3.0/configure.orig	2018-04-17 03:53:55.832471117 +0000
++++ gcc-7.3.0/configure	2018-04-17 03:58:52.478474203 +0000
+@@ -7561,7 +7561,7 @@ fi
+ # the previously-installed cross compiler, so don't bother to add
+ # flags for directories within the install tree of the compiler
+ # being built; programs in there won't even run.
+-if test "${build}" = "${host}" && test -d ${srcdir}/gcc; then
++if true ; then
+   # Search for pre-installed headers if nothing else fits.
+   FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -B$(build_tooldir)/usr/bin/ -B$(build_tooldir)/usr/lib/ -isystem $(build_tooldir)/usr/include -isystem $(build_tooldir)/usr/sys-include'
+ fi

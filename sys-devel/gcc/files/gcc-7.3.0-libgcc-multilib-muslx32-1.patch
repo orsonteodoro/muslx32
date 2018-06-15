@@ -1,0 +1,28 @@
+--- a/gcc-7.3.0/libgcc/Makefile.in.orig	2018-04-03 15:43:53.340145919 +0000
++++ b/gcc-7.3.0/libgcc/Makefile.in	2018-04-03 20:17:15.308316569 +0000
+@@ -109,6 +109,25 @@ FLAGS_TO_PASS = \
+ 	"libsubdir=$(libsubdir)" \
+ 	"tooldir=$(tooldir)"
+ 
++FLAGS_TO_PASS2 = \
++	"AR=$(AR)" \
++	"AR_FLAGS=$(AR_FLAGS)" \
++	"CFLAGS=$(CFLAGS)" \
++	"DESTDIR=$(DESTDIR)" \
++	"EXTRA_OFILES=$(EXTRA_OFILES)" \
++	"HDEFINES=$(HDEFINES)" \
++	"INSTALL=$(INSTALL)" \
++	"INSTALL_DATA=$(INSTALL_DATA)" \
++	"INSTALL_PROGRAM=$(INSTALL_PROGRAM)" \
++	"LOADLIBES=$(LOADLIBES)" \
++	"RANLIB=$(RANLIB)" \
++	"SHELL=$(SHELL)" \
++	"prefix=$(prefix)" \
++	"exec_prefix=$(exec_prefix)" \
++	"libdir=$(libdir)" \
++	"libsubdir=$(libsubdir)" \
++	"tooldir=$(tooldir)"
++
+ # Dependencies for "all" are set later in the file.
+ all: all-multi
+ 	# Now that we have built all the objects, we need to copy

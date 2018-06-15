@@ -1,0 +1,48 @@
+--- gcc-7.3.0/libstdc++-v3/Makefile.in.orig	2018-04-14 19:15:00.148349323 +0000
++++ gcc-7.3.0/libstdc++-v3/Makefile.in	2018-04-14 19:18:35.209351561 +0000
+@@ -137,6 +137,7 @@ BASIC_FILE_H = @BASIC_FILE_H@
+ cc_for_target4 = @CC@
+ cxx4 = @CXX@
+ cxxcpp4 = @CXXCPP@
++ldflags1 = @LDFLAGS@
+ ifneq (,$(findstring m64,$(CFLAGS)))
+ cc_for_target3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-musl/usr/lib,$(cc_for_target4))
+ cc_for_target2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-musl/usr/bin,$(cc_for_target3))
+@@ -158,6 +159,7 @@ cxxcpp2 = $(subst /x86_64-pc-linux-muslx
+ cxxcpp1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-musl/usr/include,$(cxxcpp2))
+ cxxcpp = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-musl/usr/sys-include,$(cxxcpp1))
+ cxxcpp += --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/
++ldflags = $(ldflags1) -Wl,-melf_x86_64
+ else ifneq (,$(findstring mx32,$(CFLAGS)))
+ cc_for_target3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/x86_64-pc-linux-muslx32/usr/lib,$(cc_for_target4))
+ cc_for_target2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/x86_64-pc-linux-muslx32/usr/bin,$(cc_for_target3))
+@@ -179,6 +181,7 @@ cxxcpp2 = $(subst /x86_64-pc-linux-muslx
+ cxxcpp1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/x86_64-pc-linux-muslx32/usr/include,$(cxxcpp2))
+ cxxcpp = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/x86_64-pc-linux-muslx32/usr/sys-include,$(cxxcpp1))
+ cxxcpp += --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/
++ldflags = $(ldflags1) -Wl,-melf32_x86_64
+ else ifneq (,$(findstring m32,$(CFLAGS)))
+ cc_for_target3 = $(subst /x86_64-pc-linux-muslx32/usr/lib,/i686-pc-linux-musl/usr/lib,$(cc_for_target4))
+ cc_for_target2 = $(subst /x86_64-pc-linux-muslx32/usr/bin,/i686-pc-linux-musl/usr/bin,$(cc_for_target3))
+@@ -200,10 +203,12 @@ cxxcpp2 = $(subst /x86_64-pc-linux-muslx
+ cxxcpp1 = $(subst /x86_64-pc-linux-muslx32/usr/include,/i686-pc-linux-musl/usr/include,$(cxxcpp2))
+ cxxcpp = $(subst /x86_64-pc-linux-muslx32/usr/sys-include,/i686-pc-linux-musl/usr/sys-include,$(cxxcpp1))
+ cxxcpp += --sysroot=/usr/i686-pc-linux-musl/usr/lib/
++ldflags = $(ldflags1) -Wl,-melf_i386
+ else
+ cc_for_target = $(cc_for_target4)
+ cxx = $(cxx4)
+ cxxcpp = $(cxxcpp4)
++ldflags = $(ldflags1)
+ endif
+ CC = $(cc_for_target)
+ CCODECVT_CC = @CCODECVT_CC@
+@@ -256,7 +261,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
+ INSTALL_SCRIPT = @INSTALL_SCRIPT@
+ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+ LD = @LD@
+-LDFLAGS = @LDFLAGS@
++LDFLAGS = $(ldflags)
+ LIBICONV = @LIBICONV@
+ LIBOBJS = @LIBOBJS@
+ LIBS = @LIBS@

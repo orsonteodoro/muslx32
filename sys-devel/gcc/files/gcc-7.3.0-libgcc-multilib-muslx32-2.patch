@@ -1,0 +1,67 @@
+--- a/gcc-7.3.0/config-ml.in.orig	2016-11-15 16:34:02.419649000 +0000
++++ b/gcc-7.3.0/config-ml.in	2018-04-11 00:54:25.160965504 +0000
+@@ -486,6 +486,19 @@ cat > Multi.tem <<\EOF
+ 
+ PWD_COMMAND=$${PWDCMD-pwd}
+ 
++CC_amd64_3=$(subst x86_64-pc-linux-muslx32/usr/sys-include,x86_64-pc-linux-musl/usr/sys-include,$(CC))
++CC_amd64_2=$(subst x86_64-pc-linux-muslx32/usr/include,x86_64-pc-linux-musl/usr/include,$(CC_amd64_3))
++CC_amd64_1=$(subst x86_64-pc-linux-muslx32/usr/lib,x86_64-pc-linux-musl/usr/lib,$(CC_amd64_2))
++CC_amd64=$(subst x86_64-pc-linux-muslx32/usr/bin,x86_64-pc-linux-musl/usr/bin,$(CC_amd64_1))
++CC_x32_3=$(subst x86_64-pc-linux-muslx32/usr/sys-include,x86_64-pc-linux-muslx32/usr/sys-include,$(CC))
++CC_x32_2=$(subst x86_64-pc-linux-muslx32/usr/include,x86_64-pc-linux-muslx32/usr/include,$(CC_x32_3))
++CC_x32_1=$(subst x86_64-pc-linux-muslx32/usr/lib,x86_64-pc-linux-muslx32/usr/lib,$(CC_x32_2))
++CC_x32=$(subst x86_64-pc-linux-muslx32/usr/bin,x86_64-pc-linux-muslx32/usr/bin,$(CC_x32_1))
++CC_x86_3=$(subst x86_64-pc-linux-muslx32/usr/sys-include,i686-pc-linux-musl/usr/sys-include,$(CC))
++CC_x86_2=$(subst x86_64-pc-linux-muslx32/usr/include,i686-pc-linux-musl/usr/include,$(CC_x86_3))
++CC_x86_1=$(subst x86_64-pc-linux-muslx32/usr/lib,i686-pc-linux-musl/usr/lib,$(CC_x86_2))
++CC_x86=$(subst x86_64-pc-linux-muslx32/usr/bin,i686-pc-linux-musl/usr/bin,$(CC_x86_1))
++
+ # FIXME: There should be an @-sign in front of the `if'.
+ # Leave out until this is tested a bit more.
+ multi-do:
+@@ -497,13 +510,34 @@ multi-do:
+ 	  lib=`echo "$${rootpre}" | sed -e 's,^.*/\([^/][^/]*\)/$$,\1,'`; \
+ 	  compiler="$(CC)"; \
+ 	  for i in `$${compiler} --print-multi-lib 2>/dev/null`; do \
++	    cc=""; \
++	    ldflags=""; \
++	    case "$${i}" in \
++	    *64*) \
++	      cc="$(CC_amd64) --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/"; \
++	      ldflags="-Wl,-melf_x86_64"; \
++	      ;; \
++	    *x32*) \
++	      cc="$(CC_x32) --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/"; \
++	      ldflags="-Wl,-melf32_x86_64"; \
++	      ;; \
++	    *32*) \
++	      cc="$(CC_x86) --sysroot=/usr/i686-pc-linux-musl/usr/lib/"; \
++	      ldflags="-Wl,-melf_i386"; \
++	      ;; \
++	    *) \
++	      cc="$(CC)" \
++	      ldflags="" \
++	      ;; \
++	    esac; \
+ 	    dir=`echo $$i | sed -e 's/;.*$$//'`; \
+ 	    if [ "$${dir}" = "." ]; then \
+ 	      true; \
+ 	    else \
+ 	      if [ -d ../$${dir}/$${lib} ]; then \
+ 		flags=`echo $$i | sed -e 's/^[^;]*;//' -e 's/@/ -/g'`; \
+-		if (cd ../$${dir}/$${lib}; $(MAKE) $(FLAGS_TO_PASS) \
++		if (cd ../$${dir}/$${lib}; $(MAKE) $(FLAGS_TO_PASS2) \
++				CC="$${cc}" \
+ 				CFLAGS="$(CFLAGS) $${flags}" \
+ 				CCASFLAGS="$(CCASFLAGS) $${flags}" \
+ 				FCFLAGS="$(FCFLAGS) $${flags}" \
+@@ -515,7 +545,7 @@ multi-do:
+ 				CXXFLAGS="$(CXXFLAGS) $${flags}" \
+ 				LIBCFLAGS="$(LIBCFLAGS) $${flags}" \
+ 				LIBCXXFLAGS="$(LIBCXXFLAGS) $${flags}" \
+-				LDFLAGS="$(LDFLAGS) $${flags}" \
++				LDFLAGS="$(LDFLAGS) $${flags} $${ldflags}" \
+ 				MULTIFLAGS="$${flags}" \
+ 				DESTDIR="$(DESTDIR)" \
+ 				INSTALL="$(INSTALL)" \

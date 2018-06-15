@@ -1,0 +1,11 @@
+--- a/gcc-7.3.0/gcc/gcc.c.orig	2018-04-08 01:14:05.262281006 +0000
++++ b/gcc-7.3.0/gcc/gcc.c	2018-04-08 02:09:29.590315593 +0000
+@@ -863,7 +863,6 @@ proper position among the other output f
+ #ifndef LINK_SSP_SPEC
+ #ifdef TARGET_LIBC_PROVIDES_SSP
+-#define LINK_SSP_SPEC "%{fstack-protector|fstack-protector-all" \
+-		       "|fstack-protector-strong|fstack-protector-explicit:}"
++#define LINK_SSP_SPEC "-lssp_nonshared"
+ #else
+ #define LINK_SSP_SPEC "%{fstack-protector|fstack-protector-all" \
+ 		       "|fstack-protector-strong|fstack-protector-explicit" \

@@ -1,0 +1,55 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2017-06-21 08:55:52.630537000 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-07 16:43:25.225962220 +0000
+@@ -3621,6 +3621,52 @@ am__tar='$${TAR-tar} chof - "$$tardir"'
+ 
+ 
+ 
++if test -n "${with_multisubdir}" ; then
++  case "${CC}" in
++    *m64*)
++      CC=$(echo "${CC}" | \
++	sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-musl/usr/sys-include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-musl/usr/include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/lib|x86_64-pc-linux-musl/usr/lib|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/bin|x86_64-pc-linux-musl/usr/bin|" )
++      CC="${CC} --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/";
++      CXX=$(echo "${CXX}" | \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-musl/usr/include|" \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-musl/usr/sys-include|" )
++      CXXCPP=$(echo "${CXXCPP}" | \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-musl/usr/include|" \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-musl/usr/sys-include|" )
++      ;;
++    *mx32*)
++      CC=$(echo "${CC}" | \
++	sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-muslx32/usr/sys-include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-muslx32/usr/include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/lib|x86_64-pc-linux-muslx32/usr/lib|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/bin|x86_64-pc-linux-muslx32/usr/bin|" )
++      CC="${CC} --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/";
++      CXX=$(echo "${CXX}" | \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-muslx32/usr/include|" \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-muslx32/usr/sys-include|" )
++      CXXCPP=$(echo "${CXXCPP}" | \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-muslx32/usr/include|" \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-muslx32/usr/sys-include|" )
++      ;;
++    *m32*)
++      CC=$(echo "${CC}" | \
++	sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|i686-pc-linux-musl/usr/sys-include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/include|i686-pc-linux-musl/usr/include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/lib|i686-pc-linux-musl/usr/lib|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/bin|i686-pc-linux-musl/usr/bin|" )
++      CC="${CC} --sysroot=/usr/i686-pc-linux-musl/usr/lib/";
++      CXX=$(echo "${CXX}" | \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/include|i686-pc-linux-musl/usr/include|" \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|i686-pc-linux-musl/usr/sys-include|" )
++      CXXCPP=$(echo "${CXXCPP}" | \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/include|i686-pc-linux-musl/usr/include|" \
++       sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|i686-pc-linux-musl/usr/sys-include|" )
++      ;;
++  esac
++fi
+ 
+ 
+ 

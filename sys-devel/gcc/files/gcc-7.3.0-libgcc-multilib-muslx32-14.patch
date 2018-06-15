@@ -1,0 +1,37 @@
+--- a/gcc-7.3.0/libatomic/configure.orig	2018-01-25 08:17:54.135232057 +0000
++++ b/gcc-7.3.0/libatomic/configure	2018-04-08 15:32:49.136817072 +0000
+@@ -3213,6 +3213,34 @@ case ${enable_version_specific_runtime_l
+     ;;
+ esac
+ 
++if test -n "${with_multisubdir}" ; then
++  case "${CC}" in
++    *m64*)
++      CC=$(echo "${CC}" | \
++	sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-musl/usr/sys-include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-musl/usr/include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/lib|x86_64-pc-linux-musl/usr/lib|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/bin|x86_64-pc-linux-musl/usr/bin|" )
++      CC="${CC} --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/";
++      ;;
++    *mx32*)
++      CC=$(echo "${CC}" | \
++	sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|x86_64-pc-linux-muslx32/usr/sys-include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/include|x86_64-pc-linux-muslx32/usr/include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/lib|x86_64-pc-linux-muslx32/usr/lib|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/bin|x86_64-pc-linux-muslx32/usr/bin|" )
++      CC="${CC} --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/";
++      ;;
++    *m32*)
++      CC=$(echo "${CC}" | \
++	sed -e "s|x86_64-pc-linux-muslx32/usr/sys-include|i686-pc-linux-musl/usr/sys-include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/include|i686-pc-linux-musl/usr/include|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/lib|i686-pc-linux-musl/usr/lib|" \
++	    -e "s|x86_64-pc-linux-muslx32/usr/bin|i686-pc-linux-musl/usr/bin|" )
++      CC="${CC} --sysroot=/usr/i686-pc-linux-musl/usr/lib/";
++      ;;
++  esac
++fi
+ 
+ 
+ # Check the compiler.

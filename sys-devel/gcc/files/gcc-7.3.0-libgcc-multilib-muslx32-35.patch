@@ -1,0 +1,39 @@
+--- a/gcc-7.3.0/libstdc++-v3/configure.orig	2018-04-21 07:08:13.898188112 +0000
++++ b/gcc-7.3.0/libstdc++-v3/configure	2018-04-21 07:16:08.938193054 +0000
+@@ -84292,7 +84292,35 @@ old_archive_from_new_cmds=$lt_old_archiv
+ old_archive_from_expsyms_cmds=$lt_old_archive_from_expsyms_cmds_CXX
+ 
+ # Commands used to build a shared archive.
+-archive_cmds=$lt_archive_cmds_CXX
++case "${CC}" in
++*m64*)
++archive_cmds=$(echo "${lt_archive_cmds_CXX}" | \
++  sed -r -e "s|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/64/|g" \
++    -e "s|/64[/]+../../../../|/64/../../../../../|g" \
++    -e "s|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-musl/lib|g" \
++    -e "s|../libx32|../lib64|g" \
++    -e "s|../x86_64-pc-linux-muslx32/lib|../x86_64-pc-linux-muslx32/lib64|g" \
++    -e "s|-L/usr/x86_64-pc-linux-muslx32/usr/lib|-L/usr/x86_64-pc-linux-musl/usr/lib|g" )
++  ;;
++*mx32*)
++archive_cmds=$(echo "${lt_archive_cmds_CXX}" | \
++  sed -r -e "s|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/|g" \
++    -e "s|[/]+../../../../|/../../../../../|g" \
++    -e "s|/usr/x86_64-pc-linux-muslx32/lib|/usr/x86_64-pc-linux-muslx32/lib|g" \
++    -e "s|../libx32|../libx32|g" \
++    -e "s|../x86_64-pc-linux-muslx32/lib|../x86_64-pc-linux-muslx32/lib|g" \
++    -e "s|-L/usr/x86_64-pc-linux-muslx32/usr/lib|-L/usr/x86_64-pc-linux-muslx32/usr/lib|g" )
++  ;;
++*m32*)
++archive_cmds=$(echo "${lt_archive_cmds_CXX}" | \
++  sed -r -e "s|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0|/usr/lib/gcc/x86_64-pc-linux-muslx32/7.3.0/32/|g" \
++    -e "s|/32[/]+../../../../|/32/../../../../../|g" \
++    -e "s|/usr/x86_64-pc-linux-muslx32/lib|/usr/i686-pc-linux-musl/lib|g" \
++    -e "s|../libx32|../lib32|g" \
++    -e "s|../x86_64-pc-linux-muslx32/lib|../x86_64-pc-linux-muslx32/lib32|g" \
++    -e "s|-L/usr/x86_64-pc-linux-muslx32/usr/lib|-L/usr/i686-pc-linux-musl/usr/lib|g" )
++  ;;
++esac
+ archive_expsym_cmds=$lt_archive_expsym_cmds_CXX
+ 
+ # Commands used to build a loadable module if different from building

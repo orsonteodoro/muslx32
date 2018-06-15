@@ -1,0 +1,21 @@
+--- a/gcc-7.3.0/libgomp/configure.orig	2018-04-08 02:29:17.118327948 +0000
++++ b/gcc-7.3.0/libgomp/configure	2018-04-08 03:10:13.626353506 +0000
+@@ -2589,6 +2589,18 @@ fi
+ ## Main body of script. ##
+ ## -------------------- ##
+ 
++case "${CC}" in
++  *m32*)
++    LDFLAGS="${LDFLAGS} -L/usr/i686-pc-linux-musl/usr/lib -lssp_nonshared "
++    ;;
++  *m64*)
++    LDFLAGS="${LDFLAGS} -L/usr/x86_64-pc-linux-musl/usr/lib -lssp_nonshared "
++    ;;
++  *mx32*)
++    LDFLAGS="${LDFLAGS} -L/usr/x86_64-pc-linux-muslx32/usr/lib -lssp_nonshared "
++    ;;
++esac
++
+ ac_ext=c
+ ac_cpp='$CPP $CPPFLAGS'
+ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'

@@ -1,0 +1,47 @@
+--- a/gcc-7.3.0/libgcc/Makefile.in.orig	2018-04-18 22:43:19.446075070 +0000
++++ b/gcc-7.3.0/libgcc/Makefile.in	2018-04-19 02:24:56.866213420 +0000
+@@ -1020,9 +1020,43 @@ libunwind$(SHLIB_EXT): $(libunwind-s-obj
+ 
+ endif
+ 
++CC_amd64_3 = $(subst x86_64-pc-linux-muslx32/usr/sys-include,x86_64-pc-linux-musl/usr/sys-include,$(CC))
++CC_amd64_2 = $(subst x86_64-pc-linux-muslx32/usr/include,x86_64-pc-linux-musl/usr/include,$(CC_amd64_3))
++CC_amd64_1 = $(subst x86_64-pc-linux-muslx32/usr/lib,x86_64-pc-linux-musl/usr/lib,$(CC_amd64_2))
++CC_amd64 = $(subst x86_64-pc-linux-muslx32/usr/bin,x86_64-pc-linux-musl/usr/bin,$(CC_amd64_1))
++CC_x32_3 = $(subst x86_64-pc-linux-muslx32/usr/sys-include,x86_64-pc-linux-muslx32/usr/sys-include,$(CC))
++CC_x32_2 = $(subst x86_64-pc-linux-muslx32/usr/include,x86_64-pc-linux-muslx32/usr/include,$(CC_x32_3))
++CC_x32_1 = $(subst x86_64-pc-linux-muslx32/usr/lib,x86_64-pc-linux-muslx32/usr/lib,$(CC_x32_2))
++CC_x32 = $(subst x86_64-pc-linux-muslx32/usr/bin,x86_64-pc-linux-muslx32/usr/bin,$(CC_x32_1))
++CC_x86_3 = $(subst x86_64-pc-linux-muslx32/usr/sys-include,i686-pc-linux-musl/usr/sys-include,$(CC))
++CC_x86_2 = $(subst x86_64-pc-linux-muslx32/usr/include,i686-pc-linux-musl/usr/include,$(CC_x86_3))
++CC_x86_1 = $(subst x86_64-pc-linux-muslx32/usr/lib,i686-pc-linux-musl/usr/lib,$(CC_x86_2))
++CC_x86 = $(subst x86_64-pc-linux-muslx32/usr/bin,i686-pc-linux-musl/usr/bin,$(CC_x86_1))
++
+ # Build the standard GCC startfiles and endfiles.
+ ALL_CRT_CFLAGS = $(CFLAGS) $(CRTSTUFF_CFLAGS) $(INCLUDES)
+-crt_compile = $(CC) $(ALL_CRT_CFLAGS) -o $@ $(compile_deps)
++crt_compile = \
++        cc=""; \
++        ldflags=""; \
++        case "$(CFLAGS)" in \
++        *64*) \
++          cc="$(CC_amd64) -B/usr/x86_64-pc-linux-musl/usr/bin/ -B/usr/x86_64-pc-linux-musl/usr/lib/ -I /usr/x86_64-pc-linux-musl/usr/include -I /usr/x86_64-pc-linux-musl/usr/sys-include --sysroot=/usr/x86_64-pc-linux-musl/usr/lib/"; \
++          ldflags="-Wl,-melf_x86_64"; \
++          ;; \
++        *x32*) \
++          cc="$(CC_x32) -B/usr/x86_64-pc-linux-muslx32/usr/bin/ -B/usr/x86_64-pc-linux-muslx32/usr/lib/ -I /usr/x86_64-pc-linux-muslx32/usr/include -I /usr/x86_64-pc-linux-muslx32/usr/sys-include --sysroot=/usr/x86_64-pc-linux-muslx32/usr/lib/"; \
++          ldflags="-Wl,-melf32_x86_64"; \
++          ;; \
++        *32*) \
++          cc="$(CC_x86) -B/usr/i686-pc-linux-musl/usr/bin/ -B/usr/i686-pc-linux-musl/usr/lib/ -I /usr/i686-pc-linux-musl/usr/include -I /usr/i686-pc-linux-musl/usr/sys-include --sysroot=/usr/i686-pc-linux-musl/usr/lib/"; \
++          ldflags="-Wl,-melf_i386"; \
++          ;; \
++        *) \
++          cc="$(CC)" \
++          ldflags="" \
++          ;; \
++        esac; \
++	$${cc} $(ALL_CRT_CFLAGS) -o $@ $(compile_deps)
+ 
+ ifeq ($(CUSTOM_CRTSTUFF),)
+ # Compile two additional files that are linked with every program
