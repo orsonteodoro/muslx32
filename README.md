@@ -122,6 +122,7 @@ phpmyadmin | Shows database tables and rows
 mariadb | Tested with phpmyadmin
 nginx | Shows "it works!"
 gentoo-sources or any linux kernel | It may require you to manually patch it to use the BFD linker.  See https://github.com/orsonteodoro/muslx32/issues/3.
+grub2-install | Works as amd64 or as x86 abi, but it doesn't work natively in x32 use lilo.  By default, the profile will use the x86 abi.
 
 ### Buggy
 
@@ -148,10 +149,13 @@ p7zip | 7zip compression
 pm-utils | suspending or hibernating computer
 ntfs3g | for connecting to windows partitions
 genkernel | see https://github.com/orsonteodoro/muslx32/issues/4 .  Also, it compiled the initramfs without problems with the --no-zfs flag.
+rust | It should work as amd64 or x86 abi.  The profile will select one of those but ban compiling as x32 abi.
 
 ### Broken packages
 
 (Do not use the ebuild and associated patches from this overlay if broken if you are planning to fix it.  My personal patches may add more complications so do it from scratch again): 
+
+Many of these package should work without problems as amd64 abi.  The ebuilds haven't been converted yet.  The problem is the build time also.
 
 package | notes
 --- | ---
@@ -164,7 +168,6 @@ wayland | I don't know if it is just weston causing the problem
 weston | Segfaults
 pulseaudio | It cannot connect to pavucontrol or pulseaudio apps
 evdev | Semi broken and quirky; dev permissions need to be manually set or devices reloaded. init script fixes are in these instructions
-grub2-install | It doesn't work natively in x32 use lilo.  you can still install grub from amd64 profile or partiton.
 xterm | It works in root but not as user
 mono | It is for C#.  The patches from PLD Linux are incomplete.  Details of the patch can be found on https://www.mail-archive.com/pld-cvs-commit@lists.pld-linux.org/msg361561.html for what needs to be done.  From my previous attempt, the fix is not trivial which PLD would suggest.
 nodejs | V8 JavaScript engine, which it is based off of, doesn't support x32.
@@ -178,11 +181,11 @@ libreoffice | Loads splash but crashes.
 gparted | If you use hfs, there may be higher risk of data loss.  dependencies that rely on the hfs use flag and the gparted program need to be checked since patches to dependencies were manually applied.  sys-fs/diskdev_cmds is the package in question if you are worrying about which one I might have screwed up on manually patching. it shows some partitions on other drives but didn't show all paritions on 2TB drive and some other drives.
 obs-studio | Segfaults on start.
 cheese | It could not detect webcam.  Either the package or library or kernel driver is broken.  It shows limited gui.
-networkmanager | It complains when trying to run daemon.
+networkmanager | It complains when trying to run daemon.  There was work on trying to get this to work on amd64 abi.  Not fully tested.
 eog | Segfaults.  It could be library problem.  Use GPicView instead.
 mirage | Segfaults.  It could be library problem. Use GPicView instead.
 physlock | Runtime problem: physlock: /dev/null/utmp: Not a directory
-weechat | Connecting to server problem.  Use hexchat instead.  It says: sending data to server: error 9 Bad file descriptor
+weechat | The problem in x32 abi native is the connecting to server problem.  Use hexchat instead.  It says: sending data to server: error 9 Bad file descriptor.  If you port the ebuild to amd64, it should work with ease.
 
 ### Notes
 
@@ -193,6 +196,8 @@ It is recommended you build the image on another machine with multicore support 
 The web browsers that currently work are only dillo and surf with webkitgtk crosscompiled as x86 or amd64 abi for simple websites.
 
 The patches for multilib support may reference gcc 7.3.0 expecially the system packages (emerge --system).
+
+The system has a preference for x86 abi when x32 is banned for a particular ebuild.  One reason why x86 abi was chosen is to limit the virtual address range or bugs related to addressing, but amd64 abi tested working fine on this profile.
 
 ### Instructions for creating the muslx32 toolchain
 
