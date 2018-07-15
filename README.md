@@ -9,7 +9,7 @@ This profile uses a 64-bit linux kernel with x32 ABI compatibility.  All of the 
 
 The current goal is trying to get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
-Multilib GCC and multilib musl will be coming.  It works but not uploaded.  This will allow for x32 as the default ABI but allow for the profile which is currently uni-lib to run amd64 or x86 only programs, which is required for programs like wine, networkmanager, firefox, nodejs, and grub-install.
+Currently Multilib GCC and multilib musl works but not all the time for some packages if x32 ABI is the default.  This will allow for x32 as the default ABI but allow for the profile to run amd64 or x86 only programs, which is required for programs like wine, networkmanager, firefox, nodejs, and grub-install.
 
 Getting 64 bit grub to compile using multilib musl.
 
