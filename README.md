@@ -121,7 +121,7 @@ php | Shows phpinfo for apache.  php-fpm segfaults with nginx and doesn't show p
 phpmyadmin | Shows database tables and rows
 mariadb | Tested with phpmyadmin
 nginx | Shows "it works!"
-gentoo-sources or any linux kernel | It may require you to manually patch it to use the BFD linker.  See https://github.com/orsonteodoro/muslx32/issues/3.
+gentoo-sources or any linux kernel | It may require you to manually patch it to use the BFD linker.  See https://github.com/orsonteodoro/muslx32/issues/3.  Also see the muslx32toolkit at the bottom of the page which has scripts to build the kernel.  There may seem to be a problem with maybe initramfs compression for lzma so try bzip2.
 grub2-install | Works as amd64 or as x86 ABI, but it doesn't work natively in x32.  By default, the profile will use the x86 ABI.
 coreutils | Works as amd64 ABI or x86 ABI.  It was buggy on x32 ABI so it was banned.  Preference for x86 ABI was chosen.
 
