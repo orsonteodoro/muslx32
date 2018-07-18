@@ -3,15 +3,13 @@ This is an unofficial muslx32 (musl libc and x32 ABI) overlay for Gentoo Linux
 
 ### About the muslx32 profile
 
-This profile uses a 64-bit linux kernel with x32 ABI compatibility.  All of the userland libraries and programs are built as native x32 ABI without duplicate 64-bit and 32-bit versions (a.k.a. multilib).  The profile contains patches that fix x32 problems and musl problems.  Other overlays seperate them, but in this overlay we combine them.
+This profile uses a 64-bit linux kernel with x32 ABI compatibility.  Almost all of the userland libraries and programs are built as native x32 ABI.  The profile contains patches that fix x32 problems and musl problems.  Other overlays seperate them, but in this overlay we combine them.
 
 ### Current goals
 
 The current goal is trying to get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
 
-Currently Multilib GCC and multilib musl works but not all the time for some packages if x32 ABI is the default.  This will allow for x32 as the default ABI but allow for the profile to run amd64 or x86 only programs, which is required for programs like wine, networkmanager, firefox, nodejs, and grub-install.
-
-Getting 64 bit grub to compile using multilib musl.
+Currently Multilib GCC and multilib musl works but not all the time for some packages if x32 ABI is the default.  This will allow for x32 as the default ABI but allow for the profile to run amd64 or x86 only programs, which is required for programs like wine, networkmanager, firefox, nodejs, and grub-install which upstream refuses to support x32 for some of these packages.
 
 ### Why musl and x32 and Gentoo? 
 
