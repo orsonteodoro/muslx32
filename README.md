@@ -3,67 +3,121 @@ This is an unofficial muslx32 (musl libc and x32 ABI) overlay for Gentoo Linux
 
 ### About the muslx32 profile
 
-This profile uses a 64-bit linux kernel with x32 ABI compatibility.  Almost all of the userland libraries and programs are built as native x32 ABI.  The profile contains patches that fix x32 problems and musl problems.  Other overlays seperate them, but in this overlay we combine them.
+This profile uses a 64-bit linux kernel with x32 ABI compatibility.  Almost all
+of the userland libraries and programs are built as native x32 ABI.  The
+profile contains patches that fix x32 problems and musl problems.  Other
+overlays seperate them, but in this overlay we combine them.
 
 ### Current goals
 
-The current goal is trying to get popular packages and necessary developer tools working on the platform/profile for widespread adoption.
+The current goal is trying to get popular packages and necessary developer
+tools working on the platform/profile for widespread adoption.
 
-Currently Multilib GCC and multilib musl works but not all the time for some packages if x32 ABI is the default.  This will allow for x32 as the default ABI but allow for the profile to run amd64 or x86 only programs, which is required for programs like wine, networkmanager, firefox, nodejs, and grub-install which upstream refuses to support x32 for some of these packages.
+Currently Multilib GCC and multilib musl works but not all the time for some
+packages if x32 ABI is the default.  This will allow for x32 as the default ABI
+but allow for the profile to run amd64 or x86 only programs, which is required
+for programs like wine, networkmanager, firefox, nodejs, and grub-install which
+upstream refuses to support x32 for some of these packages.
 
 ### Why musl and x32 and Gentoo? 
 
-Musl because it is lightweight.  x32 ABI because it reduces memory usage.  Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs resulting in a big slow down.  I was really disappointed about Alpine and the shortcomings of the other previously tested distros.  It was many times slower than the RAM based distros such as Linux Mint and Slax, so there was a motivation to work on muslx32 for Gentoo.  Tiny Linux and Slax packages were pretty much outdated.  blueness said that he wouldn't make muslx32 as top priority or it wasn't his job to do or after the hardened GCC patches for the platform were ready, so I decided to just do it myself without the hardened part.
+Musl because it is lightweight.  x32 ABI because it reduces memory usage.
+Alpine Linux, an embedded mini distro, had Firefox tagging my USB for many tabs
+resulting in a big slow down.  I was really disappointed about Alpine and the
+shortcomings of the other previously tested distros.  It was many times slower
+than the RAM based distros such as Linux Mint and Slax, so there was a
+motivation to work on muslx32 for Gentoo.  Tiny Linux and Slax packages were
+pretty much outdated.  blueness said that he wouldn't make muslx32 as top
+priority or it wasn't his job to do or after the hardened GCC patches for the
+platform were ready, so I decided to just do it myself without the hardened
+part.
 
 ### What is x32?
 
-x32 ABI is 32-bit (4-bytes) per integer, long, pointer using all of the x86_64 general purpose registers identified as (rax,rbx,rcx,r11-r15,rsi,rdi) and using sse registers.  Long-long integers are 8 bytes.  C/C++ programs will use __ILP32__ preprocessor checks to distinguish between 32/64 bit systems.  The build system may also compare sizeof(void*) to see if it has 4 bytes for 32-bit for 8 bytes and 64-bit for LP64 (longs are 8 bytes as well as pointers) and __x86_64__ defined.  
+x32 ABI is 32-bit (4-bytes) per integer, long, pointer using all of the x86_64
+general purpose registers identified as (rax,rbx,rcx,r11-r15,rsi,rdi) and using
+sse registers.  Long-long integers are 8 bytes.  C/C++ programs will use
+__ILP32__ preprocessor checks to distinguish between 32/64 bit systems.  The
+build system may also compare sizeof(void*) to see if it has 4 bytes for 32-bit
+for 8 bytes and 64-bit for LP64 (longs are 8 bytes as well as pointers) and
+__x86_64__ defined.  
 
 ### Advantages of this platform
 
 #### x32 ABI vs x86 ABI
-x32 is better than x86 because the compiler can utilize the x86_64 calling convention by dumping arguments to the registers first before dumping additional arguments on the stack.  The compiler can futher optimize the code by reducing the number of instructions executed and utilize the full register and 64 bit instructions.
+x32 is better than x86 because the compiler can utilize the x86_64 calling
+convention by dumping arguments to the registers first before dumping
+additional arguments on the stack.  The compiler can futher optimize the code
+by reducing the number of instructions executed and utilize the full register
+and 64 bit instructions.
 
 #### x32 ABI vs x86_64 ABI
-x32 is better than x86_64 because of reduced pointer size and reduced virtual space.  Reduced virtual space is better safeguard against memory hogs and better memory/cache locality to reduce cache/page miss in theory.
+x32 is better than x86_64 because of reduced pointer size and reduced virtual
+space.  Reduced virtual space is better safeguard against memory hogs and better
+memory/cache locality to reduce cache/page miss in theory.
 
 ### Disadvantages of the unilib muslx32 platform
 
-No binary exclusive packages work (e.g. adobe flash, spotify, genymotion, virtualbox, etc.) since no major distro currently completely supports it so no incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are not enabled.  Some assembly based packages don't work because they need to be hand edited.  It is not multilib meaning that there may be problems with packages that only offer x86 or x86_64 like wine [which has no x32 support].
+No binary exclusive packages work (e.g. adobe flash, spotify, genymotion,
+virtualbox, etc.) since no major distro currently completely supports it so no
+incentive to offer a x32 ABI version.  Some SIMD assembly optimizations are
+not enabled.  Some assembly based packages don't work because they need to be
+hand edited.  It is not multilib meaning that there may be problems with
+packages that only offer x86 or x86_64 like wine [which has no x32 support].
 
-For Adobe Flash try using Shumway Firefox addon.  It may or not work for some content.
+For Adobe Flash try using Shumway Firefox addon.  It may or not work for some
+content.
 
-It should be possible to run glibc only programs with chroot, so you can use spotify in that.
+It should be possible to run glibc only programs with chroot, so you can use
+spotify in that.
 
 ### Who should use muslx32?
 
 Early adopters of 64 bit and older PCs and laptops
 
-Those that enjoy the challenge of fixing bugs especially assembly bugs and those related to musl.
+Those that enjoy the challenge of fixing bugs especially assembly bugs and those
+related to musl.
 
 ### Who should not use muslx32?
 
-Whenver there is high risk involved.  Some situations like online test taking require Adobe Flash to work.  Online banking and commerce or online shopping, you should not use this because the browser Firefox is outdated and hard to fix.
+Whenver there is high risk involved.  Some situations like online test taking
+require Adobe Flash to work.  Online banking and commerce or online shopping,
+you should not use this because the browser Firefox is outdated and hard to fix.
 
 ### Other recommendations
 
-Use -Os and use kernel z3fold to significantly reduce swapping.  Use cache to ram for Firefox if using Gentoo from a usbstick.
+Use -Os and use kernel z3fold to significantly reduce swapping.  Use cache to
+ram for Firefox if using Gentoo from a usbstick.
 
 ### Sources and credits of patches
 
-Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void Linux, debian x32 port (Adam Borowski), musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi)) .... (will update this list)
+Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa),
+Void Linux, debian x32 port (Adam Borowski), 
+musl overlay (Anthony G. Basile/blueness), musl-extras (Aric Belsito/lluixhi))
+.... (will update this list)
 
 ### What you can do to help?
 
-* Clean the ebuilds with proper x32 ABI and musl CHOST checks and submit them to Gentoo.
-* Write/Fix assembly code for the jit based packages and assembly based packages.
-* Test and patch new ebuilds for these use cases or stakeholders: server, web, gaming, etc, entertainment, developer, science, business, graphic artists.
-* Check and fix packages that use elf_x86_64 when it should link using elf32_x86_64.
-* Check and fix packages that use constant numbers for syscalls.  The syscall needs to added/or'ed by __X32_SYSCALL_BIT or 0x40000000.
-* Check all sizeof(void*) and similar to be sure they are in the 4G address range if porting from 64 bit code.
-* Replace all important longs that assume 64-bit as long long.  In x32, long is actual 4 bytes.
-* Check and fix the build system scripts--inspect both the linker flags and the compiler flags and constants--if it did not provide a special case for x32 ABI.
-* Convert ebuilds to multilib to cross compile them if it fails to work on x32 ABI.  Make corrections to these packages in profiles/default/linux/musl/amd64/x32/package.use.force .
+* Clean the ebuilds with proper x32 ABI and musl CHOST checks and submit them
+to Gentoo.
+* Write/Fix assembly code for the jit based packages and assembly based
+packages.
+* Test and patch new ebuilds for these use cases or stakeholders: server, web,
+gaming, etc, entertainment, developer, science, business, graphic artists.
+* Check and fix packages that use elf_x86_64 when it should link using
+elf32_x86_64.
+* Check and fix packages that use constant numbers for syscalls.  The syscall
+needs to added/or'ed by __X32_SYSCALL_BIT or 0x40000000.
+* Check all sizeof(void*) and similar to be sure they are in the 4G address
+range if porting from 64 bit code.
+* Replace all important longs that assume 64-bit as long long.  In x32, long is
+actual 4 bytes.
+* Check and fix the build system scripts--inspect both the linker flags and
+the compiler flags and constants--if it did not provide a special case for x32
+ABI.
+* Convert ebuilds to multilib to cross compile them if it fails to work on x32
+ABI.  Make corrections to these packages in
+profiles/default/linux/musl/amd64/x32/package.use.force .
 
 ### Where can we meet on IRC?
 
@@ -71,7 +125,8 @@ Some patches for musl libc and x32 came from Alpine Linux (Natanael Copa), Void 
 
 ### Working packages
 
-Here are some major packages listed that may be difficult to port but happen to work.
+Here are some major packages listed that may be difficult to port but happen to
+work.
 
 package | notes
 --- | ---
@@ -187,22 +242,48 @@ weechat | The problem in x32 ABI native is the connecting to server problem.  Us
 
 ### Notes
 
-sys-kernel/genkernel contains subdir_mount use flag and custom patch only found in this overlay.  This will allow you to keep both the crossdev toolchain and the crossdev profile on the same partition and keep everything in-place.  Add subdir_mount=/usr/x86_64-pc-linux-muslx32 to your kernel parameters to your bootloader and both root= and real_root= point to your partition (e.g. /dev/sda15).  We keep the crossdev toolchain so we can compile ghc cross compiler and to fix musl just in case.  This also prevents any file transfer human mistakes from the old documentation, which ask you to move everything from the root into a trash folder (`/mnt/<foldername>/trash`) and pull everything from `/mnt/<foldername>/trash/usr/x86_64-pc-linux-muslx32` into the root of the partition /mnt/<foldername>.
+sys-kernel/genkernel contains subdir_mount use flag and custom patch only found
+in this overlay.  This will allow you to keep both the crossdev toolchain and
+the crossdev profile on the same partition and keep everything in-place.  Add
+subdir_mount=/usr/x86_64-pc-linux-muslx32 to your kernel parameters to your
+bootloader and both root= and real_root= point to your partition (e.g.
+/dev/sda15).  We keep the crossdev toolchain so we can compile ghc cross
+compiler and to fix musl just in case.  This also prevents any file transfer
+human mistakes from the old documentation, which ask you to move everything
+from the root into a trash folder (`/mnt/<foldername>/trash`) and pull
+everything from `/mnt/<foldername>/trash/usr/x86_64-pc-linux-muslx32` into the
+root of the partition /mnt/<foldername>.
 
-It is recommended you build the image on another machine with multicore support if you are using a old unicore computer.
+It is recommended you build the image on another machine with multicore support
+if you are using a old unicore computer.
 
-The web browsers that currently work are only dillo and surf with webkitgtk crosscompiled as x86 or amd64 ABI for simple websites.
+The web browsers that currently work are only dillo and surf with webkitgtk
+crosscompiled as x86 or amd64 ABI for simple websites.
 
-The patches for multilib support may reference GCC 7.3.0 expecially the system packages (emerge --system).
+The patches for multilib support may reference GCC 7.3.0 expecially the system
+packages (emerge --system).
 
-The system has a preference for x86 ABI when x32 is banned for a particular ebuild.  One reason why x86 ABI was chosen is to limit the virtual address range or bugs related to addressing, but amd64 ABI tested working fine on this profile.
+The system has a preference for x86 ABI when x32 is banned for a particular
+ebuild.  One reason why x86 ABI was chosen is to limit the virtual address
+range or bugs related to addressing, but amd64 ABI tested working fine on this
+profile.
 
-Many of the major problems are x32 problems not musl problems.  If the package works on Alpine Linux, the other musl distro, it is likely to work.
+Many of the major problems are x32 problems not musl problems.  If the package
+works on Alpine Linux, the other musl distro, it is likely to work.
 
 ### Instructions for creating the muslx32 toolchain
 
-You need the muslx32toolkit below.  It has convenience scripts to build stage3 and stage4 images.  You can build the images using your existing Gentoo installation.  It can fully automate building from crossdev toolchain, to stage 3 image, to stage 4 image, and finally to stage 4 extras.
+You need the muslx32toolkit below.  It has convenience scripts to build stage3
+and stage4 images.  You can build the images using your existing Gentoo
+installation.  It can fully automate building from crossdev toolchain, to
+stage 3 image, to stage 4 image, and finally to stage 4 extras.
 
-Building the stage 3/4 image will take around 2 days [1 day up to stage4, 1 day for stage 4 extras (x11,firefox,etc)] with the muslx32toolkit which has been cut from the old documented method which took weeks.  You can still follow the old method by just reading the scripts and preforming the steps by hand to understand how to build an image using a cross compiler and cross toolchain infrastructure (i.e. `<crossdev-profile-triplet>-emerge -e system`) for those more interested in how crossdev works.
+Building the stage 3/4 image will take around 2 days [1 day up to stage4, 1 day
+for stage 4 extras (x11,firefox,etc)] with the muslx32toolkit which has been
+cut from the old documented method which took weeks.  You can still follow the
+old method by just reading the scripts and preforming the steps by hand to
+understand how to build an image using a cross compiler and cross toolchain
+infrastructure (i.e. `<crossdev-profile-triplet>-emerge -e system`) for those
+more interested in how crossdev works.
 
 https://github.com/orsonteodoro/muslx32toolkit
