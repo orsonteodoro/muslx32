@@ -80,7 +80,7 @@ get_abi_var() {
 	local var="${flag}_${abi}"
 
 #
-# oiledmachine-overlay notes: check if /usr/lib/gcc/ needs to be changed to
+# muslx32-overlay notes: check if /usr/lib/gcc/ needs to be changed to
 # /usr/lib64/gcc/ or /usr/libx32/gcc/ using same assumptions as 17.1 profiles
 # and lib changes.
 #

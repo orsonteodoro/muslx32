@@ -1,0 +1,105 @@
+--- multilib.eclass.orig	2020-09-11 08:25:01.000000000 -0700
++++ multilib.eclass	2020-11-24 19:15:23.369937697 -0800
+@@ -78,6 +78,56 @@ get_abi_var() {
+ 	local flag=$1
+ 	local abi=${2:-${ABI:-${DEFAULT_ABI:-default}}}
+ 	local var="${flag}_${abi}"
++
++#
++# muslx32-overlay notes: check if /usr/lib/gcc/ needs to be changed to
++# /usr/lib64/gcc/ or /usr/libx32/gcc/ using same assumptions as 17.1 profiles
++# and lib changes.
++#
++
++	if [[ "${CHOST_default}" =~ "muslx32" ]] ; then
++		if [[ "${PN}" == "boost" ]] ; then
++			if [[ "${flag}" == "CFLAGS" || "${flag}" == "CXXFLAGS" ]] ; then
++				if [[ "${abi}" == "amd64" ]] ; then
++					echo "${CFLAGS2_amd64} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/64"
++					return
++				elif [[ "${abi}" == "x86" ]] ; then
++					echo "${CFLAGS2_x86} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/32"
++					return
++				elif [[ "${abi}" == "x32" || "${abi}" == "default" ]] ; then
++					echo "${CFLAGS2_x32} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)"
++					return
++				fi
++			fi
++		#elif [[ "${PN}" == "chromium" ]] ; then
++		#	if [[ "${flag}" == "CFLAGS" || "${flag}" == "CXXFLAGS" ]] ; then
++		#		if [[ "${abi}" == "amd64" ]] ; then
++		#			echo "${CFLAGS3_amd64} -I${S}/base/third_party/libevent/compat/ -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/64"
++		#			return
++		#		elif [[ "${abi}" == "x86" ]] ; then
++		#			echo "${CFLAGS3_x86} -I${S}/base/third_party/libevent/compat/ -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/32"
++		#			return
++		#		elif [[ "${abi}" == "x32" || "${abi}" == "default" ]] ; then
++		#			echo "${CFLAGS3_x32} -I${S}/base/third_party/libevent/compat/ -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)"
++		#			return
++		#		fi
++		#	fi
++		else
++			if [[ "${flag}" == "CFLAGS" || "${flag}" == "CXXFLAGS" ]] ; then
++				if [[ "${abi}" == "amd64" ]] ; then
++					echo "${CFLAGS_amd64} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/64"
++					return
++				elif [[ "${abi}" == "x86" ]] ; then
++					echo "${CFLAGS_x86} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/32"
++					return
++				elif [[ "${abi}" == "x32" || "${abi}" == "default" ]] ; then
++					echo "${CFLAGS_x32} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)"
++					return
++				fi
++			fi
++		fi
++	fi
++
+ 	echo ${!var}
+ }
+ 
+@@ -334,6 +384,7 @@ multilib_env() {
+ 			export CFLAGS_x86=${CFLAGS_x86--m32}
+ 			export CHOST_x86=${CTARGET/x86_64/i686}
+ 			CHOST_x86=${CHOST_x86/%-gnux32/-gnu}
++			CHOST_x86=${CHOST_x86/%-muslx32/-musl}
+ 			export CTARGET_x86=${CHOST_x86}
+ 			if [[ ${SYMLINK_LIB} == "yes" ]] ; then
+ 				export LIBDIR_x86="lib32"
+@@ -343,16 +394,18 @@ multilib_env() {
+ 
+ 			export CFLAGS_amd64=${CFLAGS_amd64--m64}
+ 			export CHOST_amd64=${CTARGET/%-gnux32/-gnu}
++			export CHOST_amd64=${CTARGET/%-muslx32/-musl}
+ 			export CTARGET_amd64=${CHOST_amd64}
+ 			export LIBDIR_amd64="lib64"
+ 
+ 			export CFLAGS_x32=${CFLAGS_x32--mx32}
+ 			export CHOST_x32=${CTARGET/%-gnu/-gnux32}
++			export CHOST_x32=${CTARGET/%-musl/-muslx32}
+ 			export CTARGET_x32=${CHOST_x32}
+ 			export LIBDIR_x32="libx32"
+ 
+ 			case ${CTARGET} in
+-			*-gnux32)
++			*-gnux32|*-muslx32)
+ 				: ${MULTILIB_ABIS=x32 amd64 x86}
+ 				: ${DEFAULT_ABI=x32}
+ 				;;
+@@ -549,6 +602,17 @@ multilib_toolchain_setup() {
+ 		export PKG_CONFIG_PATH=${EPREFIX}/usr/share/pkgconfig
+ 		export PKG_CONFIG_SYSTEM_LIBRARY_PATH=${EPREFIX}/usr/$(get_libdir)
+ 	fi
++
++	if [[ "${CHOST_default}" =~ "muslx32" ]] ; then
++		#if [[ "${PN}" == "boost" || "${PN}" == "chromium" ]] ; then
++		if [[ "${PN}" == "boost" ]] ; then
++			export CC="${CHOST_default}-gcc $(get_abi_CFLAGS)"
++			export CXX="${CHOST_default}-g++ $(get_abi_CFLAGS)"
++		elif [[ "${PN}" == "chromium" ]] ; then
++			export CC="${CHOST_default}-gcc "
++			export CXX="${CHOST_default}-g++ "
++		fi
++	fi
+ }
+ 
+ fi

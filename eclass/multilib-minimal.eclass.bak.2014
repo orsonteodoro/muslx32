@@ -1,6 +1,10 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+#
+# muslx32-overlay notes:  This is a copy before the 2020 update.
+#
+
 # @ECLASS: multilib-minimal.eclass
 # @MAINTAINER:
 # Multilib team <multilib@gentoo.org>

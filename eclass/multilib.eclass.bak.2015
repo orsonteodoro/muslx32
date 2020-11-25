@@ -1,6 +1,10 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+#
+# muslx32-overlay notes:  This is a backup before 2020 update.
+#
+
 # @ECLASS: multilib.eclass
 # @MAINTAINER:
 # amd64@gentoo.org

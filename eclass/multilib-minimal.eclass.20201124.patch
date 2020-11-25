@@ -1,0 +1,13 @@
+--- multilib-minimal.eclass.orig	2018-08-15 01:04:34.000000000 -0700
++++ multilib-minimal.eclass	2020-11-24 18:43:17.553224562 -0800
+@@ -110,7 +110,9 @@ multilib-minimal_src_install() {
+ 			fi
+ 		fi
+ 
+-		multilib_prepare_wrappers
++		if [[ "${PN}" != "musl" ]] ; then
++			multilib_prepare_wrappers
++		fi
+ 		multilib_check_headers
+ 		popd >/dev/null || die
+ 	}
