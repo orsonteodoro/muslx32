@@ -15,8 +15,8 @@ all packages in dev-* category will be updated.  All userspace programs
 
 Once the project is up to date, the status above will change to READY.  If you
 are impatent or want to jump ahead, you may fork this repo and bring all system
-ebuilds and toolchain yourself.  I recommend looking at both the musl overlay
-(https://github.com/gentoo/musl) and the Alpine Linux repo
+ebuilds and toolchain up to date yourself.  I recommend looking at both the musl
+overlay (https://github.com/gentoo/musl) and the Alpine Linux repo
 (https://git.alpinelinux.org/aports/tree/) for additional musl patches.
 Diff the ebuilds against the ones in the gentoo-overlay or the musl overlay
 to see what changes this repo has made to those ebuilds.  Do the musl patching
