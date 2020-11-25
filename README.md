@@ -7,7 +7,7 @@ This is an unofficial muslx32 (musl libc and x32 ABI) overlay for Gentoo Linux
 
 The last update before 2020 was in Jul 17, 2018.
 
-As of 2020, this repo is slowly being updated.  It is not recommended to use it
+As of Nov 2020, this repo is slowly being updated.  It is not recommended to use it
 until the system dependencies (stage 1 to 3) are up to date because of security
 reasons.  This means that all packages in sys-* category be updated first.  Then, 
 all packages in dev-* category will be updated.  All userspace programs 
