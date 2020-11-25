@@ -1,0 +1,13 @@
+--- elinks-0.13.5-r100.ebuild.orig	2020-11-25 06:19:50.454388678 -0800
++++ elinks-0.13.5-r100.ebuild	2020-11-25 06:18:21.289916734 -0800
+@@ -58,6 +58,10 @@ src_prepare() {
+ 
+ 	sed -i -e 's/-Werror//' configure* || die
+ 
++	if [[ "${CHOST}" =~ "muslx32" ]]; then
++		sed -i "s|\$(LD) -r -o|\$(LD) -m elf32_x86_64 -r -o|g" Makefile.lib || die
++	fi
++
+ 	eautoreconf
+ }
+ 
