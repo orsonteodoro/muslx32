@@ -1,0 +1,18 @@
+--- grep-3.6.ebuild.orig	2020-11-08 22:39:17.000000000 -0800
++++ grep-3.6.ebuild	2020-11-25 03:07:20.955991261 -0800
+@@ -44,10 +44,15 @@ src_configure() {
+ 	export ac_cv_search_pcre_compile=$(
+ 		usex pcre "$($(tc-getPKG_CONFIG) --libs $(usex static --static '') libpcre)" ''
+ 	)
++	local myconf
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		myconf=( --with-included-regex )
++	fi
+ 	local myeconfargs=(
+ 		--bindir="${EPREFIX}"/bin
+ 		$(use_enable nls)
+ 		$(use_enable pcre perl-regexp)
++		${myconf[@]}
+ 	)
+ 	econf "${myeconfargs[@]}"
+ }
