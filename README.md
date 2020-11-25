@@ -7,22 +7,23 @@ This is an unofficial muslx32 (musl libc and x32 ABI) overlay for Gentoo Linux
 
 The last update before 2020 was in Jul 17, 2018.
 
-As of Nov 2020, this repo is slowly being updated.  It is not recommended to use it
-until the system dependencies (stage 1 to 3) are up to date because of security
-reasons.  This means that all packages in sys-* category be updated first.  Then, 
-all packages in dev-* category will be updated.  All userspace programs 
-(@world set - @system set) that sit on top of those layers will be done afterwards.
+As of Nov 2020, this repo is slowly being updated.  It is not recommended to use
+it until the system dependencies (stage 1 to 3) are up to date because of
+security reasons.  This means that all packages in sys-* category be updated
+first. Then, all packages in dev-* category will be updated.  All userspace
+programs (@world set - @system set) that sit on top of those layers will be done
+afterwards.
 
 Once the project is up to date, the status above will change to READY.  If you
-are impatent or want to jump ahead, you may fork this repo and bring all system
-ebuilds and toolchain up to date yourself.  I recommend looking at both the musl
-overlay (https://github.com/gentoo/musl) and the Alpine Linux repo
-(https://git.alpinelinux.org/aports/tree/) for additional musl patches.
-Diff the ebuilds against the ones in the gentoo-overlay or the musl overlay
-to see what changes this repo has made to those ebuilds.  Do the musl patching
-first, then do the x32 part next.  Keep those parts in the ebuild self-contained
-and documented in a conditional as follows to easily migrate ebuild updates
-forward.
+are impatent or want to jump ahead, you may fork this repo (or work on a local
+repo) and bring all system ebuilds and toolchain up to date yourself.  I
+recommend looking at both the musl overlay (https://github.com/gentoo/musl) and
+the Alpine Linux repo (https://git.alpinelinux.org/aports/tree/) for additional
+musl patches. Diff the ebuilds against the ones in the gentoo-overlay or the
+musl overlay to see what changes this repo has made to those ebuilds.  Do the
+musl patching first, then do the x32 part next.  Keep those parts in the ebuild
+self-contained and documented in a conditional as follows to easily migrate
+ebuild updates forward.
 
 <pre>
 if [[ "${CHOST}" =~ "muslx32" ]] ; then
