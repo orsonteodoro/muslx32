@@ -1,0 +1,13 @@
+--- sed-4.8.ebuild.orig	2020-11-25 03:40:26.341472856 -0800
++++ sed-4.8.ebuild	2020-11-25 03:37:45.231198679 -0800
+@@ -38,6 +38,10 @@ src_configure() {
+ 		myconf+=( --program-prefix=g )
+ 	fi
+ 
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		myconf+=( --with-included-regex )
++	fi
++
+ 	use static && append-ldflags -static
+ 	myconf+=(
+ 		$(use_enable acl)

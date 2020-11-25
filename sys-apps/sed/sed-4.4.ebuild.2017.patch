@@ -1,0 +1,14 @@
+--- sed-4.4.ebuild.orig	2020-11-25 03:35:10.000000000 -0800
++++ sed-4.4.ebuild	2020-11-21 17:03:10.179949368 -0800
+@@ -52,6 +52,11 @@ src_configure() {
+ 
+ 	export ac_cv_search_setfilecon=$(usex selinux -lselinux)
+ 	export ac_cv_header_selinux_{context,selinux}_h=$(usex selinux)
++
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		myconf+=( --with-included-regex )
++	fi
++
+ 	use static && append-ldflags -static
+ 	myconf+=(
+ 		$(use_enable acl)
