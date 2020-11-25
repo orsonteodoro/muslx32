@@ -1,0 +1,103 @@
+--- coreutils-8.32-r1.ebuild.orig	2020-09-19 13:39:29.000000000 -0700
++++ coreutils-8.32-r1.ebuild	2020-11-25 02:27:21.200055819 -0800
+@@ -5,7 +5,8 @@ EAPI=7
+ 
+ PYTHON_COMPAT=( python3_{6,7,8} )
+ 
+-inherit eutils flag-o-matic python-any-r1 toolchain-funcs
++inherit eutils flag-o-matic python-any-r1 toolchain-funcs \
++	multilib multilib-minimal multilib-build
+ 
+ PATCH="${PN}-8.30-patches-01"
+ DESCRIPTION="Standard GNU utilities (chmod, cp, dd, ls, sort, tr, head, wc, who,...)"
+@@ -22,20 +23,22 @@ SLOT="0"
+ KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~m68k ~mips ppc ppc64 ~riscv s390 sparc x86 ~x86-linux"
+ IUSE="acl caps gmp hostname kill multicall nls selinux +split-usr static test vanilla xattr"
+ RESTRICT="!test? ( test )"
++REQUIRED_USE="!abi_x86_x32"
+ 
+-LIB_DEPEND="acl? ( sys-apps/acl[static-libs] )
+-	caps? ( sys-libs/libcap )
+-	gmp? ( dev-libs/gmp:=[static-libs] )
+-	xattr? ( sys-apps/attr[static-libs] )"
++LIB_DEPEND="acl? ( sys-apps/acl[static-libs,${MULTILIB_USEDEP}] )
++	caps? ( sys-libs/libcap[${MULTILIB_USEDEP}] )
++	gmp? ( dev-libs/gmp:=[static-libs,${MULTILIB_USEDEP}] )
++	xattr? ( sys-apps/attr[static-libs,${MULTILIB_USEDEP}] )
++	elibc_musl? ( sys-libs/musl[${MULTILIB_USEDEP}] )"
+ RDEPEND="!static? ( ${LIB_DEPEND//\[static-libs]} )
+-	selinux? ( sys-libs/libselinux )
+-	nls? ( virtual/libintl )"
++	selinux? ( sys-libs/libselinux[${MULTILIB_USEDEP}] )
++	nls? ( virtual/libintl[${MULTILIB_USEDEP}] )"
+ DEPEND="
+ 	${RDEPEND}
+ 	static? ( ${LIB_DEPEND} )
+ "
+ BDEPEND="
+-	app-arch/xz-utils
++	app-arch/xz-utils[${MULTILIB_USEDEP}]
+ 	test? (
+ 		dev-lang/perl
+ 		dev-perl/Expect
+@@ -46,12 +49,12 @@ BDEPEND="
+ RDEPEND+="
+ 	hostname? ( !sys-apps/net-tools[hostname] )
+ 	kill? (
+-		!sys-apps/util-linux[kill]
++		!sys-apps/util-linux[kill,${MULTILIB_USEDEP}]
+ 		!sys-process/procps[kill]
+ 	)
+ 	!app-misc/realpath
+ 	!<sys-apps/util-linux-2.13
+-	!<sys-apps/sandbox-2.10-r4
++	!<sys-apps/sandbox-2.10-r4[${MULTILIB_USEDEP}]
+ 	!sys-apps/stat
+ 	!net-mail/base64
+ 	!sys-apps/mktemp
+@@ -89,9 +92,10 @@ src_prepare() {
+ 		touch src/dircolors.h
+ 		touch ${@/%x/1}
+ 	fi
++	multilib_copy_sources
+ }
+ 
+-src_configure() {
++multilib_src_configure() {
+ 	local myconf=(
+ 		--with-packager="Gentoo"
+ 		--with-packager-version="${PVR} (p${PATCH_VER:-0})"
+@@ -114,13 +118,23 @@ src_configure() {
+ 	export gl_cv_func_mknod_works=yes #409919
+ 	use static && append-ldflags -static && sed -i '/elf_sys=yes/s:yes:no:' configure #321821
+ 	use selinux || export ac_cv_{header_selinux_{context,flash,selinux}_h,search_setfilecon}=no #301782
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		myconf+=( --with-included-regex )
++	fi
+ 	# kill/uptime - procps
+ 	# groups/su   - shadow
+ 	# hostname    - net-tools
+ 	econf "${myconf[@]}"
+ }
+ 
+-src_test() {
++multilib_src_compile() {
++	default
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		make src/chroot
++	fi
++}
++
++multilib_src_test() {
+ 	# Known to fail with FEATURES=usersandbox (bug #439574):
+ 	#   -  tests/du/long-from-unreadable.sh} (bug #413621)
+ 	#   -  tests/rm/deep-2.sh (bug #413621)
+@@ -159,7 +173,7 @@ src_test() {
+ 	emake -j1 -k check
+ }
+ 
+-src_install() {
++multilib_src_install() {
+ 	default
+ 
+ 	insinto /etc

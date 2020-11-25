@@ -1,0 +1,85 @@
+--- coreutils-8.28-r1.ebuild.orig	2020-11-25 02:06:29.000000000 -0800
++++ coreutils-8.28-r1.ebuild	2020-11-21 17:03:10.169948968 -0800
+@@ -11,7 +11,8 @@ EAPI="6"
+ 
+ PYTHON_COMPAT=( python{2_7,3_4,3_5,3_6} )
+ 
+-inherit eutils flag-o-matic python-any-r1 toolchain-funcs
++inherit eutils flag-o-matic python-any-r1 toolchain-funcs \
++	multilib multilib-minimal multilib-build
+ 
+ PATCH_VER="1.1"
+ DESCRIPTION="Standard GNU utilities (chmod, cp, dd, ls, sort, tr, head, wc, who,...)"
+@@ -24,16 +25,18 @@ SRC_URI="mirror://gnu/${PN}/${P}.tar.xz
+ 
+ LICENSE="GPL-3"
+ SLOT="0"
+-KEYWORDS="alpha amd64 arm arm64 hppa ia64 m68k ~mips ppc ppc64 s390 sh sparc x86 ~x86-linux"
++KEYWORDS="alpha amd64 arm ~arm64 hppa ia64 ~m68k ~mips ppc ppc64 ~s390 ~sh sparc x86 ~arm-linux ~x86-linux"
+ IUSE="acl caps gmp hostname kill multicall nls selinux static test userland_BSD vanilla xattr"
++REQUIRED_USE="!abi_x86_x32"
+ 
+-LIB_DEPEND="acl? ( sys-apps/acl[static-libs] )
+-	caps? ( sys-libs/libcap )
+-	gmp? ( dev-libs/gmp:=[static-libs] )
+-	xattr? ( !userland_BSD? ( sys-apps/attr[static-libs] ) )"
++LIB_DEPEND="acl? ( sys-apps/acl[static-libs,${MULTILIB_USEDEP}] )
++	caps? ( sys-libs/libcap[${MULTILIB_USEDEP}] )
++	gmp? ( dev-libs/gmp:=[static-libs,${MULTILIB_USEDEP}] )
++	xattr? ( !userland_BSD? ( sys-apps/attr[static-libs,${MULTILIB_USEDEP}] ) )
++        elibc_musl? ( sys-libs/musl[${MULTILIB_USEDEP}] )"
+ RDEPEND="!static? ( ${LIB_DEPEND//\[static-libs]} )
+-	selinux? ( sys-libs/libselinux )
+-	nls? ( virtual/libintl )"
++	selinux? ( sys-libs/libselinux[${MULTILIB_USEDEP}] )
++	nls? ( virtual/libintl[${MULTILIB_USEDEP}] )"
+ DEPEND="${RDEPEND}
+ 	static? ( ${LIB_DEPEND} )
+ 	app-arch/xz-utils
+@@ -89,9 +92,10 @@ src_prepare() {
+ 		touch src/dircolors.h
+ 		touch ${@/%x/1}
+ 	fi
++	multilib_copy_sources
+ }
+ 
+-src_configure() {
++multilib_src_configure() {
+ 	local myconf=(
+ 		--with-packager="Gentoo"
+ 		--with-packager-version="${PVR} (p${PATCH_VER:-0})"
+@@ -115,13 +119,24 @@ src_configure() {
+ 	use static && append-ldflags -static && sed -i '/elf_sys=yes/s:yes:no:' configure #321821
+ 	use selinux || export ac_cv_{header_selinux_{context,flash,selinux}_h,search_setfilecon}=no #301782
+ 	use userland_BSD && myconf+=( -program-prefix=g --program-transform-name=s/stat/nustat/ )
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		myconf+=( --with-included-regex )
++	fi
+ 	# kill/uptime - procps
+ 	# groups/su   - shadow
+ 	# hostname    - net-tools
+ 	econf "${myconf[@]}"
+ }
+ 
+-src_test() {
++#added by muslx32
++multilib_src_compile() {
++	default
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		make src/chroot
++	fi
++}
++
++multilib_src_test() {
+ 	# Known to fail with FEATURES=usersandbox (bug #439574):
+ 	#   -  tests/du/long-from-unreadable.sh} (bug #413621)
+ 	#   -  tests/rm/deep-2.sh (bug #413621)
+@@ -160,7 +175,7 @@ src_test() {
+ 	emake -j1 -k check
+ }
+ 
+-src_install() {
++multilib_src_install() {
+ 	default
+ 
+ 	insinto /etc
