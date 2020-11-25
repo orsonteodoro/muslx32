@@ -30,6 +30,12 @@ if [[ "${CHOST}" =~ "muslx32" ]] ; then
 fi
 </pre>
 
+The ebuild / overlay precedence is low-to-high with gentoo -> musl -> muslx32 ->
+local, respectively.  This means that test gentoo ebuilds first.  If gentoo-overlay
+doesn't work or buggy, try the musl-overlay for a fix.  If musl-overlay can't
+fix it, then use the muslx32 ebuilds.  If the priority is done correctly,
+it should do it automatically.
+
 ### About the muslx32 profile
 
 This profile uses a 64-bit linux kernel with x32 ABI compatibility.  Almost all
