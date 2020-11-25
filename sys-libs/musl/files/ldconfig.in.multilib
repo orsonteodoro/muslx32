@@ -140,9 +140,7 @@ read_ldso_conf() {
 				# glibc's ldconfig silently skips non directories
 				if [[ -d $l ]]; then
 					repeated $l $drs && continue
-
 					multilib_filter $l $arch $drs || continue
-
 					drs+=" $l "
 				fi
 			fi

@@ -1,9 +1,9 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
-inherit eutils flag-o-matic multilib toolchain-funcs multilib-minimal
+inherit eutils flag-o-matic multilib-minimal toolchain-funcs
 if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="git://git.musl-libc.org/musl"
 	inherit git-r3
@@ -17,7 +17,7 @@ else
 	https://dev.gentoo.org/~blueness/musl-misc/getconf.c
 	https://dev.gentoo.org/~blueness/musl-misc/getent.c
 	https://dev.gentoo.org/~blueness/musl-misc/iconv.c"
-	KEYWORDS="-* amd64 arm ~mips ppc x86"
+	KEYWORDS="-* amd64 ~arm ~arm64 ~mips ~ppc ~ppc64 x86"
 fi
 
 export CBUILD=${CBUILD:-${CHOST}}
@@ -28,7 +28,7 @@ if [[ ${CTARGET} == ${CHOST} ]] ; then
 	fi
 fi
 
-#current sub
+# current sub
 abi_to_host() {
 	local abi="$1"
 	if [[ "${abi}" == "amd64" ]] ; then
@@ -125,7 +125,6 @@ IUSE="headers-only"
 
 #QA_SONAME="/usr/lib/libc.so"
 #QA_DT_NEEDED="/usr/lib/libc.so"
-
 ARCHES=
 
 is_crosscompile() {
@@ -143,13 +142,20 @@ pkg_setup() {
 		*) die "Use sys-devel/crossdev to build a musl toolchain" ;;
 		esac
 	fi
+
+	# fix for #667126, copied from glibc ebuild
+	# make sure host make.conf doesn't pollute us
+	if is_crosscompile || tc-is-cross-compiler ; then
+		CHOST=${CTARGET} strip-unsupported-flags
+	fi
 }
 
 src_prepare() {
+	default
 	if [[ "${CHOST}" =~ "muslx32" ]] ; then
-		epatch "${FILESDIR}"/musl-1.1.15-gdb-ptrace.patch #for gdb on x32
-		epatch "${FILESDIR}"/musl-9999-timex-x32.patch #for chrony
-		epatch "${FILESDIR}"/musl-1.1.19-add_libssp_nonshared.patch #for multilib gcc on i686
+		eapply "${FILESDIR}"/musl-1.1.15-gdb-ptrace.patch # for gdb on x32
+		eapply "${FILESDIR}"/musl-9999-timex-x32.patch # for chrony
+		eapply "${FILESDIR}"/musl-1.2.1-add_libssp_nonshared.patch # for multilib gcc on i686
 	fi
 	eapply_user
 	multilib_copy_sources
@@ -186,9 +192,12 @@ multilib_src_compile() {
 
 	emake
 	if [[ ${CATEGORY} != cross-* ]] ; then
-		$(tc-getCC) ${CFLAGS} $(multilib_cflags) "${DISTDIR}"/getconf.c -o "${T}"/getconf $(multilib_ldflags) || die
-		$(tc-getCC) ${CFLAGS} $(multilib_cflags) "${DISTDIR}"/getent.c -o "${T}"/getent $(multilib_ldflags) || die
-		$(tc-getCC) ${CFLAGS} $(multilib_cflags) "${DISTDIR}"/iconv.c -o "${T}"/iconv $(multilib_ldflags) || die
+		emake -C "${T}" getconf getent iconv \
+			CC="$(tc-getCC)" \
+			CFLAGS="${CFLAGS} $(multilib_cflags)" \
+			CPPFLAGS="${CPPFLAGS}" \
+			LDFLAGS="${LDFLAGS} $(multilib_ldflags)" \
+			VPATH="${DISTDIR}"
 	fi
 }
 
@@ -211,17 +220,16 @@ multilib_src_install() {
 	local sysroot
 	is_crosscompile && sysroot=/usr/${CTARGET2}
 	local default_libdir=${libdir}
-
-	local ldso=$(basename "${D}"/${sysroot}/${libdir}/ld-musl-*)
-	dosym ../${libdir}/libc.so ${sysroot}/usr/bin/ldd
+	local ldso=$(basename "${D}"${sysroot}/${libdir}/ld-musl-*)
+	dosym ../${libdir}/${ldso} ${sysroot}/usr/bin/ldd
 
 	# force relative
-	rm "${D}"/usr/${CTARGET2}/usr/lib/${ldso}
+	rm "${D}"/usr/${CTARGET2}/usr/lib/${ldso} || die
 	dosym libc.so /usr/${CTARGET2}/usr/lib/${ldso}
 
 	if [[ "${ABI}" == "${DEFAULT_ABI}" ]] ; then
 		# force relative
-		rm "${D}"/usr/${CTARGET}/lib/${ldso}
+		rm "${D}"/usr/${CTARGET}/lib/${ldso} || die
 		dosym ../usr/lib/libc.so /usr/${CTARGET}/${default_libdir}/${ldso}
 	fi
 
@@ -229,20 +237,8 @@ multilib_src_install() {
 		einfo "default abi"
 
 		_libdir=$(abi_libdir ${ABI})
-
 		into /
 		dodir /usr/${CTARGET}/usr
-
-		if [[ "${ABI}" != "${DEFAULT_ABI}" ]] ; then
-			einfo "not default_abi"
-
-			cp -a "${D}"/usr/${CTARGET2} "${D}"/usr/${CTARGET}/usr/
-			[[ -d "${D}"/usr/${CTARGET}/usr/${CTARGET2} ]] || die
-
-			dosym ../usr/${CTARGET2}/usr/lib/libc.so /usr/${CTARGET}/${_libdir}/${ldso}
-			rm ${D}/usr/${CTARGET}/usr/${CTARGET2}/lib/${ldso}
-			dosym ../usr/lib/libc.so /usr/${CTARGET}/usr/${CTARGET2}/lib/${ldso}
-		fi
 
 		if [[ "${ABI}" == "${DEFAULT_ABI}" ]] ; then
 			einfo "is default_abi"
@@ -256,29 +252,40 @@ multilib_src_install() {
 
 			dosym ${_libdir} /usr/${CTARGET}/lib
 			dosym ${_libdir} /usr/${CTARGET}/usr/lib
+		else
+			einfo "not default_abi"
+
+			cp -a "${D}"/usr/${CTARGET2} "${D}"/usr/${CTARGET}/usr/ || die
+			[[ -d "${D}"/usr/${CTARGET}/usr/${CTARGET2} ]] || die
+
+			dosym ../usr/${CTARGET2}/usr/lib/libc.so /usr/${CTARGET}/${_libdir}/${ldso}
+			rm ${D}/usr/${CTARGET}/usr/${CTARGET2}/lib/${ldso} || die
+			dosym ../usr/lib/libc.so /usr/${CTARGET}/usr/${CTARGET2}/lib/${ldso}
 		fi
 	fi
 
-	#force creation
+	# force creation
 	dodir /usr/$(abi_libdir ${ABI})
 	dodir /usr/local/$(abi_libdir ${ABI})
 
-	if [[ ${CATEGORY} != cross-* ]] ; then
-		if [[ "${ABI}" == "${DEFAULT_ABI}" ]] ; then
-			local arch=$("${D}"/usr/lib/libc.so 2>&1 | sed -n '1s/^musl libc (\(.*\))$/\1/p')
-			[[ -e "${D}"/$(abi_libdir ${ABI})/ld-musl-${arch}.so.1 ]] || die
-			cp "${FILESDIR}"/ldconfig.in.multilib "${T}" || die
-			local native=$(abi_native ${ABI})
-			sed -e "s|@@ARCH@@|${arch}|" -e "s|@@ARCHES@@|${ARCHES}|" "${T}"/ldconfig.in.multilib > "${T}"/ldconfig || die
-			into /
-			dosbin "${T}"/ldconfig
-			into /usr
-			dobin "${T}"/getconf
-			dobin "${T}"/getent
-			dobin "${T}"/iconv
-			echo 'LDPATH="include ld.so.conf.d/*.conf"' > "${T}"/00musl || die
-			doenvd "${T}"/00musl || die
-		fi
+	if [[ ${CATEGORY} != cross-* && "${ABI}" == "${DEFAULT_ABI}" ]] ; then
+		# Fish out of config:
+		#   ARCH = ...
+		#   SUBARCH = ...
+		# and print $(ARCH)$(SUBARCH).
+		local arch=$(awk '{ k[$1] = $3 } END { printf("%s%s", k["ARCH"], k["SUBARCH"]); }' config.mak)
+		[[ -e "${D}"/$(abi_libdir ${ABI})/ld-musl-${arch}.so.1 ]] || die
+		cp "${FILESDIR}"/ldconfig.in.multilib "${T}" || die
+		local native=$(abi_native ${ABI})
+		sed -e "s|@@ARCH@@|${arch}|" -e "s|@@ARCHES@@|${ARCHES}|" "${T}"/ldconfig.in.multilib > "${T}"/ldconfig || die
+		into /
+		dosbin "${T}"/ldconfig
+		into /usr
+		dobin "${T}"/getconf
+		dobin "${T}"/getent
+		dobin "${T}"/iconv
+		echo 'LDPATH="include ld.so.conf.d/*.conf"' > "${T}"/00musl || die
+		doenvd "${T}"/00musl
 	fi
 }
 
@@ -288,6 +295,4 @@ pkg_postinst() {
 	[ "${ROOT}" != "/" ] && return 0
 
 	ldconfig || die
-	# reload init ...
-	/sbin/telinit U 2>/dev/null
 }

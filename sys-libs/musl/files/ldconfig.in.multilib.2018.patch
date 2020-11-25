@@ -1,0 +1,103 @@
+ldconfig.in.multilib.orig is the exact copy of ldconfig.in before modification
+----
+--- ldconfig.in.multilib.orig	2020-11-21 17:03:10.317954898 -0800
++++ ldconfig.in.multilib	2020-11-21 17:03:10.317954898 -0800
+@@ -81,8 +81,45 @@ expand() {
+ 	echo $drs
+ }
+ 
++multilib_filter() {
++	local l="$1"
++	local arch="$2"
++	local drs="${@:3}"
++
++	if [[ "${arch}" == "x32" ]] ; then
++		if [[ "$l" =~ "/32" || "$l" =~ "lib32" || "$l" =~ "/64" || "$l" =~ "lib64" ]] ; then
++			#trash
++			return 1
++		else
++			return 0
++		fi
++	elif [[ "${arch}" == "i386" ]] ; then
++		if [[ "$l" == "/lib" || "$l" == "/usr/lib" || "$l" == "/usr/local/lib" ]] ; then
++			return 1
++		fi
++		if [[ "$l" =~ "/32" || "$l" =~ "lib32" ]] ; then
++			#keep
++			return 0
++		else
++			return 1
++		fi
++	elif [[ "${arch}" == "x86_64" ]] ; then
++		if [[ "$l" == "/lib" || "$l" == "/usr/lib" || "$l" == "/usr/local/lib" ]] ; then
++			return 1
++		fi
++		if [[ "$l" =~ "/64" || "$l" =~ "lib64" ]] ; then
++			#keep
++			return 0
++		else
++			return 1
++		fi
++	fi
++	return 0
++}
++
+ read_ldso_conf() {
+ 	local drs=" "
++	local arch="$2"
+ 
+ 	while read line; do
+ 		# Sanitize the line - see ldconfig(8) for delimiters
+@@ -103,6 +140,9 @@ read_ldso_conf() {
+ 				# glibc's ldconfig silently skips non directories
+ 				if [[ -d $l ]]; then
+ 					repeated $l $drs && continue
++
++					multilib_filter $l $arch $drs || continue
++
+ 					drs+=" $l "
+ 				fi
+ 			fi
+@@ -122,11 +162,32 @@ sanitize() {
+ }
+ 
+ get_options "$@"
+-drs=$(read_ldso_conf "$LDSO_CONF")
+-drs=$(sanitize $drs)
+ 
+-ARCH=@@ARCH@@
+-LDSO_PATH="/lib/ld-musl-${ARCH}.so.1"
++for arch in @@ARCHES@@ ; do
++
++echo "Updating $arch"
++
++ARCH=$arch
++
++drs=$(read_ldso_conf "$LDSO_CONF" "$ARCH")
++if [[ "${arch}" == "@@ARCH@@" ]] ; then
++	drs=$(sanitize $drs)
++fi
++
++libdir=
++case $arch in
++	i386)
++		libdir="lib32"
++		;;
++	x86_64)
++		libdir="lib64"
++		;;
++	x32)
++		libdir="libx32"
++		;;
++esac
++
++LDSO_PATH="/${libdir}/ld-musl-${ARCH}.so.1"
+ if [[ ! -e $LDSO_PATH ]]; then
+ 	echo "$LDSO_PATH not found" >&2
+ 	exit 1
+@@ -142,3 +203,5 @@ for d in $drs; do
+ done
+ chmod 644 $X
+ mv $X $ETC_LDSO_PATH
++
++done

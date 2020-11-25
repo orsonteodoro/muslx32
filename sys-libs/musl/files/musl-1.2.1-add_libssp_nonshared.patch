@@ -1,0 +1,46 @@
+Forward port of:
+
+From 7ec87fbbc3cac99b4173d082dd6195f47c9a32e7 Mon Sep 17 00:00:00 2001
+From: Steven Barth <steven@midlink.org>
+Date: Mon, 22 Jun 2015 11:01:56 +0200
+Subject: [PATCH] Add libssp_nonshared.a so GCC's is not needed
+
+----
+diff -x '*.orig' -x '*.rej' -urpN musl-1.2.1.orig/Makefile musl-1.2.1/Makefile
+--- musl-1.2.1.orig/Makefile	2020-08-03 21:21:09.000000000 -0700
++++ musl-1.2.1/Makefile	2020-11-25 01:23:03.323347712 -0800
+@@ -67,7 +67,7 @@ CRT_LIBS = $(addprefix lib/,$(notdir $(C
+ STATIC_LIBS = lib/libc.a
+ SHARED_LIBS = lib/libc.so
+ TOOL_LIBS = lib/musl-gcc.specs
+-ALL_LIBS = $(CRT_LIBS) $(STATIC_LIBS) $(SHARED_LIBS) $(EMPTY_LIBS) $(TOOL_LIBS)
++ALL_LIBS = $(CRT_LIBS) $(STATIC_LIBS) $(SHARED_LIBS) $(EMPTY_LIBS) $(TOOL_LIBS) lib/libssp_nonshared.a
+ ALL_TOOLS = obj/musl-gcc
+ 
+ WRAPCC_GCC = gcc
+@@ -124,6 +124,7 @@ $(MEMOPS_OBJS) $(MEMOPS_OBJS:%.o=%.lo):
+ NOSSP_OBJS = $(CRT_OBJS) $(LDSO_OBJS) $(filter \
+ 	%/__libc_start_main.o %/__init_tls.o %/__stack_chk_fail.o \
+ 	%/__set_thread_area.o %/memset.o %/memcpy.o \
++	%/__stack_chk_fail_local.o \
+ 	, $(LIBC_OBJS))
+ $(NOSSP_OBJS) $(NOSSP_OBJS:%.o=%.lo): CFLAGS_ALL += $(CFLAGS_NOSSP)
+ 
+@@ -167,6 +168,11 @@ lib/libc.a: $(AOBJS)
+ 	$(AR) rc $@ $(AOBJS)
+ 	$(RANLIB) $@
+ 
++lib/libssp_nonshared.a: obj/src/libssp_nonshared/__stack_chk_fail_local.o
++	rm -f $@
++	$(AR) rc $@ $<
++	$(RANLIB) $@
++
+ $(EMPTY_LIBS):
+ 	rm -f $@
+ 	$(AR) rc $@
+diff -x '*.orig' -x '*.rej' -urpN musl-1.2.1.orig/src/libssp_nonshared/__stack_chk_fail_local.c musl-1.2.1/src/libssp_nonshared/__stack_chk_fail_local.c
+--- musl-1.2.1.orig/src/libssp_nonshared/__stack_chk_fail_local.c	1969-12-31 16:00:00.000000000 -0800
++++ musl-1.2.1/src/libssp_nonshared/__stack_chk_fail_local.c	2020-11-25 01:21:25.310565374 -0800
+@@ -0,0 +1,2 @@
++#include "atomic.h"
++void __attribute__((visibility ("hidden"))) __stack_chk_fail_local(void) { a_crash(); }
