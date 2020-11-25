@@ -21,9 +21,9 @@ recommend looking at both the musl overlay (https://github.com/gentoo/musl) and
 the Alpine Linux repo (https://git.alpinelinux.org/aports/tree/) for additional
 musl patches. Diff the ebuilds against the ones in the gentoo-overlay or the
 musl overlay to see what changes this repo has made to those ebuilds.  Do the
-musl patching first, then do the x32 part next.  Keep those parts in the ebuild
-self-contained and documented in a conditional as follows to easily migrate
-ebuild updates forward.
+easy musl patching first, then do the more difficult x32 part next.  Keep those
+parts in the ebuild self-contained and documented in a conditional as follows
+to easily migrate ebuild updates forward.
 
 <pre>
 if [[ "${CHOST}" =~ "muslx32" ]] ; then
