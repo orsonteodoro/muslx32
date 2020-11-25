@@ -1,0 +1,23 @@
+These are the muslx32 overlay additions:
+----
+--- gettext-0.21.ebuild.orig	2020-09-19 13:39:29.000000000 -0700
++++ gettext-0.21.ebuild	2020-11-24 19:07:30.208221930 -0800
+@@ -78,6 +78,10 @@ src_prepare() {
+ }
+ 
+ multilib_src_configure() {
++	local myconf_muslx32
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		myconf_muslx32=( --with-included-regex )
++	fi
+ 	local myconf=(
+ 		# switches common to runtime and top-level
+ 		--cache-file="${BUILD_DIR}"/config.cache
+@@ -108,6 +112,7 @@ multilib_src_configure() {
+ 		$(use_enable nls)
+ 		$(use_enable openmp)
+ 		$(use_enable static-libs static)
++		${myconf_muslx32[@]}
+ 	)
+ 
+ 	local ECONF_SOURCE="${S}"
