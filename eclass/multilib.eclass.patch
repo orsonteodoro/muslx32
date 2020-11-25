@@ -1,0 +1,178 @@
+--- multilib.eclass.orig	2020-11-21 17:34:33.000000000 -0800
++++ multilib.eclass	2020-11-21 17:03:10.118946924 -0800
+@@ -1,6 +1,5 @@
+ # Copyright 1999-2015 Gentoo Foundation
+ # Distributed under the terms of the GNU General Public License v2
+-# $Id$
+ 
+ # @ECLASS: multilib.eclass
+ # @MAINTAINER:
+@@ -79,6 +78,50 @@ get_abi_var() {
+ 	local flag=$1
+ 	local abi=${2:-${ABI:-${DEFAULT_ABI:-default}}}
+ 	local var="${flag}_${abi}"
++
++	if [[ "${CHOST_default}" =~ "muslx32" ]] ; then
++		if [[ "${PN}" == "boost" ]] ; then
++			if [[ "${flag}" == "CFLAGS" || "${flag}" == "CXXFLAGS" ]] ; then
++				if [[ "${abi}" == "amd64" ]] ; then
++					echo "${CFLAGS2_amd64} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/64"
++					return
++				elif [[ "${abi}" == "x86" ]] ; then
++					echo "${CFLAGS2_x86} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/32"
++					return
++				elif [[ "${abi}" == "x32" || "${abi}" == "default" ]] ; then
++					echo "${CFLAGS2_x32} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)"
++					return
++				fi
++			fi
++		#elif [[ "${PN}" == "chromium" ]] ; then
++		#	if [[ "${flag}" == "CFLAGS" || "${flag}" == "CXXFLAGS" ]] ; then
++		#		if [[ "${abi}" == "amd64" ]] ; then
++		#			echo "${CFLAGS3_amd64} -I${S}/base/third_party/libevent/compat/ -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/64"
++		#			return
++		#		elif [[ "${abi}" == "x86" ]] ; then
++		#			echo "${CFLAGS3_x86} -I${S}/base/third_party/libevent/compat/ -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/32"
++		#			return
++		#		elif [[ "${abi}" == "x32" || "${abi}" == "default" ]] ; then
++		#			echo "${CFLAGS3_x32} -I${S}/base/third_party/libevent/compat/ -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)"
++		#			return
++		#		fi
++		#	fi
++		else
++			if [[ "${flag}" == "CFLAGS" || "${flag}" == "CXXFLAGS" ]] ; then
++				if [[ "${abi}" == "amd64" ]] ; then
++					echo "${CFLAGS_amd64} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/64"
++					return
++				elif [[ "${abi}" == "x86" ]] ; then
++					echo "${CFLAGS_x86} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)/32"
++					return
++				elif [[ "${abi}" == "x32" || "${abi}" == "default" ]] ; then
++					echo "${CFLAGS_x32} -B/usr/lib/gcc/${CHOST_default}/$(gcc-fullversion)"
++					return
++				fi
++			fi
++		fi
++	fi
++
+ 	echo ${!var}
+ }
+ 
+@@ -225,6 +268,20 @@ number_abis() {
+ 	echo $#
+ }
+ 
++# @FUNCTION: get_exeext
++# @DESCRIPTION:
++# Returns standard executable program suffix (null, .exe, etc.)
++# for the current platform identified by CHOST.
++#
++# Example:
++#     get_exeext
++#     Returns: null string (almost everywhere) || .exe (mingw*) || ...
++get_exeext() {
++	case ${CHOST} in
++		*-cygwin*|mingw*|*-mingw*)  echo ".exe";;
++	esac
++}
++
+ # @FUNCTION: get_libname
+ # @USAGE: [version]
+ # @DESCRIPTION:
+@@ -238,11 +295,12 @@ get_libname() {
+ 	local libname
+ 	local ver=$1
+ 	case ${CHOST} in
+-		*-cygwin|mingw*|*-mingw*) libname="dll";;
+-		*-darwin*)                libname="dylib";;
+-		*-mint*)                  libname="irrelevant";;
+-		hppa*-hpux*)              libname="sl";;
+-		*)                        libname="so";;
++		*-cygwin*)       libname="dll.a";; # import lib
++		mingw*|*-mingw*) libname="dll";;
++		*-darwin*)       libname="dylib";;
++		*-mint*)         libname="irrelevant";;
++		hppa*-hpux*)     libname="sl";;
++		*)               libname="so";;
+ 	esac
+ 
+ 	if [[ -z $* ]] ; then
+@@ -250,6 +308,7 @@ get_libname() {
+ 	else
+ 		for ver in "$@" ; do
+ 			case ${CHOST} in
++				*-cygwin*) echo ".${ver}.${libname}";;
+ 				*-darwin*) echo ".${ver}.${libname}";;
+ 				*-mint*)   echo ".${libname}";;
+ 				*)         echo ".${libname}.${ver}";;
+@@ -308,6 +367,7 @@ multilib_env() {
+ 			export CFLAGS_x86=${CFLAGS_x86--m32}
+ 			export CHOST_x86=${CTARGET/x86_64/i686}
+ 			CHOST_x86=${CHOST_x86/%-gnux32/-gnu}
++			CHOST_x86=${CHOST_x86/%-muslx32/-musl}
+ 			export CTARGET_x86=${CHOST_x86}
+ 			if [[ ${SYMLINK_LIB} == "yes" ]] ; then
+ 				export LIBDIR_x86="lib32"
+@@ -317,16 +377,18 @@ multilib_env() {
+ 
+ 			export CFLAGS_amd64=${CFLAGS_amd64--m64}
+ 			export CHOST_amd64=${CTARGET/%-gnux32/-gnu}
++			export CHOST_amd64=${CHOST_amd64/%-muslx32/-musl}
+ 			export CTARGET_amd64=${CHOST_amd64}
+ 			export LIBDIR_amd64="lib64"
+ 
+ 			export CFLAGS_x32=${CFLAGS_x32--mx32}
+ 			export CHOST_x32=${CTARGET/%-gnu/-gnux32}
++			export CHOST_x32=${CHOST_x32/%-musl/-muslx32}
+ 			export CTARGET_x32=${CHOST_x32}
+ 			export LIBDIR_x32="libx32"
+ 
+ 			case ${CTARGET} in
+-			*-gnux32)
++			*-gnux32|*-muslx32)
+ 				: ${MULTILIB_ABIS=x32 amd64 x86}
+ 				: ${DEFAULT_ABI=x32}
+ 				;;
+@@ -414,6 +476,7 @@ multilib_toolchain_setup() {
+ 	local v vv
+ 
+ 	export ABI=$1
++	FUNC="${@}"
+ 
+ 	# First restore any saved state we have laying around.
+ 	if [[ ${_DEFAULT_ABI_SAVED} == "true" ]] ; then
+@@ -435,6 +498,11 @@ multilib_toolchain_setup() {
+ 		done
+ 		export _DEFAULT_ABI_SAVED="true"
+ 
++		# Set CBUILD only if not cross-compiling.
++		if [[ ${CBUILD} == "${CHOST}" ]]; then
++			export CBUILD=$(get_abi_CHOST $1)
++		fi
++
+ 		# Set the CHOST native first so that we pick up the native
+ 		# toolchain and not a cross-compiler by accident #202811.
+ 		export CHOST=$(get_abi_CHOST ${DEFAULT_ABI})
+@@ -444,10 +512,21 @@ multilib_toolchain_setup() {
+ 		export FC="$(tc-getFC) $(get_abi_CFLAGS)"
+ 		export LD="$(tc-getLD) $(get_abi_LDFLAGS)"
+ 		export CHOST=$(get_abi_CHOST $1)
+-		export CBUILD=$(get_abi_CHOST $1)
+ 		export PKG_CONFIG_LIBDIR=${EPREFIX}/usr/$(get_libdir)/pkgconfig
+ 		export PKG_CONFIG_PATH=${EPREFIX}/usr/share/pkgconfig
+ 	fi
++
++	if [[ "${CHOST_default}" =~ "muslx32" ]] ; then
++		#if [[ "${PN}" == "boost" || "${PN}" == "chromium" ]] ; then
++		if [[ "${PN}" == "boost" ]] ; then
++			export CC="${CHOST_default}-gcc $(get_abi_CFLAGS)"
++			export CXX="${CHOST_default}-g++ $(get_abi_CFLAGS)"
++		elif [[ "${PN}" == "chromium" ]] ; then
++			export CC="${CHOST_default}-gcc "
++			export CXX="${CHOST_default}-g++ "
++		fi
++	fi
++
+ }
+ 
+ fi

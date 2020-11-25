@@ -1,0 +1,12 @@
+--- multilib-build.eclass.orig	2020-11-21 17:30:05.000000000 -0800
++++ multilib-build.eclass	2020-11-21 17:03:10.118946924 -0800
+@@ -201,7 +201,8 @@ _multilib_multibuild_wrapper() {
+ 	local ABI=${MULTIBUILD_VARIANT#*.}
+ 	local -r MULTILIB_ABI_FLAG=${MULTIBUILD_VARIANT%.*}
+ 
+-	multilib_toolchain_setup "${ABI}"
++	multilib_toolchain_setup "${ABI}" "${@}"
++
+ 	readonly ABI
+ 	"${@}"
+ }
