@@ -1,0 +1,13 @@
+--- util-linux-2.36.ebuild.orig	2020-10-26 10:39:11.000000000 -0700
++++ util-linux-2.36.ebuild	2020-11-28 23:04:15.301099909 -0800
+@@ -145,6 +145,10 @@ multilib_src_configure() {
+ 	export NCURSES6_CONFIG=false NCURSES5_CONFIG=false
+ 	export NCURSESW6_CONFIG=false NCURSESW5_CONFIG=false
+ 
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		append-cppflags -Dsigsetjmp=__sigsetjmp
++	fi
++
+ 	# configure args shared by python and non-python builds
+ 	local commonargs=(
+ 		--enable-fs-paths-extra="${EPREFIX}/usr/sbin:${EPREFIX}/bin:${EPREFIX}/usr/bin"
