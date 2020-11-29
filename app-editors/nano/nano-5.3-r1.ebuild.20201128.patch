@@ -1,0 +1,20 @@
+--- nano-5.3-r1.ebuild.orig	2020-10-12 05:09:05.000000000 -0700
++++ nano-5.3-r1.ebuild	2020-11-28 22:35:19.455189669 -0800
+@@ -28,6 +28,7 @@ LIB_DEPEND=">=sys-libs/ncurses-5.9-r1:0=
+ RDEPEND="!static? ( ${LIB_DEPEND//\[static-libs(+)]} )"
+ DEPEND="${RDEPEND}
+ 	static? ( ${LIB_DEPEND} )"
++DEPEND+=" app-shells/bash" # line added by muslx32 overlay.  bash needs to be reemerged before the nano package.
+ BDEPEND="
+ 	nls? ( sys-devel/gettext )
+ 	virtual/pkgconfig
+@@ -40,6 +41,9 @@ REQUIRED_USE="
+ 
+ src_prepare() {
+ 	default
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		sed -i "s|limits.h regex.h sys|limits.h sys|g" configure.ac || die
++	fi
+ 	if [[ ${PV} == "9999" ]] ; then
+ 		eautoreconf
+ 	fi
