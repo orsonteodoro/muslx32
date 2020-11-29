@@ -1,0 +1,16 @@
+--- m4-1.4.18-r1.ebuild.orig	2020-09-13 15:39:21.000000000 -0700
++++ m4-1.4.18-r1.ebuild	2020-11-29 02:38:15.798531199 -0800
+@@ -26,9 +26,10 @@ src_configure() {
+ 	# Disable automagic dependency over libsigsegv; see bug #278026
+ 	export ac_cv_libsigsegv=no
+ 
+-	local myconf=""
+-	[[ ${USERLAND} != "GNU" ]] && myconf="--program-prefix=g"
+-	econf --enable-changeword ${myconf}
++	local myconf=()
++	[[ ${USERLAND} != "GNU" ]] && myconf+=( --program-prefix=g )
++	[[ "${CHOST}" =~ "muslx32" ]] && myconf+=( --with-included-regex )
++	econf --enable-changeword ${myconf[@]}
+ }
+ 
+ src_test() {
