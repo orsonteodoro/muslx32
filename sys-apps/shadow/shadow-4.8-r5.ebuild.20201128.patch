@@ -1,0 +1,18 @@
+--- shadow-4.8-r5.ebuild.orig	2020-09-08 08:39:32.000000000 -0700
++++ shadow-4.8-r5.ebuild	2020-11-28 22:48:38.226975124 -0800
+@@ -48,8 +48,15 @@ PATCHES=(
+ 	"${FILESDIR}/${P}-revert-bin-merge.patch"
+ )
+ 
++MUSLX32_PATCHES=(
++	"${FILESDIR}/${PN}-4.4-all-am-fix.patch"
++)
++
+ src_prepare() {
+ 	default
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		epatch "${MUSLX32_PATCHES[@]}"
++	fi
+ 	eautoreconf
+ 	#elibtoolize
+ }
