@@ -1,0 +1,14 @@
+--- bitlbee-3.6-r1.ebuild.orig	2020-09-07 01:39:30.000000000 -0700
++++ bitlbee-3.6-r1.ebuild	2020-11-30 23:00:31.872671647 -0800
+@@ -69,6 +69,11 @@ PATCHES=(
+ src_configure() {
+ 	local myconf
+ 
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		append-ldflags -m elf32_x86_64
++		sed -i -e "s|LFLAGS=|LFLAGS= -m elf32_x86_64|g" "${S}/configure" || die
++	fi
++
+ 	# setup plugins, protocol, ipv6 and debug
+ 	myconf+=( --jabber=$(usex xmpp 1 0) )
+ 	for flag in debug ipv6 plugins ${IUSE_PROTOCOLS/+xmpp/} ; do

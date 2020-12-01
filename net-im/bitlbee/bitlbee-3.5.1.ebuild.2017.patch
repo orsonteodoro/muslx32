@@ -1,0 +1,22 @@
+--- bitlbee-3.5.1.ebuild.orig	2020-11-30 22:58:45.000000000 -0800
++++ bitlbee-3.5.1.ebuild	2020-11-21 17:03:10.140947805 -0800
+@@ -25,7 +25,6 @@ IUSE="debug +gnutls ipv6 libevent libres
+ REQUIRED_USE="
+ 	|| ( purple xmpp msn oscar )
+ 	xmpp? ( !nss )
+-	test? ( plugins )
+ "
+ 
+ COMMON_DEPEND="
+@@ -69,6 +68,11 @@ src_prepare() {
+ src_configure() {
+ 	local myconf
+ 
++	if [[ "${CHOST}" =~ "muslx32" ]] ; then
++		append-ldflags -m elf32_x86_64
++		sed -i -e "s|LFLAGS=|LFLAGS= -m elf32_x86_64|g" ${S}/configure || die
++	fi
++
+ 	# setup plugins, protocol, ipv6 and debug
+ 	myconf+=( --jabber=$(usex xmpp 1 0) )
+ 	for flag in debug ipv6 plugins ${IUSE_PROTOCOLS/+xmpp/} ; do
