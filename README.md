@@ -3,7 +3,11 @@ This is an unofficial muslx32 (musl libc and x32 ABI) overlay for Gentoo Linux
 
 ### STATUS
 
-* Between INACTIVE or COLD-REBOOT.
+* Indefinite hold.
+
+Gentoo removed the profile in [2019-06-12](https://gitweb.gentoo.org/repo/gentoo.git/commit/profiles?id=2deb22c6cff05eddf22f800ff6dbe0c3a92b4779),
+so updates are on hold.  Decision to update and maintain this profile on this
+overlay is uncertain, but maybe possible to restore back.
 
 The last update before 2020 was in Jul 17, 2018.
 
